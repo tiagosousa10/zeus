@@ -1,0 +1,1 @@
+{"name":"@zeus/api","private":true,"type":"module","scripts":{"dev":"tsx watch src/index.ts","start":"tsx src/index.ts","db:setup":"tsx src/db/setup.ts","test":"tsx --test test/*.test.ts"}}
