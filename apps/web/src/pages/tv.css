@@ -1,0 +1,242 @@
+.tv-page .art-hero {
+  min-height: 520px;
+}
+.tv-page .art-copy .eyebrow {
+  color: #7ad8e8;
+}
+.tv-add {
+  max-width: 850px;
+  margin: 0 auto 40px;
+}
+.tv-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.tv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.tv-toolbar select {
+  max-width: 260px;
+}
+.tv-toolbar input {
+  flex: 1;
+  min-width: 120px;
+}
+.tv-toolbar button {
+  white-space: nowrap;
+}
+.tv-groups {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding: 4px 0 18px;
+}
+.tv-groups button {
+  white-space: nowrap;
+}
+.tv-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 28px 0;
+}
+.tv-section-head h2 {
+  font:
+    34px Georgia,
+    serif;
+  margin: 0;
+}
+.tv-section-head > span {
+  font: 12px ui-monospace;
+  color: #888;
+}
+.channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
+.channel-card {
+  position: relative;
+  border: 1px solid #ffffff15;
+  border-radius: 18px;
+  background: linear-gradient(150deg, #14334633, #121218);
+  transition:
+    transform 0.3s,
+    border-color 0.3s;
+  overflow: hidden;
+}
+.channel-card:hover {
+  transform: translateY(-5px);
+  border-color: #78dcea60;
+}
+.channel-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 25px;
+}
+.channel-open > img {
+  height: 60px;
+  width: 90px;
+  object-fit: contain;
+  display: block;
+  margin: 10px 0 25px;
+}
+.channel-letter {
+  display: block;
+  font: 45px Georgia;
+  color: #a0d2dd;
+  margin: 10px 0 25px;
+}
+.live-badge {
+  font: 9px ui-monospace;
+  letter-spacing: 0.1em;
+  color: #79d7e4;
+  display: block;
+}
+.channel-open h3 {
+  font-size: 18px;
+  margin: 8px 0;
+}
+.channel-open p {
+  font-size: 13px;
+  color: #a5a5b2;
+  margin: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.channel-favorite {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #c9b57e;
+  background: none;
+  border: 0;
+  font-size: 25px;
+}
+.channel-open progress {
+  height: 3px;
+  width: 100%;
+  accent-color: #7bdbe9;
+  margin-top: 18px;
+}
+.tv-player {
+  margin: 25px 0;
+}
+.tv-player video {
+  width: 100%;
+  max-height: 65vh;
+  background: #000;
+  border-radius: 12px;
+}
+.tv-player-title {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.tv-player-title button {
+  margin-left: auto;
+}
+.epg-scroll {
+  overflow: auto;
+  border: 1px solid #ffffff15;
+  border-radius: 18px;
+}
+.epg-grid {
+  min-width: 800px;
+}
+.epg-row {
+  display: flex;
+  border-bottom: 1px solid #ffffff0b;
+  min-height: 90px;
+}
+.epg-row > button {
+  width: 180px;
+  flex-shrink: 0;
+  background: #111115;
+  border: 0;
+  text-align: left;
+  color: #ddd;
+  padding: 20px;
+}
+.epg-programmes {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 4px;
+}
+.epg-programmes > button {
+  min-width: 180px;
+  flex: 1;
+  padding: 16px;
+  text-align: left;
+  background: #ffffff04;
+  border: 1px solid #ffffff08;
+  color: #ccc;
+}
+.epg-programmes > button.is-now {
+  background: #3ba2be16;
+  border-left: 2px solid #6bdaee;
+}
+.epg-programmes small {
+  display: block;
+  font: 11px ui-monospace;
+  color: #83c5d0;
+  margin-bottom: 8px;
+}
+.epg-programmes strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.epg-programmes > span {
+  padding: 28px;
+  color: #666;
+  font-size: 13px;
+}
+@media (max-width: 700px) {
+  .tv-toolbar {
+    flex-wrap: wrap;
+  }
+  .tv-toolbar select {
+    max-width: 100%;
+    flex: 1;
+  }
+  .tv-toolbar input {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .channel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .channel-open {
+    padding: 18px;
+  }
+  .channel-open h3 {
+    font-size: 15px;
+  }
+  .tv-two {
+    grid-template-columns: 1fr;
+  }
+  .tv-player {
+    padding: 15px;
+  }
+  .tv-player-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tv-player-title h2 {
+    font-size: 18px;
+  }
+  .tv-section-head h2 {
+    font-size: 27px;
+  }
+}
