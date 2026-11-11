@@ -1,0 +1,21 @@
+node_modules/
+.env
+.env.*
+!.env.example
+apps/web/dist/
+.playwright-mcp/
+.remember/
+.DS_Store
+*.log
+.zeus/
+apps/api/dist/
+
+# Local reference originals; shipped artwork lives in apps/web/public/art.
+/images-zeus/
+# Generated installers and browser reports.
+/dist/
+/coverage/
+/test-results/
+/playwright-report/
+/build/*
+!/build/icon.png
