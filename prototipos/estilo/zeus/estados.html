@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zeus — Estados do sistema</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#000; --elev:#1c1c1e; --elev-2:#2c2c2e; --text:#f5f5f7; --text-2:rgba(235,235,245,.62); --text-3:rgba(235,235,245,.36);
+  --hair:rgba(255,255,255,.09); --accent:#7de3f0; --live:#ff453a; --glass:rgba(44,44,48,.52); --blur:blur(28px) saturate(180%);
+  --r-xl:24px; --r-lg:18px; --r-md:12px; --spring:cubic-bezier(.2,1.25,.4,1); --out:cubic-bezier(.22,1,.36,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  --bronze:#d2a77c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{overflow-x:hidden}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:17px/1.47 var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:max(20px,env(safe-area-inset-top)) clamp(16px,4vw,48px) 0;position:relative;z-index:2}
+.mark{font-size:15px;font-weight:600;letter-spacing:.52em;margin-right:-.52em;color:var(--text);text-decoration:none}
+.tabs{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(44,44,48,.6);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--hair);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font:inherit;font-size:14px;white-space:nowrap;color:var(--text-2);background:transparent;border:0;border-radius:999px;padding:8px 16px;cursor:pointer;transition:background .3s var(--out),color .3s}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{background:var(--elev-2);color:var(--text)}
+.tab:focus-visible{outline-offset:-2px}
+
+.stage{display:grid;grid-template-columns:minmax(300px,440px) minmax(0,1fr);align-items:center;gap:clamp(16px,4vw,64px);
+  min-height:calc(100vh - 80px);padding:0 clamp(16px,4vw,48px) 32px;max-width:1440px;margin:0 auto}
+.panels{grid-column:1;grid-row:1;position:relative;z-index:2}
+.visual{grid-column:2;grid-row:1;justify-self:center;position:relative;width:min(760px,100%);aspect-ratio:1;transition:opacity .9s var(--out),filter .9s var(--out)}
+.stage[data-state="vazio"] .visual{opacity:0;visibility:hidden;transition:opacity .5s,visibility 0s .5s}
+.stage[data-state="vazio"] .panels{grid-column:1 / -1}
+
+.clock{position:absolute;inset:0;-webkit-mask-image:radial-gradient(closest-side at 50% 42%,#000 64%,transparent 100%);mask-image:radial-gradient(closest-side at 50% 42%,#000 64%,transparent 100%)}
+.clock img,.clock svg,.clock canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.clock img{transition:filter 1.8s var(--out)}
+.clock::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 52%,rgba(0,0,0,.85) 82%,#000)}
+.stage[data-state="sessao"] .clock img{filter:grayscale(1) brightness(.62) contrast(1.05)}
+.stage[data-state="offline"] .clock img{filter:saturate(.5) brightness(.7) contrast(1.08)}
+.hands{transition:opacity 1s}
+.hands .h{fill:var(--bronze);filter:drop-shadow(0 0 6px rgba(210,167,124,.45))}
+.hands .s{stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.stage[data-state="sessao"] .hands .h{fill:#9a9a9f;filter:none}
+.stage[data-state="sessao"] .hands .s{stroke:#b4b4b9}
+.ring{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:opacity 1s,stroke 1s;filter:drop-shadow(0 0 8px rgba(125,227,240,.6))}
+.ticks{fill:none;stroke:rgba(255,236,210,.42);stroke-width:10;transition:opacity 1s;mix-blend-mode:screen}
+.stage:not([data-state="motor"]) .ring,.stage:not([data-state="motor"]) .ticks{opacity:0}
+.grain{opacity:0;transition:opacity 1.2s;mix-blend-mode:screen}
+.stage[data-state="offline"] .grain{opacity:.16}
+.band{position:absolute;left:0;right:0;height:18%;top:-20%;opacity:0;background:linear-gradient(to bottom,transparent,rgba(190,220,255,.07),transparent)}
+.stage[data-state="offline"] .band{opacity:1;animation:band 9s linear infinite}
+@keyframes band{to{top:110%}}
+.paused .band{animation-play-state:paused}
+
+[role="tabpanel"] h1{margin:0 0 12px;font-size:clamp(30px,3.4vw,44px);line-height:1.08;font-weight:700;letter-spacing:-.02em}
+[role="tabpanel"] h1:focus{outline:none}
+[role="tabpanel"] p{margin:0 0 24px;color:var(--text-2);max-width:40ch}
+.status{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;font-size:15px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.status b{font-size:28px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+.log{list-style:none;margin:0 0 20px;padding:14px 16px;min-height:212px;border-radius:var(--r-lg);background:rgba(28,28,30,.72);border:1px solid var(--hair);font:13px/1.75 var(--mono);color:var(--text-2);overflow:hidden}
+.log li{display:flex;gap:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log time{color:var(--text-3);flex:none}
+.log li.ok{color:var(--accent)}
+.log li.cur::after{content:"";width:7px;height:14px;align-self:center;background:var(--text-2);animation:caret 1.1s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.btn{font:inherit;font-size:16px;font-weight:600;border-radius:999px;padding:12px 22px;border:0;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:scale .4s var(--spring),background .2s,color .2s}
+.btn:active{scale:.96}
+.btn.primary{background:var(--text);color:#000}
+.btn.primary:hover{background:#fff;scale:1.03}
+.btn.ghost{background:rgba(255,255,255,.08);color:var(--text)}
+.btn.ghost:hover{background:rgba(255,255,255,.14)}
+.btn[disabled]{opacity:.6;cursor:progress}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.25);border-top-color:#000;animation:rot .8s linear infinite;display:none}
+.btn[aria-busy="true"] .spin{display:block}
+@keyframes rot{to{rotate:360deg}}
+.small{font-size:14px;color:var(--text-3);margin-top:14px}
+.small:empty{display:none}
+
+/* continuar a ver vazio */
+.home{max-width:1100px;margin:0 auto;width:100%}
+.home h2{margin:0 0 14px;font-size:22px;font-weight:600;letter-spacing:-.01em}
+.row{display:grid;grid-template-columns:minmax(0,1.8fr) repeat(3,minmax(0,1fr));gap:16px}
+.empty{display:flex;align-items:center;gap:22px;padding:22px;border-radius:var(--r-lg);background:var(--elev);border:1px solid var(--hair)}
+.empty p{margin:0 0 14px;color:var(--text);font-size:17px;max-width:24ch}
+.empty .btn{white-space:nowrap}
+.medal{position:relative;flex:none;width:112px;height:112px;border-radius:50%;
+  background:url(img/zeus-4.webp) 48.1% 12.4% / 155.2% auto no-repeat #111;box-shadow:inset 0 0 0 1px rgba(210,167,124,.35),inset 0 0 26px rgba(0,0,0,.85),0 10px 30px rgba(0,0,0,.6)}
+.medal svg{position:absolute;inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px)}
+.medal circle{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round}
+.ghostcard{border-radius:var(--r-lg);border:1px dashed rgba(255,255,255,.12);aspect-ratio:16/10;background:linear-gradient(160deg,rgba(255,255,255,.035),transparent)}
+.home .rest{margin-top:40px;opacity:.35}
+.home .rest .row{grid-template-columns:repeat(6,minmax(0,1fr))}
+.home .rest .ghostcard{aspect-ratio:2/3;border-style:solid;border-color:var(--hair);background:var(--elev)}
+
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr;align-items:start;gap:0;min-height:0}
+  .visual{grid-column:1;grid-row:1;width:min(560px,112%);margin-top:-8px}
+  .panels{grid-row:2;margin-top:-18%}
+  .stage[data-state="vazio"] .panels{grid-row:1;margin-top:32px}
+  .stage[data-state="vazio"] .visual{display:none}
+  .row{grid-template-columns:1fr}
+  .row .ghostcard{display:none}
+  .home .rest .row{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .home .rest .ghostcard{display:block}
+  .home .rest .ghostcard:nth-child(n+4){display:none}
+  .top{flex-wrap:wrap}
+  .tabs{order:3;flex:1 1 100%;display:grid;grid-template-columns:1fr 1fr;border-radius:18px}
+  .tab{border-radius:14px;white-space:normal}
+}
+@media (max-width:480px){
+  .empty{flex-direction:column;align-items:flex-start;text-align:left}
+  .log{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .band{display:none}
+  .log li.cur::after,.spin{animation:none}
+  .btn,.tab{transition:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="mark" href="index.html" aria-label="Zeus, voltar ao índice">ZEUS</a>
+  <div class="tabs" role="tablist" aria-label="Estados do sistema">
+    <button class="tab" role="tab" id="t-motor" aria-controls="p-motor" data-state="motor">Motor a arrancar</button>
+    <button class="tab" role="tab" id="t-sessao" aria-controls="p-sessao" data-state="sessao">Sessão expirada</button>
+    <button class="tab" role="tab" id="t-vazio" aria-controls="p-vazio" data-state="vazio">Continuar a ver</button>
+    <button class="tab" role="tab" id="t-offline" aria-controls="p-offline" data-state="offline">Sem ligação</button>
+  </div>
+</header>
+
+<main class="stage" id="stage" data-state="motor">
+  <div class="visual" aria-hidden="true">
+    <div class="clock">
+      <img src="img/zeus-4.webp" alt="">
+      <svg viewBox="0 0 1024 1024">
+        <defs>
+          <radialGradient id="headG"><stop offset="0" stop-color="#000"/><stop offset=".84" stop-color="#000"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+          <filter id="soft"><feGaussianBlur stdDeviation="10"/></filter>
+          <mask id="behind" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+            <rect width="1024" height="1024" fill="#fff"/>
+            <ellipse cx="458" cy="318" rx="228" ry="300" fill="url(#headG)"/>
+            <path filter="url(#soft)" fill="#000" d="M0 640 L170 580 L300 572 L420 640 L560 610 L620 470 L760 450 L1024 560 L1024 1024 L0 1024Z"/>
+          </mask>
+        </defs>
+        <g mask="url(#behind)">
+          <circle class="ticks" id="ticks" cx="505" cy="375" r="425" pathLength="240" stroke-dasharray="0.6 3.4"/>
+          <circle class="ring" id="ring" cx="505" cy="375" r="366" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 505 375)"/>
+          <g class="hands">
+            <path class="h" id="hh" d="M496 395 L499 150 L505 124 L511 150 L514 395Z"/>
+            <path class="h" id="mh" d="M499 405 L501 70 L505 44 L509 70 L511 405Z"/>
+            <line class="s" id="sh" x1="505" y1="430" x2="505" y2="30"/>
+          </g>
+        </g>
+      </svg>
+      <canvas class="grain" id="grain" width="180" height="180"></canvas>
+      <div class="band"></div>
+    </div>
+  </div>
+
+  <div class="panels">
+    <section role="tabpanel" id="p-motor" aria-labelledby="t-motor" tabindex="-1">
+      <h1 id="motorTitle" tabindex="-1">O Motor está a arrancar</h1>
+      <p>Na primeira vez demora uns segundos. Podes fechar esta janela: avisamos quando estiver pronto.</p>
+      <div class="status" aria-live="polite"><b id="pct">0%</b><span id="phase">a preparar</span></div>
+      <ol class="log" id="log" aria-label="Registo do Motor"></ol>
+      <button class="btn ghost" id="replay" type="button">Arrancar outra vez</button>
+    </section>
+
+    <section role="tabpanel" id="p-sessao" aria-labelledby="t-sessao" tabindex="-1" hidden>
+      <h1 tabindex="-1">A sessão expirou</h1>
+      <p>Por segurança, a sessão termina ao fim de 30 dias sem atividade. Entra outra vez para continuares onde ficaste.</p>
+      <a class="btn primary" href="entrada.html">Entrar outra vez</a>
+      <p class="small">As tuas listas, add-ons e progresso continuam guardados.</p>
+    </section>
+
+    <section role="tabpanel" id="p-vazio" aria-labelledby="t-vazio" tabindex="-1" hidden>
+      <div class="home">
+        <h2 tabindex="-1">Continuar a ver</h2>
+        <div class="row">
+          <div class="empty">
+            <div class="medal" aria-hidden="true"><svg viewBox="0 0 128 128"><circle id="medalRing" cx="64" cy="64" r="61" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 64 64)"/></svg></div>
+            <div>
+              <p>O tempo é teu. Começa algo para ver.</p>
+              <a class="btn primary" href="portal.html">Explorar o Cinema</a>
+            </div>
+          </div>
+          <div class="ghostcard" aria-hidden="true"></div>
+          <div class="ghostcard" aria-hidden="true"></div>
+          <div class="ghostcard" aria-hidden="true"></div>
+        </div>
+        <div class="rest" aria-hidden="true">
+          <h2>Em destaque no Cinema</h2>
+          <div class="row"><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div><div class="ghostcard"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="p-offline" aria-labelledby="t-offline" tabindex="-1" hidden>
+      <h1 tabindex="-1">Sem ligação à internet</h1>
+      <p>Verifica o Wi-Fi ou o cabo de rede. O que já descarregaste continua disponível em Transferências.</p>
+      <button class="btn primary" id="retry" type="button"><span class="spin"></span><span id="retryLbl">Tentar outra vez</span></button>
+      <p class="small" id="retryNote" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(() => {
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const stage = $('#stage'), tabs = $$('.tab');
+  const C = '505 375';
+  const hh = $('#hh'), mh = $('#mh'), sh = $('#sh'), ring = $('#ring'), ticks = $('#ticks');
+
+  /* relógio: ângulos em graus, velocidades em graus por segundo */
+  const clock = { h: 0, m: 0, s: 0, speed: 1, mode: 'real' };
+  function realTime() {
+    const d = new Date(), s = d.getSeconds() + d.getMilliseconds() / 1000, m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
+    clock.h = h * 30; clock.m = m * 6; clock.s = s * 6;
+  }
+  function draw() {
+    hh.setAttribute('transform', `rotate(${clock.h.toFixed(2)} ${C})`);
+    mh.setAttribute('transform', `rotate(${clock.m.toFixed(2)} ${C})`);
+    sh.setAttribute('transform', `rotate(${clock.s.toFixed(2)} ${C})`);
+  }
+  let raf = 0, last = 0, stuck = 0;
+  function tick(now) {
+    raf = requestAnimationFrame(tick);
+    const dt = Math.min((now - last) / 1000, .1); last = now;
+    if (clock.mode === 'boot') {
+      clock.s += 360 / 1.6 * dt * clock.speed; clock.m += 360 / 6 * dt * clock.speed; clock.h += 360 / 72 * dt * clock.speed;
+    } else if (clock.mode === 'stop') {
+      clock.s += 6 * dt * clock.speed; clock.m += .1 * dt * clock.speed;
+    } else if (clock.mode === 'stuck') {
+      stuck += dt;
+      clock.s = clock.stuckAt + (Math.floor(stuck) % 2 ? 1.5 : 0);
+    } else realTime();
+    draw();
+  }
+  function run() { if (!raf && !RM && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+  function halt() { cancelAnimationFrame(raf); raf = 0; }
+
+  /* motor */
+  const LOG = [
+    [0, 'a iniciar o Motor 2.3.0'], [700, 'a abrir a porta 11470 em 127.0.0.1'], [1400, 'a ligar ao DHT…'],
+    [2500, 'DHT: 64 nós encontrados'], [3300, 'a contactar 6 trackers…'], [4200, 'peers: 12'],
+    [5000, 'peers: 37, a pedir metadados'], [5900, 'cache pronta, 21,4 GB livres'], [6800, 'Motor pronto em 127.0.0.1:11470']
+  ];
+  const PHASES = ['a preparar', 'a preparar', 'a ligar à rede', 'a ligar à rede', 'à procura de peers', 'à procura de peers', 'à procura de peers', 'a preparar a cache', 'pronto'];
+  const logEl = $('#log'), pct = $('#pct'), phase = $('#phase'), motorTitle = $('#motorTitle');
+  let timers = [], ringTween = null;
+  const prog = { v: 0 };
+  function setRing() { ring.setAttribute('stroke-dasharray', `${prog.v.toFixed(2)} 100`); pct.textContent = Math.round(prog.v) + '%'; }
+  function stamp(ms) { return '00:0' + (ms / 1000).toFixed(1).replace('.', ','); }
+  function boot() {
+    timers.forEach(clearTimeout); timers = [];
+    ringTween && ringTween.kill(); gsap.killTweensOf(clock);
+    logEl.innerHTML = ''; prog.v = 0; setRing();
+    motorTitle.textContent = 'O Motor está a arrancar';
+    clock.mode = 'boot'; clock.speed = 1; realTime();
+    LOG.forEach(([at, text], i) => timers.push(setTimeout(() => {
+      $$('li', logEl).forEach(li => li.classList.remove('cur'));
+      const li = document.createElement('li');
+      li.innerHTML = `<time>${stamp(at)}</time><span></span>`;
+      li.lastChild.textContent = text;
+      const done = i === LOG.length - 1;
+      li.className = done ? 'ok' : 'cur';
+      logEl.append(li);
+      while (logEl.children.length > 8) logEl.firstChild.remove();
+      if (!RM) gsap.from(li, { opacity: 0, x: -6, duration: .35, ease: 'power2.out' });
+      phase.textContent = PHASES[i];
+      ringTween = gsap.to(prog, { v: done ? 100 : Math.round((i + 1) / LOG.length * 100 - 4), duration: RM ? 0 : .6, ease: 'power2.out', onUpdate: setRing });
+      if (done) {
+        motorTitle.textContent = 'O Motor está pronto';
+        if (!RM) gsap.to(clock, { speed: 0, duration: 1.2, ease: 'power2.out', onComplete: () => { clock.mode = 'real'; } });
+        else { clock.mode = 'real'; realTime(); draw(); }
+      }
+    }, at)));
+    if (!RM) gsap.fromTo(ticks, { rotation: 0 }, { rotation: 90, svgOrigin: C, duration: 7, ease: 'power1.inOut' });
+  }
+  $('#replay').addEventListener('click', boot);
+
+  /* grão para «sem ligação» */
+  const grain = $('#grain'), gctx = grain.getContext('2d'), img = gctx.createImageData(180, 180);
+  let gTimer = 0;
+  function noise() {
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255 | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+    gctx.putImageData(img, 0, 0);
+  }
+  function grainOn() { noise(); if (!RM && !gTimer && !document.hidden) gTimer = setInterval(noise, 83); }
+  function grainOff() { clearInterval(gTimer); gTimer = 0; }
+
+  const retry = $('#retry'), retryLbl = $('#retryLbl'), retryNote = $('#retryNote');
+  retry.addEventListener('click', () => {
+    retry.disabled = true; retry.setAttribute('aria-busy', 'true'); retryLbl.textContent = 'A tentar…'; retryNote.textContent = '';
+    setTimeout(() => {
+      retry.disabled = false; retry.removeAttribute('aria-busy'); retryLbl.textContent = 'Tentar outra vez';
+      retryNote.textContent = 'Ainda sem ligação. Voltamos a tentar sozinhos dentro de 30 segundos.';
+    }, 1600);
+  });
+
+  /* estados */
+  const medalRing = $('#medalRing');
+  function enter(state) {
+    timers.forEach(clearTimeout); timers = [];
+    gsap.killTweensOf(clock); grainOff();
+    if (state === 'motor') { boot(); run(); }
+    if (state === 'sessao') {
+      if (clock.mode === 'real' || clock.mode === 'stuck') realTime();
+      clock.mode = 'stop'; clock.speed = clock.speed || 1;
+      if (RM) { halt(); draw(); }
+      else { run(); gsap.fromTo(clock, { speed: 18 }, { speed: 0, duration: 2.2, ease: 'power3.out', onComplete: halt }); }
+    }
+    if (state === 'offline') {
+      realTime(); clock.stuckAt = clock.s; clock.mode = 'stuck'; stuck = 0;
+      grainOn(); RM ? (halt(), draw()) : run();
+    }
+    if (state === 'vazio') {
+      halt();
+      gsap.fromTo(medalRing, { attr: { 'stroke-dasharray': '0 100' }, opacity: 1 },
+        RM ? { attr: { 'stroke-dasharray': '0 100' }, duration: 0 }
+           : { attr: { 'stroke-dasharray': '100 0' }, duration: 2.4, ease: 'power2.inOut', onComplete: () => gsap.to(medalRing, { opacity: .25, duration: 1 }) });
+    }
+  }
+  function select(tab, focus) {
+    const state = tab.dataset.state;
+    tabs.forEach(t => { const on = t === tab; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; $('#' + t.getAttribute('aria-controls')).hidden = !on; });
+    stage.dataset.state = state;
+    history.replaceState(null, '', '#' + state);
+    const panel = $('#' + tab.getAttribute('aria-controls'));
+    if (!RM) gsap.fromTo(panel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .5, ease: 'power3.out' });
+    if (focus) tab.focus();
+    enter(state);
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', e => {
+      const k = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (k) { e.preventDefault(); select(tabs[(i + k + tabs.length) % tabs.length], true); }
+      if (e.key === 'Home') { e.preventDefault(); select(tabs[0], true); }
+      if (e.key === 'End') { e.preventDefault(); select(tabs[tabs.length - 1], true); }
+    });
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    document.documentElement.classList.toggle('paused', document.hidden);
+    if (document.hidden) { halt(); grainOff(); }
+    else {
+      const s = stage.dataset.state;
+      if (s === 'motor' || s === 'offline' || (s === 'sessao' && clock.speed > 0)) run();
+      if (s === 'offline') grainOn();
+    }
+  });
+
+  realTime(); draw();
+  const first = tabs.find(t => '#' + t.dataset.state === location.hash) || tabs[0];
+  select(first);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Entrar no Zeus</title>
+<style>
+:root{
+  --bg:#000; --elev:#1c1c1e; --elev-2:#2c2c2e; --text:#f5f5f7;
+  --text-2:rgba(235,235,245,.62); --text-3:rgba(235,235,245,.36);
+  --hair:rgba(255,255,255,.09); --accent:#7de3f0; --live:#ff453a;
+  --glass:rgba(44,44,48,.52); --blur:blur(28px) saturate(180%);
+  --r-xl:24px; --r-lg:18px; --r-md:12px;
+  --spring:cubic-bezier(.2,1.25,.4,1); --out:cubic-bezier(.22,1,.36,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{min-height:100vh;min-height:100dvh}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.wordmark{position:fixed;top:28px;left:32px;z-index:4;margin:0;font-size:13px;font-weight:600;letter-spacing:.62em;color:var(--text)}
+
+/* palco: a imagem nunca aparece nítida a toda a largura */
+.stage{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.stage::after{content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(90deg,transparent 30%,rgba(0,0,0,.72) 50%,#000 63%),
+    linear-gradient(0deg,#000 0,transparent 28%),
+    linear-gradient(180deg,rgba(0,0,0,.55) 0,transparent 18%)}
+.bust{position:absolute;width:min(108vh,66vw);aspect-ratio:1;left:-3vw;top:50%;transform:translateY(-50%)}
+.breath{position:absolute;inset:0;transform-origin:46% 40%}
+.bust img{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+.base{filter:brightness(.24) contrast(1.15)}
+.lamp{position:absolute;left:0;top:0;width:62%;aspect-ratio:1;overflow:hidden;will-change:transform;
+  -webkit-mask-image:radial-gradient(closest-side,#000 0,rgba(0,0,0,.9) 28%,rgba(0,0,0,.42) 62%,transparent 100%);
+          mask-image:radial-gradient(closest-side,#000 0,rgba(0,0,0,.9) 28%,rgba(0,0,0,.42) 62%,transparent 100%)}
+.bust .lamp img{inset:auto;left:0;top:0;width:calc(100% / .62);height:auto;will-change:transform;filter:brightness(1.14) contrast(1.12)}
+.tint{position:absolute;inset:0;background:var(--accent);mix-blend-mode:multiply;opacity:0}
+.bloom{position:absolute;inset:0;background:radial-gradient(closest-side,rgba(255,252,245,.14),transparent);mix-blend-mode:screen}
+
+#temple{visibility:hidden;opacity:0}
+.t-base{filter:brightness(.2) saturate(.5) contrast(1.1)}
+#temple .bust{width:min(100vh,60vw)}
+#temple .breath::after{content:"";position:absolute;inset:-1px;background:linear-gradient(90deg,transparent 60%,#000 99%),linear-gradient(180deg,#000 0,transparent 12%)}
+.t-lit{opacity:0;filter:saturate(1.05)}
+.arcs{position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+.arcs path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.arcs .glow{stroke:var(--accent);stroke-width:7;opacity:.38}
+.arcs .core{stroke:#f2fdff;stroke-width:1.6}
+.arcs g{opacity:0}
+
+.grain{position:fixed;inset:-120px;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation:grain 1.2s steps(5) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-38px,22px)}40%{transform:translate(26px,-41px)}60%{transform:translate(-17px,-12px)}80%{transform:translate(44px,30px)}100%{transform:translate(0,0)}}
+.paused .grain,.paused .spin{animation-play-state:paused}
+
+main{position:relative;z-index:2;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:flex-end;padding:96px 7vw 48px}
+.panel{width:min(400px,100%);padding:32px;border-radius:var(--r-xl);background:var(--glass);
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--hair);
+  box-shadow:0 40px 80px -30px rgba(0,0,0,.9)}
+[hidden]{display:none!important}
+h1{margin:0 0 6px;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.022em;outline:none}
+.lede{margin:0 0 24px;font-size:15px;line-height:1.45;color:var(--text-2);max-width:34ch}
+.lede strong{color:var(--text);font-weight:500;word-break:break-all}
+.gap{height:18px}
+.field{display:grid;gap:8px;margin-bottom:16px}
+.field label,.label{font-size:13px;font-weight:500;color:var(--text-2)}
+.input-wrap{position:relative}
+.input{width:100%;height:48px;padding:0 14px;border-radius:var(--r-md);border:1px solid var(--hair);background:rgba(118,118,128,.18);font-size:17px;transition:border-color .2s,background .2s}
+.input:hover{background:rgba(118,118,128,.24)}
+.input[readonly]{color:var(--text-2)}
+.input-wrap .input{padding-right:84px}
+.reveal{position:absolute;right:6px;top:6px;height:36px;padding:0 10px;border:0;border-radius:8px;background:none;color:var(--text-2);font-size:14px;cursor:pointer}
+.reveal:hover{color:var(--text)}
+[aria-invalid="true"]{border-color:var(--live)!important}
+.row{display:flex;justify-content:flex-end;margin:-6px 0 18px}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-size:15px;cursor:pointer;text-decoration:none;border-radius:4px}
+.linkbtn:hover{text-decoration:underline;text-underline-offset:3px}
+
+.ts{display:flex;align-items:center;gap:12px;height:64px;padding:0 14px;margin:8px 0 20px;border-radius:var(--r-md);border:1px solid var(--hair);background:rgba(0,0,0,.28)}
+.ts-box{position:relative;width:28px;height:28px;flex:none}
+.ts-box svg{position:absolute;inset:0;width:100%;height:100%}
+.spin{animation:spin 1s linear infinite;transform-origin:50% 50%}
+.spin circle{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-dasharray:44 80;stroke-linecap:round}
+.tick{opacity:0}
+.tick circle{fill:#30d158}
+.tick path{fill:none;stroke:#000;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .45s var(--out) .15s}
+.ts.ok .spin{opacity:0;animation:none}
+.ts.ok .tick{opacity:1;transition:opacity .2s}
+.ts.ok .tick path{stroke-dashoffset:0}
+.ts-text{flex:1;font-size:15px}
+.ts-brand{text-align:right;font-size:11px;line-height:1.35;color:var(--text-3)}
+.ts-brand b{display:block;font-size:12px;font-weight:600;color:var(--text-2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.btn{width:100%;height:50px;border:0;border-radius:var(--r-md);background:var(--text);color:#000;font-size:17px;font-weight:600;cursor:pointer;transition:transform .35s var(--spring),opacity .2s}
+.btn:active{transform:scale(.98)}
+.btn[aria-busy="true"]{opacity:.6;cursor:progress}
+.msg{min-height:20px;margin:12px 0 0;font-size:14px;line-height:1.4;color:#ff6961}
+.msg.ok{color:var(--text-2)}
+.fine{margin:20px 0 0;padding-top:18px;border-top:1px solid var(--hair);font-size:13px;color:var(--text-3);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.fine .linkbtn{font-size:13px}
+
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin-bottom:10px}
+.code{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.digit{width:100%;min-width:0;height:58px;padding:0;text-align:center;font-family:var(--mono);font-size:24px;caret-color:var(--accent)}
+.digit.filled{border-color:rgba(125,227,240,.4)}
+.code-alt{margin-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:2px}
+.meter span{height:4px;border-radius:2px;background:rgba(118,118,128,.3);overflow:hidden}
+.meter span::after{content:"";display:block;height:100%;background:var(--c,var(--accent));transform:scaleX(0);transform-origin:left;transition:transform .45s var(--out)}
+.meter span.on::after{transform:scaleX(1)}
+.meter-txt{font-size:13px;color:var(--text-2);min-height:18px}
+
+#welcome{position:fixed;inset:0;z-index:10;background:#000;display:grid;place-content:center;text-align:center;visibility:hidden;opacity:0}
+.w-mark{margin:0;font-size:clamp(44px,9vw,96px);font-weight:600;letter-spacing:.5em;padding-left:.5em}
+.w-sub{margin:18px 0 0;font-size:17px;color:var(--text-2)}
+#flash{position:fixed;inset:0;z-index:11;background:#fff;opacity:0;pointer-events:none}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:820px){
+  .wordmark{top:22px;left:50%;transform:translateX(-50%);padding-left:.62em}
+  .bust,#temple .bust{width:max(100vw,64vh);left:50%;top:-3vh;transform:translateX(-50%)}
+  .stage::after{background:linear-gradient(180deg,rgba(0,0,0,.35) 0,rgba(0,0,0,.5) 34%,#000 74%)}
+  main{align-items:flex-end;justify-content:center;padding:96px 16px 24px}
+  .panel{padding:24px}
+  h1{font-size:30px}
+}
+@media (prefers-reduced-motion:reduce){
+  .grain{animation:none}
+  .spin{animation:none}
+  .btn,.input,.meter span::after,.tick path{transition:none}
+}
+</style>
+</head>
+<body>
+<p class="wordmark" aria-label="Zeus">ZEUS</p>
+
+<div class="stage" id="marble" aria-hidden="true">
+  <div class="bust" id="bust">
+    <div class="breath">
+      <img class="base" src="img/zeus-6.webp" alt="" width="794" height="794" decoding="async">
+      <div class="lamp" id="lamp">
+        <img id="lampImg" src="img/zeus-6.webp" alt="" width="794" height="794" decoding="async">
+        <div class="tint" id="tint"></div>
+        <div class="bloom"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stage" id="temple" aria-hidden="true">
+  <div class="bust">
+    <div class="breath">
+      <img class="t-base" src="img/zeus-3.webp" alt="" width="626" height="626" decoding="async">
+      <img class="t-lit" id="templeLit" src="img/zeus-3.webp" alt="" width="626" height="626" decoding="async">
+      <svg class="arcs" id="arcs" viewBox="0 0 626 626" preserveAspectRatio="xMidYMid slice"></svg>
+    </div>
+  </div>
+</div>
+
+<div class="grain" aria-hidden="true"></div>
+
+<main>
+  <div class="panel" id="panel">
+
+    <section class="view" id="v-login" aria-labelledby="h-login">
+      <h1 id="h-login" tabindex="-1">Entrar</h1>
+      <div class="gap"></div>
+      <form id="f-login" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" name="email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" required aria-describedby="m-login">
+        </div>
+        <div class="field">
+          <label for="pw">Palavra-passe</label>
+          <div class="input-wrap">
+            <input class="input" id="pw" name="password" type="password" autocomplete="current-password" required aria-describedby="m-login">
+            <button type="button" class="reveal" data-reveal="pw" aria-pressed="false">Mostrar</button>
+          </div>
+        </div>
+        <div class="row"><button type="button" class="linkbtn" id="forgot">Esqueci-me da palavra-passe</button></div>
+
+        <span class="label" id="ts-label">Verificação Cloudflare</span>
+        <div class="ts" id="ts" role="group" aria-labelledby="ts-label">
+          <span class="ts-box" aria-hidden="true">
+            <svg class="spin" viewBox="0 0 28 28"><circle cx="14" cy="14" r="11"/></svg>
+            <svg class="tick" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13"/><path d="M8.5 14.5l3.6 3.6 7.4-8"/></svg>
+          </span>
+          <span class="ts-text" id="ts-text" aria-live="polite">A verificar…</span>
+          <span class="ts-brand"><b>Cloudflare</b>Privacidade e termos</span>
+        </div>
+
+        <button class="btn" id="b-login" type="submit">Continuar</button>
+        <p class="msg" id="m-login" aria-live="assertive"></p>
+      </form>
+      <p class="fine"><span>Acesso só por convite.</span><button type="button" class="linkbtn" data-go="invite">Tenho um convite</button></p>
+    </section>
+
+    <section class="view" id="v-totp" aria-labelledby="h-totp" hidden>
+      <h1 id="h-totp" tabindex="-1">Verificação em dois passos</h1>
+      <p class="lede" id="totp-lede">Abre a app de autenticação e introduz o código de 6 dígitos.</p>
+      <form id="f-totp" novalidate>
+        <fieldset id="code-set">
+          <legend class="label">Código de 6 dígitos</legend>
+          <div class="code" id="code">
+            <input class="input digit" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" aria-label="Dígito 1 de 6" aria-describedby="m-totp">
+            <input class="input digit" inputmode="numeric" autocomplete="off" pattern="[0-9]*" aria-label="Dígito 2 de 6">
+            <input class="input digit" inputmode="numeric" autocomplete="off" pattern="[0-9]*" aria-label="Dígito 3 de 6">
+            <input class="input digit" inputmode="numeric" autocomplete="off" pattern="[0-9]*" aria-label="Dígito 4 de 6">
+            <input class="input digit" inputmode="numeric" autocomplete="off" pattern="[0-9]*" aria-label="Dígito 5 de 6">
+            <input class="input digit" inputmode="numeric" autocomplete="off" pattern="[0-9]*" aria-label="Dígito 6 de 6">
+          </div>
+        </fieldset>
+        <div class="field" id="rec-set" hidden>
+          <label for="rec">Código de recuperação</label>
+          <input class="input" id="rec" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="xxxx-xxxx-xxxx" aria-describedby="m-totp">
+          <button class="btn" type="submit" style="margin-top:8px">Verificar</button>
+        </div>
+        <p class="msg" id="m-totp" aria-live="assertive"></p>
+      </form>
+      <div class="code-alt">
+        <button type="button" class="linkbtn" id="rec-toggle" aria-controls="rec-set" aria-expanded="false">Usar código de recuperação</button>
+        <button type="button" class="linkbtn" data-go="login">Voltar</button>
+      </div>
+    </section>
+
+    <section class="view" id="v-invite" aria-labelledby="h-invite" hidden>
+      <h1 id="h-invite" tabindex="-1">Aceitar convite</h1>
+      <p class="lede">A Marta convidou-te para o Zeus. Escolhe uma palavra-passe para criar a tua conta.</p>
+      <form id="f-invite" novalidate>
+        <div class="field">
+          <label for="i-name">Nome</label>
+          <input class="input" id="i-name" autocomplete="name" required aria-describedby="m-invite">
+        </div>
+        <div class="field">
+          <label for="i-email">Email</label>
+          <input class="input" id="i-email" type="email" autocomplete="email" value="ines.duarte@exemplo.pt" readonly>
+        </div>
+        <div class="field">
+          <label for="i-pw">Palavra-passe</label>
+          <div class="input-wrap">
+            <input class="input" id="i-pw" type="password" autocomplete="new-password" required aria-describedby="i-pw-hint m-invite">
+            <button type="button" class="reveal" data-reveal="i-pw" aria-pressed="false">Mostrar</button>
+          </div>
+          <div class="meter" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <span class="meter-txt" id="i-pw-hint" aria-live="polite">Usa pelo menos 12 caracteres.</span>
+        </div>
+        <button class="btn" id="b-invite" type="submit">Criar conta</button>
+        <p class="msg" id="m-invite" aria-live="assertive"></p>
+      </form>
+      <p class="fine"><span>Já tens conta?</span><button type="button" class="linkbtn" data-go="login">Entrar</button></p>
+    </section>
+
+  </div>
+</main>
+
+<div id="welcome" role="status" aria-live="polite">
+  <p class="w-mark">ZEUS</p>
+  <p class="w-sub">Bem-vindo. A abrir o Zeus…</p>
+</div>
+<div id="flash" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const NS = 'http://www.w3.org/2000/svg';
+  const views = { login: $('#v-login'), totp: $('#v-totp'), invite: $('#v-invite') };
+  let view = 'login';
+
+  /* A luz: um recorte nítido da imagem segue o cursor, só com transforms. */
+  const bust = $('#bust'), lamp = $('#lamp'), lampImg = $('#lampImg');
+  const LAMP = 0.62;
+  const MODES = {
+    login:  { rest: [.34, .30], orbit: [.47, .38, .13, .09], tint: 0 },
+    invite: { rest: [.60, .54], orbit: [.58, .50, .10, .08], tint: .5 }
+  };
+  const L = { x: 0, y: 0, tx: 0, ty: 0, last: -1e9, S: 1 };
+
+  function measure() { L.S = bust.offsetWidth; }
+  function placeLamp(x, y) {
+    const h = L.S * LAMP / 2;
+    lamp.style.transform = `translate3d(${x - h}px,${y - h}px,0)`;
+    lampImg.style.transform = `translate3d(${h - x}px,${h - y}px,0)`;
+  }
+  function restLamp() {
+    const m = MODES[view === 'invite' ? 'invite' : 'login'];
+    L.x = L.tx = m.rest[0] * L.S; L.y = L.ty = m.rest[1] * L.S;
+    placeLamp(L.x, L.y);
+  }
+
+  function tick(time, dt) {
+    if (view === 'totp') return;
+    const m = MODES[view].orbit;
+    if (performance.now() - L.last > 3500) {
+      const t = time * .42;
+      L.tx = L.S * (m[0] + m[2] * Math.cos(t * .5));
+      L.ty = L.S * (m[1] + m[3] * Math.sin(t * .8));
+    }
+    const k = 1 - Math.exp(-dt / (L.last > 0 && performance.now() - L.last < 3500 ? 140 : 600));
+    L.x += (L.tx - L.x) * k; L.y += (L.ty - L.y) * k;
+    placeLamp(L.x, L.y);
+  }
+
+  measure(); restLamp();
+  addEventListener('resize', () => { measure(); if (reduce) restLamp(); });
+
+  if (!reduce) {
+    addEventListener('pointermove', e => {
+      const r = bust.getBoundingClientRect();
+      L.tx = (e.clientX - r.left) * L.S / r.width;
+      L.ty = (e.clientY - r.top) * L.S / r.height;
+      L.last = performance.now();
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => { L.last = -1e9; });
+    gsap.ticker.add(tick);
+    gsap.to('.breath', { scale: 1.014, duration: 5.5, ease: 'sine.inOut', yoyo: true, repeat: -1 });
+
+    const intro = gsap.timeline();
+    intro.from('.base', { opacity: 0, duration: 1.8, ease: 'power2.out' })
+         .from(lamp, { opacity: 0, duration: 2.6, ease: 'power2.inOut' }, .3)
+         .from('.wordmark', { opacity: 0, duration: 1.4 }, .7)
+         .from('#panel', { opacity: 0, y: 18, duration: 1.1, ease: 'expo.out' }, 1);
+  }
+
+  /* Raios: arcos gerados por deslocamento de ponto médio. */
+  const svg = $('#arcs');
+  const HEAD = [318, 215];
+  const ANGLES = [-150, -30, -104, -76, 172, 8];
+
+  function bolt(x1, y1, x2, y2, d, n) {
+    let pts = [[x1, y1], [x2, y2]];
+    for (let k = 0; k < n; k++) {
+      const out = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        const nx = ay - by, ny = bx - ax, len = Math.hypot(nx, ny) || 1;
+        const o = (Math.random() - .5) * d;
+        out.push([(ax + bx) / 2 + nx / len * o, (ay + by) / 2 + ny / len * o], [bx, by]);
+      }
+      pts = out; d /= 2;
+    }
+    return 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
+  }
+  function makeArc(geom) {
+    const g = document.createElementNS(NS, 'g');
+    const paths = ['glow', 'core'].map(c => {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('class', c); p.setAttribute('pathLength', '1');
+      g.appendChild(p); return p;
+    });
+    svg.appendChild(g);
+    const arc = { g, paths, geom, on: false };
+    redraw(arc); return arc;
+  }
+  function redraw(a) {
+    const d = bolt(...a.geom);
+    a.paths.forEach(p => p.setAttribute('d', d));
+  }
+  const arcs = ANGLES.map((deg, i) => {
+    const r = deg * Math.PI / 180, r0 = 140 + (i % 2) * 14, r1 = 330 + (i % 3) * 30;
+    return makeArc([HEAD[0] + Math.cos(r) * r0, HEAD[1] + Math.sin(r) * r0,
+                     HEAD[0] + Math.cos(r) * r1, HEAD[1] + Math.sin(r) * r1, 70, 5]);
+  });
+  const strike = makeArc([HEAD[0] + 8, -40, HEAD[0] - 4, HEAD[1] - 70, 120, 6]);
+  strike.paths.forEach(p => { p.style.strokeWidth = p.classList.contains('core') ? 3 : 14; });
+
+  function setArcs(n) {
+    arcs.forEach((a, i) => {
+      const on = i < n;
+      if (on === a.on) return;
+      a.on = on;
+      if (reduce) {
+        gsap.set(a.paths, { strokeDashoffset: 0 });
+        gsap.to(a.g, { opacity: on ? .8 : 0, duration: .3 });
+      } else {
+        gsap.to(a.paths, { strokeDashoffset: on ? 0 : 1, duration: on ? .7 : .35, ease: on ? 'power3.out' : 'power2.in' });
+        gsap.to(a.g, { opacity: on ? 1 : 0, duration: on ? .2 : .4, delay: on ? 0 : .1 });
+      }
+    });
+    gsap.to('#templeLit', { opacity: n / 6 * .7, duration: reduce ? .3 : .8, ease: 'power2.out' });
+  }
+
+  let crawl = null;
+  function startCrawl() {
+    if (reduce || crawl) return;
+    crawl = setInterval(() => arcs.forEach(a => a.on && redraw(a)), 150);
+  }
+  function stopCrawl() { clearInterval(crawl); crawl = null; }
+
+  /* Navegação entre estados. */
+  function swapStage(toTemple) {
+    const show = toTemple ? '#temple' : '#marble', hide = toTemple ? '#marble' : '#temple';
+    if (reduce) {
+      gsap.to(hide, { autoAlpha: 0, duration: .3 });
+      gsap.to(show, { autoAlpha: 1, duration: .3 });
+      return;
+    }
+    gsap.to(hide, { autoAlpha: 0, scale: 1.04, duration: .8, ease: 'power2.in' });
+    gsap.fromTo(show, { autoAlpha: 0, scale: 1.07 }, { autoAlpha: 1, scale: 1, duration: 1.8, ease: 'expo.out', delay: .35 });
+  }
+
+  function go(next) {
+    if (next === view) return;
+    const from = views[view], to = views[next], prev = view;
+    view = next;
+    if (next === 'totp' || prev === 'totp') swapStage(next === 'totp');
+    if (next === 'totp') { resetCode(); startCrawl(); } else stopCrawl();
+    gsap.to('#tint', { opacity: MODES[next === 'invite' ? 'invite' : 'login'].tint, duration: reduce ? .3 : 1.6, ease: 'power2.inOut' });
+    if (reduce) restLamp();
+    else L.last = -1e9;
+
+    const d = reduce ? .2 : .35;
+    gsap.to(from, { opacity: 0, y: reduce ? 0 : -8, duration: d, ease: 'power2.in', onComplete: () => {
+      from.hidden = true; to.hidden = false;
+      gsap.fromTo(to, { opacity: 0, y: reduce ? 0 : 12 }, { opacity: 1, y: 0, duration: reduce ? .25 : .7, ease: 'expo.out' });
+      (next === 'totp' ? digits[0] : to.querySelector('h1')).focus({ preventScroll: true });
+    }});
+  }
+  $$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+
+  /* Formulários. */
+  function say(el, text, field, ok) {
+    el.textContent = text;
+    el.classList.toggle('ok', !!ok);
+    $$('[aria-invalid]', el.closest('form')).forEach(f => f.removeAttribute('aria-invalid'));
+    if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
+  }
+
+  $$('[data-reveal]').forEach(b => b.addEventListener('click', () => {
+    const f = document.getElementById(b.dataset.reveal), show = f.type === 'password';
+    f.type = show ? 'text' : 'password';
+    b.textContent = show ? 'Ocultar' : 'Mostrar';
+    b.setAttribute('aria-pressed', String(show));
+  }));
+
+  let tsOk = false;
+  setTimeout(() => { tsOk = true; $('#ts').classList.add('ok'); $('#ts-text').textContent = 'Verificado'; }, reduce ? 700 : 2200);
+
+  const mLogin = $('#m-login'), email = $('#email'), pw = $('#pw');
+  $('#forgot').addEventListener('click', () => {
+    if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return say(mLogin, 'Escreve o teu email e volta a carregar em «Esqueci-me da palavra-passe».', email);
+    say(mLogin, 'Se existir uma conta com este email, vais receber um link para repor a palavra-passe.', null, true);
+  });
+
+  $('#f-login').addEventListener('submit', e => {
+    e.preventDefault();
+    const btn = $('#b-login');
+    if (btn.getAttribute('aria-busy') === 'true') return;
+    if (!/^\S+@\S+\.\S+$/.test(email.value.trim())) return say(mLogin, 'Escreve um email válido, por exemplo nome@dominio.pt.', email);
+    if (!pw.value) return say(mLogin, 'Escreve a tua palavra-passe.', pw);
+    if (!tsOk) return say(mLogin, 'Aguarda que a verificação Cloudflare termine.');
+    say(mLogin, '');
+    btn.setAttribute('aria-busy', 'true'); btn.textContent = 'A entrar…';
+    $('#totp-lede').innerHTML = 'Abre a app de autenticação e introduz o código de 6 dígitos para <strong></strong>.';
+    $('#totp-lede strong').textContent = email.value.trim();
+    setTimeout(() => { btn.removeAttribute('aria-busy'); btn.textContent = 'Continuar'; go('totp'); }, 650);
+  });
+
+  /* Código TOTP. */
+  const digits = $$('.digit'), mTotp = $('#m-totp');
+  let verifying = false;
+
+  function fill(from, str) {
+    for (const ch of str) { if (from > 5) break; digits[from++].value = ch; }
+    return from;
+  }
+  function update() {
+    digits.forEach(d => d.classList.toggle('filled', !!d.value));
+    const n = digits.filter(d => d.value).length;
+    setArcs(n);
+    if (n === 6 && !verifying) {
+      verifying = true;
+      digits.forEach(d => d.readOnly = true);
+      setTimeout(() => verify(digits.map(d => d.value).join('')), reduce ? 150 : 450);
+    }
+  }
+  function resetCode() {
+    digits.forEach(d => { d.value = ''; d.readOnly = false; d.classList.remove('filled'); d.removeAttribute('aria-invalid'); });
+    verifying = false; setArcs(0);
+  }
+  digits.forEach((d, i) => {
+    d.addEventListener('input', () => {
+      const v = d.value.replace(/\D/g, '');
+      if (!v) d.value = '';
+      else if (v.length > 1) digits[Math.min(fill(i, v), 5)].focus();
+      else { d.value = v; if (i < 5) digits[i + 1].focus(); }
+      if (mTotp.textContent) say(mTotp, '');
+      update();
+    });
+    d.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !d.value && i > 0) { e.preventDefault(); digits[i - 1].value = ''; digits[i - 1].focus(); update(); }
+      else if (e.key === 'ArrowLeft' && i > 0) { e.preventDefault(); digits[i - 1].focus(); }
+      else if (e.key === 'ArrowRight' && i < 5) { e.preventDefault(); digits[i + 1].focus(); }
+    });
+    d.addEventListener('paste', e => {
+      e.preventDefault();
+      const v = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+      if (!v || d.readOnly) return;
+      digits[Math.min(fill(i, v), 5)].focus();
+      update();
+    });
+    d.addEventListener('focus', () => d.select());
+  });
+
+  function verify(code) {
+    if (code === '000000') return fail();
+    success();
+  }
+
+  function fail() {
+    say(mTotp, 'Código inválido. Confirma o código atual na app de autenticação e tenta de novo.');
+    digits.forEach(d => d.setAttribute('aria-invalid', 'true'));
+    const done = () => { resetCode(); digits.forEach(d => d.setAttribute('aria-invalid', 'true')); digits[0].focus(); };
+    if (reduce) return setTimeout(done, 400);
+    gsap.timeline({ onComplete: done })
+      .to('#panel', { keyframes: { x: [0, -12, 10, -7, 5, -2, 0] }, duration: .5, ease: 'none' })
+      .to('#templeLit', { opacity: 0, duration: .5 }, 0);
+  }
+
+  function success() {
+    stopCrawl();
+    say(mTotp, 'Código confirmado.', null, true);
+    const tl = gsap.timeline({ onComplete: () => location.assign('portal.html') });
+    if (reduce) {
+      tl.to('#welcome', { autoAlpha: 1, duration: .5 }).to({}, { duration: 1.4 });
+      return;
+    }
+    redraw(strike);
+    tl.set(strike.g, { opacity: 1 })
+      .fromTo(strike.paths, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .22, ease: 'power4.in' })
+      .to('#templeLit', { opacity: 1, duration: .12 }, '-=.08')
+      .to('#flash', { opacity: .92, duration: .08, ease: 'power2.in' })
+      .set('#welcome', { autoAlpha: 1 })
+      .to('#flash', { opacity: 0, duration: 1.1, ease: 'power2.out' })
+      .from('.w-mark', { opacity: 0, scale: .94, duration: 1.4, ease: 'expo.out' }, '<.1')
+      .from('.w-sub', { opacity: 0, y: 8, duration: .8, ease: 'power2.out' }, '<.5')
+      .to({}, { duration: .9 });
+  }
+
+  const rec = $('#rec'), recSet = $('#rec-set'), codeSet = $('#code-set'), recToggle = $('#rec-toggle');
+  recToggle.addEventListener('click', () => {
+    const toRec = recSet.hidden;
+    recSet.hidden = !toRec; codeSet.hidden = toRec;
+    recToggle.setAttribute('aria-expanded', String(toRec));
+    recToggle.textContent = toRec ? 'Usar a app de autenticação' : 'Usar código de recuperação';
+    say(mTotp, '');
+    (toRec ? rec : digits[0]).focus();
+  });
+  $('#f-totp').addEventListener('submit', e => {
+    e.preventDefault();
+    if (recSet.hidden) return;
+    if (rec.value.replace(/[^a-z0-9]/gi, '').length < 12) return say(mTotp, 'O código de recuperação tem 12 caracteres, por exemplo a1b2-c3d4-e5f6.', rec);
+    setArcs(6); success();
+  });
+
+  /* Convite. */
+  const iPw = $('#i-pw'), bars = $$('.meter span'), hint = $('#i-pw-hint');
+  const LEVELS = [
+    ['Usa pelo menos 12 caracteres.', ''],
+    ['Fraca', 'var(--live)'], ['Razoável', '#ff9f0a'], ['Boa', 'var(--accent)'], ['Forte', 'var(--accent)']
+  ];
+  function strength(p) {
+    if (!p) return 0;
+    let s = 0;
+    if (p.length >= 8) s++;
+    if (p.length >= 12) s++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
+    if (/\d/.test(p) && /[^\w\s]/.test(p)) s++;
+    return Math.max(1, s);
+  }
+  iPw.addEventListener('input', () => {
+    const s = strength(iPw.value), [txt, c] = LEVELS[s];
+    bars.forEach((b, i) => { b.classList.toggle('on', i < s); b.style.setProperty('--c', c); });
+    hint.textContent = s ? `Força: ${txt}` : txt;
+  });
+  $('#f-invite').addEventListener('submit', e => {
+    e.preventDefault();
+    const m = $('#m-invite'), name = $('#i-name'), btn = $('#b-invite');
+    if (!name.value.trim()) return say(m, 'Escreve o teu nome.', name);
+    if (strength(iPw.value) < 3) return say(m, 'Escolhe uma palavra-passe mais forte: 12 caracteres ou mais, com maiúsculas e minúsculas.', iPw);
+    say(m, '');
+    btn.setAttribute('aria-busy', 'true'); btn.textContent = 'A criar conta…';
+    setTimeout(() => location.assign('onboarding.html'), 700);
+  });
+
+  /* Pausa tudo com o separador escondido. */
+  document.addEventListener('visibilitychange', () => {
+    document.documentElement.classList.toggle('paused', document.hidden);
+    if (document.hidden) { gsap.globalTimeline.pause(); gsap.ticker.sleep(); stopCrawl(); }
+    else { gsap.ticker.wake(); gsap.globalTimeline.resume(); if (view === 'totp' && !verifying) startCrawl(); }
+  });
+
+  const start = { '#convite': 'invite', '#codigo': 'totp' }[location.hash];
+  if (start) go(start);
+})();
+</script>
+</body>
+</html>

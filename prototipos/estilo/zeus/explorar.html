@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Explorar</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/ulisses.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* O mar de Ulisses: a pesquisa navega sobre a pintura e deixa esteira. */
+.sea{position:relative;isolation:isolate;overflow:hidden;padding:calc(var(--nav-h) + clamp(120px,24vh,260px)) var(--gutter) 28px;transition:padding 1.2s var(--out)}
+.sea__art{position:absolute;inset:0 -9% 0 0;z-index:-2;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent 97%);mask-image:linear-gradient(180deg,#000 60%,transparent 97%);transition:transform 1.6s var(--out),opacity 1.2s var(--out)}
+.sea__art img{width:100%;height:100%;object-fit:cover;object-position:62% 38%;transform-origin:65% 40%;animation:drift 64s ease-in-out infinite alternate}
+.sea__art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.62) 0,transparent 26%,transparent 44%,rgba(0,0,0,.72) 76%,#000 100%),linear-gradient(90deg,rgba(0,0,0,.7) 0,rgba(0,0,0,.25) 34%,transparent 60%)}
+@keyframes drift{from{transform:scale(1.05) translate3d(1.2%,0,0)}to{transform:scale(1.1) translate3d(-1.2%,-1%,0)}}
+.sea__wake{position:absolute;inset:0;z-index:-1;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+.sea.is-sailing{padding-top:calc(var(--nav-h) + clamp(40px,8vh,90px))}
+.sea.is-sailing .sea__art{transform:translate3d(-7%,-8%,0);opacity:.6}
+.sea__deck{display:grid;gap:18px;max-width:1180px}
+.sea__head{display:grid;gap:6px}
+.sea__head .z-lede{max-width:44ch}
+.sea__credit{position:absolute;right:var(--gutter);top:calc(var(--nav-h) + 12px);margin:0;font-size:12px;color:var(--text-3)}
+.sea__credit i{font-style:italic}
+
+.voyage{position:relative;max-width:720px}
+.voyage .z-search{height:60px;padding:0 20px;border-radius:999px;background:rgba(30,30,34,.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 24px 60px -24px rgba(0,0,0,.9)}
+.voyage .z-search:focus-within{box-shadow:inset 0 0 0 1px rgba(var(--gold-rgb),.65),0 0 0 4px rgba(var(--gold-rgb),.12),0 24px 60px -24px rgba(0,0,0,.9)}
+.voyage .z-search input{font-size:19px}
+.voyage .z-search input::-webkit-search-cancel-button{filter:invert(1) opacity(.6)}
+.voyage kbd{font:12px/1 var(--font);padding:4px 7px;border-radius:6px;color:var(--text-3);box-shadow:inset 0 0 0 1px var(--hair)}
+.voyage::after{content:"";position:absolute;left:-12%;right:-36%;bottom:-2px;height:1px;z-index:-1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(var(--gold-rgb),.5) 30%,rgba(255,232,190,.9) 50%,rgba(var(--gold-rgb),.5) 70%,transparent);box-shadow:0 0 12px rgba(var(--gold-rgb),.45)}
+
+.filters{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 16px;align-items:center;max-width:1180px}
+.filters .z-label{margin:0}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px;margin:-2px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
+.chips::-webkit-scrollbar{display:none}
+.chips .z-chip{flex:none;padding:7px 15px;background:rgba(44,44,48,.46);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-color:rgba(255,255,255,.1)}
+.chips .z-chip:hover{background:rgba(70,70,76,.55)}
+.chips .z-chip[aria-pressed="true"]{background:rgba(var(--gold-rgb),.16);border-color:rgba(var(--gold-rgb),.6);color:var(--gold)}
+
+.results{padding:8px var(--gutter) 96px;max-width:calc(1180px + 2 * var(--gutter))}
+.status{min-height:1.5em;margin:0 0 18px;color:var(--text-2);font-size:15px}
+.status b{color:var(--text);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:26px 16px;margin:0;padding:0;list-style:none}
+.grid .z-card{width:auto}
+.grid .z-card__art{aspect-ratio:2/3}
+.grid a.z-card:hover{transform:translateY(-6px)}
+.grid .z-card:focus-visible .z-card__art{outline-color:var(--gold)}
+.grid .z-card__cap small{margin-top:2px}
+
+.icarus{display:grid;justify-items:center;text-align:center;gap:12px;padding:24px 0 40px}
+.icarus__art{position:relative;width:min(240px,60vw);aspect-ratio:.81;overflow:hidden;-webkit-mask-image:radial-gradient(closest-side,#000 42%,transparent 100%);mask-image:radial-gradient(closest-side,#000 52%,transparent 100%)}
+/* Recorte: asa e braço de Ícaro na luz dourada, sem as ninfas à direita. */
+.icarus__art img{position:absolute;max-width:none;width:227%;height:auto;left:-4.5%;top:-26%;filter:brightness(1.15) contrast(1.05)}
+.icarus__art::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 30% 20%,rgba(255,200,110,.28),transparent 70%);mix-blend-mode:screen}
+.icarus h2{margin-top:4px}
+.icarus p{max-width:44ch;color:var(--text-2)}
+.icarus .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:8px}
+
+@media (max-width:760px){
+  .sea{padding-top:calc(var(--nav-h) + 30vw)}
+  .sea__art img{object-position:66% 30%}
+  .sea.is-sailing{padding-top:calc(var(--nav-h) + 16px)}
+  .sea__credit{display:none}
+  .voyage .z-search{height:54px}
+  .voyage kbd{display:none}
+  .filters{grid-template-columns:minmax(0,1fr);gap:6px}
+  .filters .z-label:not(:first-child){margin-top:8px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:18px 10px}
+  .grid .z-card__cap{font-size:13px}
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="sea" id="sea" aria-labelledby="ex-title">
+    <div class="sea__art" id="sea-art" aria-hidden="true"><img src="img/ulisses.webp" alt="" decoding="async" fetchpriority="high"></div>
+    <canvas class="sea__wake" id="wake" aria-hidden="true"></canvas>
+    <p class="sea__credit" aria-hidden="true">Waterhouse, <i>Ulisses e as Sereias</i>, 1891</p>
+    <div class="sea__deck">
+      <div class="sea__head">
+        <h1 class="z-t1" id="ex-title">Explorar</h1>
+        <p class="z-lede">Procura um título ou deixa os filtros escolherem a rota.</p>
+      </div>
+      <form class="voyage" id="voyage" role="search" action="explorar.html">
+        <label class="z-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <input id="q" name="q" type="search" placeholder="Filmes e séries" aria-label="Pesquisar filmes e séries" autocomplete="off" spellcheck="false" enterkeyhint="search">
+          <kbd aria-hidden="true">/</kbd>
+        </label>
+      </form>
+      <div class="filters" id="filters">
+        <span class="z-label" id="f-type">Tipo</span>
+        <div class="chips" role="group" aria-labelledby="f-type" data-key="tipo"></div>
+        <span class="z-label" id="f-genre">Género</span>
+        <div class="chips" role="group" aria-labelledby="f-genre" data-key="genero"></div>
+        <span class="z-label" id="f-year">Ano</span>
+        <div class="chips" role="group" aria-labelledby="f-year" data-key="ano"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="results" aria-labelledby="ex-status">
+    <p class="status" id="ex-status" aria-live="polite"></p>
+    <ul class="grid" id="grid"></ul>
+    <div class="icarus" id="empty" hidden>
+      <div class="icarus__art" aria-hidden="true"><img src="img/icaro-thumb.webp" alt="" loading="lazy" decoding="async"></div>
+      <h2 class="z-t2" id="empty-title">Voaste perto demais do sol</h2>
+      <p id="empty-text"></p>
+      <div class="acts" id="empty-acts"></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { reveal, prefersReducedMotion } from './shared/fx.js';
+import { poster } from '../data.js';
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion(), G = window.gsap;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+mountNav({ active: 'cinema', page: 'explorar' });
+
+const API = 'https://v3-cinemeta.strem.io';
+const TYPES = [['tudo', 'Tudo'], ['movie', 'Filmes'], ['series', 'Séries']];
+const GENRES = [['', 'Todos'], ['Action', 'Acção'], ['Adventure', 'Aventura'], ['Animation', 'Animação'], ['Comedy', 'Comédia'], ['Crime', 'Crime'], ['Documentary', 'Documentário'], ['Drama', 'Drama'], ['Family', 'Família'], ['Fantasy', 'Fantasia'], ['Sci-Fi', 'Ficção científica'], ['Horror', 'Terror'], ['Mystery', 'Mistério'], ['Romance', 'Romance'], ['Thriller', 'Thriller'], ['War', 'Guerra'], ['History', 'História'], ['Western', 'Western']];
+const YEARS = [['', 'Todos', null], ['2026', '2026', [2026, 2026]], ['2025', '2025', [2025, 2025]], ['2020', '2020 a 2024', [2020, 2024]], ['2010', '2010 a 2019', [2010, 2019]], ['2000', '2000 a 2009', [2000, 2009]], ['antes', 'Antes de 2000', [0, 1999]]];
+const GEN_PT = Object.fromEntries(GENRES.slice(1));
+
+/* Estado espelhado no URL, para que o link da pesquisa da barra de topo funcione. */
+const url = new URL(location.href);
+const state = { q: url.searchParams.get('q') || '', tipo: url.searchParams.get('tipo') || 'tudo', genero: url.searchParams.get('genero') || '', ano: url.searchParams.get('ano') || '' };
+if (!TYPES.some(t => t[0] === state.tipo)) state.tipo = 'tudo';
+if (!GENRES.some(g => g[0] === state.genero)) state.genero = '';
+if (!YEARS.some(y => y[0] === state.ano)) state.ano = '';
+const syncUrl = () => {
+  const u = new URL(location.pathname, location.origin);
+  if (state.q.trim()) u.searchParams.set('q', state.q.trim());
+  if (state.tipo !== 'tudo') u.searchParams.set('tipo', state.tipo);
+  if (state.genero) u.searchParams.set('genero', state.genero);
+  if (state.ano) u.searchParams.set('ano', state.ano);
+  history.replaceState(null, '', u);
+};
+
+const OPTS = { tipo: TYPES, genero: GENRES, ano: YEARS };
+$$('.chips').forEach(g => {
+  const key = g.dataset.key;
+  g.innerHTML = OPTS[key].map(([v, label]) => `<button class="z-chip" type="button" data-v="${esc(v)}" aria-pressed="${state[key] === v}">${esc(label)}</button>`).join('');
+  g.addEventListener('click', e => {
+    const b = e.target.closest('.z-chip'); if (!b || state[key] === b.dataset.v) return;
+    state[key] = b.dataset.v;
+    $$('.z-chip', g).forEach(c => c.setAttribute('aria-pressed', c === b));
+    b.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: RM ? 'auto' : 'smooth' });
+    run();
+  });
+});
+
+/* Cinemeta, com cache por pedido e cancelamento dos pedidos ultrapassados. */
+const cache = new Map();
+async function get(path, signal) {
+  if (cache.has(path)) return cache.get(path);
+  const response = await fetch(API + path, { signal });
+  if (!response.ok) throw new Error(response.status);
+  const data = await response.json();
+  // Only cache completed responses: an aborted search must not poison its successor.
+  cache.set(path, data);
+  return data;
+}
+const yearOf = it => parseInt(String(it.releaseInfo || it.year || '').slice(0, 4), 10) || 0;
+const zip = lists => { const out = []; for (let i = 0; i < Math.max(0, ...lists.map(l => l.length)); i++) lists.forEach(l => l[i] && out.push(l[i])); return out; };
+const uniq = list => { const seen = new Set(); return list.filter(it => it && !seen.has(it.id) && seen.add(it.id)); };
+
+async function find(signal) {
+  const types = state.tipo === 'tudo' ? ['movie', 'series'] : [state.tipo];
+  const range = YEARS.find(y => y[0] === state.ano)[2];
+  const q = norm(state.q);
+  let lists;
+  if (q) {
+    lists = await Promise.all(types.map(t => get(`/catalog/${t}/top/search=${encodeURIComponent(q)}.json`, signal).then(j => (j.metas || []).map(m => ({ ...m, type: m.type || t })))));
+  } else {
+    const single = range && range[0] === range[1] && !state.genero;
+    lists = await Promise.all(types.map(async t => {
+      const paths = single ? [`/catalog/${t}/year/genre=${range[0]}.json`]
+        : state.genero ? [`/catalog/${t}/top/genre=${encodeURIComponent(state.genero)}.json`, ...(range ? [`/catalog/${t}/top/genre=${encodeURIComponent(state.genero)}&skip=50.json`] : [])]
+        : [`/catalog/${t}/top.json`, ...(range ? [`/catalog/${t}/top/skip=50.json`, `/catalog/${t}/top/skip=100.json`] : [])];
+      const pages = await Promise.all(paths.map(p => get(p, signal).then(j => j.metas || [])));
+      return pages.flat().map(m => ({ ...m, type: m.type || t }));
+    }));
+  }
+  let items = uniq(zip(lists));
+  if (range) items = items.filter(it => { const y = yearOf(it); return y >= range[0] && y <= range[1]; });
+  if (q && state.genero) {
+    // A pesquisa do Cinemeta não traz géneros: vamos buscar a ficha de cada resultado.
+    const metas = await Promise.all(items.slice(0, 30).map(it => get(`/meta/${it.type}/${it.id}.json`, signal).then(j => j.meta, () => null)));
+    items = items.slice(0, 30).filter((it, i) => metas[i]?.genres?.includes(state.genero));
+  } else if (state.genero) items = items.filter(it => !it.genres || it.genres.includes(state.genero));
+  return items.slice(0, 60);
+}
+
+/* Desenho */
+const grid = $('#grid'), statusEl = $('#ex-status'), empty = $('#empty'), sea = $('#sea');
+const typeWord = it => it.type === 'series' ? 'Série' : 'Filme';
+const card = it => `<li><a class="z-card" href="titulo.html?id=${encodeURIComponent(it.id)}&amp;type=${it.type === 'series' ? 'series' : 'movie'}" aria-label="${esc(it.name)}, ${typeWord(it)}${yearOf(it) ? `, ${yearOf(it)}` : ''}">
+  <span class="z-card__art"><img src="${poster(it.id)}" alt="" loading="lazy" decoding="async"><span class="z-card__fallback">${esc(it.name)}</span></span>
+  <span class="z-card__cap">${esc(it.name)}<small><span>${yearOf(it) || ''}</span><span>${typeWord(it)}</span></small></span></a></li>`;
+grid.addEventListener('error', e => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+const skeleton = () => { grid.innerHTML = Array.from({ length: 12 }, () => '<li aria-hidden="true"><span class="z-card"><span class="z-card__art z-sk"></span><span class="z-sk z-sk--line" style="width:70%;height:12px;margin-top:12px"></span></span></li>').join(''); grid.setAttribute('aria-busy', 'true'); };
+const filtersOn = () => state.tipo !== 'tudo' || state.genero || state.ano;
+function describe(n) {
+  const g = state.genero ? GEN_PT[state.genero] : '', yr = state.ano ? YEARS.find(y => y[0] === state.ano)[1] : '';
+  const what = state.tipo === 'movie' ? 'Filmes' : state.tipo === 'series' ? 'Séries' : 'Títulos';
+  const extra = [g && `em ${g}`, yr && (state.ano === 'antes' ? yr.toLowerCase() : `de ${yr}`)].filter(Boolean).join(' ');
+  if (state.q.trim()) return `<b>${n}</b> ${n === 1 ? 'resultado' : 'resultados'} para «${esc(state.q.trim())}»${extra ? ` ${extra}` : ''}`;
+  return `${what} populares${extra ? ` ${extra}` : ''}`;
+}
+function showEmpty(kind) {
+  grid.innerHTML = ''; grid.removeAttribute('aria-busy');
+  empty.hidden = false;
+  const q = state.q.trim();
+  if (kind === 'error') {
+    $('#empty-title').textContent = 'O catálogo não respondeu';
+    $('#empty-text').textContent = 'Não foi possível ligar ao Cinemeta. Verifica a ligação e tenta outra vez.';
+    $('#empty-acts').innerHTML = '<button class="z-btn z-btn--primary" type="button" data-do="retry">Tentar outra vez</button>';
+  } else {
+    $('#empty-title').textContent = 'Voaste perto demais do sol';
+    $('#empty-text').textContent = q ? `Nada encontrado para «${q}»${filtersOn() ? ' com estes filtros' : ''}. Experimenta outro título${filtersOn() ? ' ou limpa os filtros' : ''}.` : 'Nada encontrado com estes filtros. Alarga o género ou o ano.';
+    $('#empty-acts').innerHTML = (filtersOn() ? '<button class="z-btn z-btn--primary" type="button" data-do="filters">Limpar filtros</button>' : '') + (q ? `<button class="z-btn ${filtersOn() ? 'z-btn--secondary' : 'z-btn--primary'}" type="button" data-do="query">Limpar pesquisa</button>` : '');
+  }
+  statusEl.innerHTML = `<span class="z-sr">${kind === 'error' ? 'Sem ligação ao catálogo.' : 'Nada encontrado.'}</span>`;
+  if (G && !RM) G.fromTo('.icarus__art img', { y: -18, filter: 'brightness(1.5) saturate(1.2)' }, { y: 0, filter: 'brightness(1.15) saturate(1)', duration: 2.4, ease: 'power2.out' });
+  reveal($$('.icarus > *'), { stagger: .07, delay: 0 });
+}
+$('#empty-acts').addEventListener('click', e => {
+  const b = e.target.closest('[data-do]'); if (!b) return;
+  if (b.dataset.do === 'filters') { Object.assign(state, { tipo: 'tudo', genero: '', ano: '' }); $$('.chips').forEach(g => $$('.z-chip', g).forEach((c, i) => c.setAttribute('aria-pressed', i === 0))); }
+  if (b.dataset.do === 'query') { state.q = ''; input.value = ''; input.focus(); }
+  run();
+});
+
+let ctrl = null, seq = 0;
+async function run() {
+  syncUrl();
+  sea.classList.toggle('is-sailing', !!state.q.trim());
+  ctrl?.abort(); ctrl = new AbortController();
+  const my = ++seq;
+  empty.hidden = true; skeleton();
+  statusEl.textContent = state.q.trim() ? `A procurar «${state.q.trim()}»…` : 'A carregar…';
+  let items;
+  try { items = await find(ctrl.signal); } catch (err) { if (err.name !== 'AbortError' && my === seq) showEmpty('error'); return; }
+  if (my !== seq) return;
+  if (!items.length) return showEmpty('none');
+  grid.innerHTML = items.map(card).join(''); grid.removeAttribute('aria-busy');
+  statusEl.innerHTML = describe(items.length);
+  reveal($$('li', grid).slice(0, 24), { stagger: .035, delay: 0, y: 14, duration: .9 });
+}
+
+/* Pesquisa com espera curta enquanto se escreve. */
+const input = $('#q');
+input.value = state.q;
+let deb = 0;
+input.addEventListener('input', () => {
+  state.q = input.value; wake(input);
+  clearTimeout(deb); deb = setTimeout(run, 320);
+});
+$('#voyage').addEventListener('submit', e => { e.preventDefault(); clearTimeout(deb); state.q = input.value; run(); input.blur(); });
+addEventListener('keydown', e => {
+  if (e.key === '/' && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName) && !e.metaKey && !e.ctrlKey) { e.preventDefault(); input.focus(); input.select(); }
+});
+
+/* Esteira: cada tecla deixa ondas douradas na água por baixo da pesquisa. */
+const cv = $('#wake'), cx = cv.getContext('2d'), ripples = [];
+let raf = 0, dpr = 1;
+const fit = () => { dpr = Math.min(devicePixelRatio || 1, 2); cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr; };
+new ResizeObserver(fit).observe(cv); fit();
+const meter = document.createElement('canvas').getContext('2d');
+function wake(el) {
+  if (RM || document.hidden) return;
+  const r = el.getBoundingClientRect(), c = cv.getBoundingClientRect(), cs = getComputedStyle(el);
+  meter.font = `${cs.fontSize} ${cs.fontFamily}`;
+  const x = Math.min(r.right - 8, r.left + meter.measureText(el.value).width) - c.left;
+  ripples.push({ x, y: $('.z-search').getBoundingClientRect().bottom - c.top + 10, t: performance.now() });
+  if (ripples.length > 14) ripples.shift();
+  if (!raf) raf = requestAnimationFrame(draw);
+}
+function draw(now) {
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const p = ripples[i], k = (now - p.t) / 1800;
+    if (k >= 1) { ripples.splice(i, 1); continue; }
+    for (const [lag, a] of [[0, .5], [.16, .28]]) {
+      const kk = Math.max(0, k - lag), rx = 12 + kk * 220;
+      cx.beginPath(); cx.ellipse(p.x, p.y + kk * 14, rx, rx * .16, 0, 0, Math.PI * 2);
+      cx.strokeStyle = `rgba(255,214,150,${(a * (1 - kk) ** 2).toFixed(3)})`; cx.lineWidth = 1.4 - kk; cx.stroke();
+    }
+  }
+  raf = ripples.length && !document.hidden ? requestAnimationFrame(draw) : 0;
+  if (!raf) cx.clearRect(0, 0, cv.width, cv.height);
+}
+
+/* Paralaxe suave da pintura com o rato. */
+if (!RM && matchMedia('(pointer:fine)').matches) {
+  const art = $('#sea-art img'); let tx = 0, ty = 0, x = 0, y = 0, pr = 0;
+  const tick = () => { x += (tx - x) * .05; y += (ty - y) * .05; art.style.translate = `${x.toFixed(2)}px ${y.toFixed(2)}px`; pr = Math.abs(tx - x) + Math.abs(ty - y) > .05 && !document.hidden ? requestAnimationFrame(tick) : 0; };
+  addEventListener('pointermove', e => { tx = (e.clientX / innerWidth - .5) * -18; ty = (e.clientY / innerHeight - .5) * -8; if (!pr) pr = requestAnimationFrame(tick); }, { passive: true });
+}
+
+if (G && !RM) G.fromTo('#sea-art', { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'power2.out', clearProps: 'opacity' });
+if (state.q || matchMedia('(pointer:fine)').matches) input.focus({ preventScroll: true });
+run();
+</script>
+</body>
+</html>

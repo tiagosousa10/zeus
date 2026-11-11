@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Cinema</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/guerreiro.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* Herói: arte do título à esquerda, nicho escuro à direita onde o guerreiro de mármore se ergue. */
+.t-hero{position:relative;isolation:isolate;overflow:hidden;min-height:max(640px,min(100svh,1000px));display:grid;align-items:end;padding:calc(var(--nav-h) + 24px) var(--gutter) clamp(36px,7vh,72px)}
+.t-back{--pos:42% 25%;--scrim:linear-gradient(90deg,#000 0,rgba(0,0,0,.78) 24%,rgba(0,0,0,.1) 46%,rgba(0,0,0,.78) 62%,#000 74%),linear-gradient(0deg,#000 0,rgba(0,0,0,.62) 20%,transparent 46%),linear-gradient(180deg,rgba(0,0,0,.6),transparent 22%)}
+.t-back>img{transform-origin:40% 35%;animation:t-burns 38s ease-in-out infinite alternate;opacity:0;transition:opacity 1.4s var(--out)}
+.t-back>img.is-on{opacity:1}
+@keyframes t-burns{from{scale:1.04}to{scale:1.13;translate:-1.5% 1%}}
+.t-warrior{position:absolute;z-index:1;top:calc(var(--nav-h) - 3vh);right:-5vw;width:clamp(340px,50vw,860px);aspect-ratio:1;overflow:hidden;pointer-events:none;mix-blend-mode:screen;
+  -webkit-mask-image:linear-gradient(180deg,#000 38%,transparent 66%),linear-gradient(90deg,transparent 0,#000 22%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(180deg,#000 38%,transparent 66%),linear-gradient(90deg,transparent 0,#000 22%);mask-composite:intersect}
+.t-warrior .z-light__base{object-fit:cover;object-position:50% 0;filter:brightness(calc(.3 + var(--I,0) * .6)) contrast(1.15)}
+.t-credit{position:absolute;z-index:3;right:var(--gutter);bottom:14px;font-size:11px;color:var(--text-3);text-decoration:none}
+.t-credit:hover{color:var(--text-2)}
+.t-copy{position:relative;z-index:3;display:grid;gap:18px;justify-items:start;max-width:600px}
+.t-title{margin:0;font-size:clamp(40px,5.6vw,76px);line-height:1;letter-spacing:-.04em;font-weight:700;text-wrap:balance}
+.t-logo{position:relative;display:inline-block;max-width:min(520px,82vw)}
+.t-logo img{max-height:clamp(84px,15vh,150px);width:auto;max-width:100%;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 6px 30px rgba(0,0,0,.7))}
+.t-logo::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(105deg,transparent 35%,rgba(255,236,200,.95) 48%,rgba(var(--gold-rgb),.9) 50%,transparent 64%);background-size:300% 100%;background-position:100% 0;-webkit-mask:var(--logo) left bottom/contain no-repeat;mask:var(--logo) left bottom/contain no-repeat;mix-blend-mode:screen}
+.t-logo.is-lit::after{animation:t-sheen 1.6s var(--out) both}
+@keyframes t-sheen{0%{opacity:1;background-position:100% 0}100%{opacity:1;background-position:0 0}}
+.t-meta{gap:6px 16px}
+.t-genres{color:var(--text-2)}
+.t-syn{font-size:17px;color:var(--text-2);max-width:56ch;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.t-cast{font-size:15px;color:var(--text-3);max-width:56ch}
+.t-cast b{color:var(--text-2);font-weight:500}
+.t-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+.t-play{min-width:210px;box-shadow:0 0 0 0 rgba(var(--gold-rgb),0);transition:transform .45s var(--spring),box-shadow .6s var(--out),background .2s}
+.t-play.is-struck{animation:t-charge .9s var(--out)}
+@keyframes t-charge{0%{box-shadow:0 0 0 2px #fff,0 0 70px 14px rgba(var(--gold-rgb),.85)}100%{box-shadow:0 0 0 0 rgba(var(--gold-rgb),0)}}
+.t-bolts{position:fixed;inset:0;z-index:70;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+.t-bolts.is-travel{clip-path:circle(var(--r,0px) at var(--cx,0) var(--cy,0))}
+
+/* Secções */
+.t-body{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(48px,8vh,88px);padding:8px var(--gutter) 140px;max-width:1280px}
+.t-sec-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-bottom:18px}
+.t-sec-head h2{margin-right:auto}
+.t-body>section{min-width:0}
+.t-for{color:var(--text-2);font-size:15px}
+
+/* Episódios */
+.t-eps{display:flex;gap:16px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:6px 6px 16px;margin:0 -6px;scrollbar-width:none;list-style:none}
+.t-eps::-webkit-scrollbar{display:none}
+.t-ep{position:relative;flex:0 0 clamp(250px,24vw,320px);scroll-snap-align:start}
+.t-ep__btn{display:grid;gap:10px;width:100%;padding:0;border:0;background:none;text-align:left;border-radius:var(--r-lg)}
+.t-ep__art{position:relative;aspect-ratio:16/9;border-radius:var(--r-lg);overflow:hidden;background:linear-gradient(160deg,#26262a,#121214);box-shadow:inset 0 0 0 1px var(--hair),0 14px 30px -16px #000;transition:transform .5s var(--spring),box-shadow .4s}
+.t-ep__art img{width:100%;height:100%;object-fit:cover}
+.t-ep__btn:hover .t-ep__art,.t-ep__btn:focus-visible .t-ep__art{transform:translateY(-4px) scale(1.02)}
+.t-ep__btn:focus-visible{outline:none}
+.t-ep__btn:focus-visible .t-ep__art{outline:3px solid var(--accent);outline-offset:3px}
+.t-ep.is-current .t-ep__art{box-shadow:0 0 40px -10px rgba(var(--gold-rgb),.6)}
+.t-ep.is-current .t-ep__art::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px rgba(var(--gold-rgb),.9)}
+.t-ep .z-progress{position:absolute;left:12px;right:12px;bottom:10px}
+.t-ep .z-progress>i{background:var(--gold)}
+.t-ep__seen{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 6px;border-radius:999px;background:rgba(0,0,0,.6);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);font-size:12px;font-weight:600}
+.t-ep__seen svg{width:14px;height:14px;color:var(--ok)}
+.t-ep.is-seen .t-ep__art img{filter:saturate(.5) brightness(.7)}
+.t-ep__no{font:600 13px/1 var(--mono);color:var(--text-3);letter-spacing:0}
+.t-ep__name{display:block;font-size:16px;font-weight:600;line-height:1.3;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-ep__desc{font-size:14px;line-height:1.45;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.t-ep__more{position:absolute;top:8px;right:8px;z-index:2;width:34px;height:34px}
+.t-menu{position:fixed;top:0;left:0;right:auto;width:max-content;min-width:250px;transform-origin:top left}
+
+/* Fontes */
+.t-tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.t-addons{display:grid;gap:12px;padding:16px 18px;border-radius:var(--r-lg);background:rgba(255,255,255,.035);box-shadow:inset 0 0 0 1px var(--hair);margin-bottom:14px}
+.t-addons__row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.t-addons__status{font-size:15px;font-weight:500;margin-right:auto}
+.t-pips{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.t-pip{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 8px;border-radius:999px;background:rgba(255,255,255,.06);font:12px/1.3 var(--mono);color:var(--text-3);letter-spacing:0;transition:color .4s,background .4s}
+.t-pip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--text-3);animation:z-pulse 1.4s ease-in-out infinite}
+.t-pip[data-state="ok"]{color:var(--text-2)}
+.t-pip[data-state="ok"]::before{background:var(--gold);animation:none;box-shadow:0 0 8px rgba(var(--gold-rgb),.8)}
+.t-pip[data-state="fail"]::before{background:var(--live);animation:none}
+.t-pip b{color:var(--text);font-weight:600}
+.t-bar{height:2px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.t-bar>i{display:block;height:100%;background:linear-gradient(90deg,rgba(var(--gold-rgb),.2),var(--gold));transform-origin:left;transform:scaleX(var(--p,0));transition:transform .6s var(--out)}
+.t-srcs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.t-src{position:relative;display:grid;grid-template-columns:104px minmax(0,1fr) auto;align-items:center;gap:6px 18px;width:100%;padding:14px 14px 14px 20px;border:0;border-radius:var(--r-lg);background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--hair);text-align:left;transition:background .25s,box-shadow .35s var(--out),transform .45s var(--spring)}
+.t-src:hover{background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(var(--gold-rgb),.3),0 18px 40px -24px rgba(var(--gold-rgb),.45)}
+.t-src:active{transform:scale(.99)}
+.t-src.is-struck{animation:t-charge .9s var(--out)}
+.t-q{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.t-q small{display:block;margin-top:6px;font-size:12px;font-weight:500;letter-spacing:0;color:var(--text-3)}
+.t-chips{display:flex;flex-wrap:wrap;gap:6px}
+.t-chips .z-tag{font-family:var(--mono);font-size:12px;letter-spacing:0}
+.t-raw{grid-column:2;font:11px/1.4 var(--mono);color:var(--text-3);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-src__end{grid-column:3;grid-row:1/3;display:flex;align-items:center;gap:12px}
+.t-go{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:var(--text);color:#000;transition:transform .4s var(--spring)}
+.t-go svg{width:20px;height:20px}
+.t-src:hover .t-go{transform:scale(1.08)}
+.t-empty{padding:28px 20px;text-align:center;color:var(--text-2)}
+
+/* Doca: aparece quando o botão do herói sai do ecrã */
+.t-dock{position:fixed;z-index:45;left:50%;bottom:max(16px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:14px;width:max-content;max-width:calc(100vw - 24px);padding:8px 8px 8px 20px;border-radius:999px;background:rgba(36,36,40,.72);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:inset 0 0 0 1px var(--hair),0 24px 60px -20px #000;translate:-50% 0;transition:translate .5s var(--out),opacity .4s}
+.t-dock[data-off]{translate:-50% 140%;opacity:0;pointer-events:none}
+.t-dock__t{min-width:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-dock__t small{display:block;font:12px/1.3 var(--mono);color:var(--text-2);font-weight:400;letter-spacing:0}
+.t-dock .z-btn{height:44px}
+body:has(.t-dock:not([data-off])) .z-toast{bottom:96px}
+
+@media (max-width:760px){
+  .t-hero{min-height:auto;padding-top:calc(var(--nav-h) + 34vh)}
+  .t-back{--pos:60% 20%;--scrim:linear-gradient(180deg,rgba(0,0,0,.45) 0,rgba(0,0,0,.15) 22%,rgba(0,0,0,.55) 46%,#000 70%),linear-gradient(270deg,rgba(0,0,0,.7) 0,transparent 45%)}
+  .t-warrior{width:86vw;right:-34vw;top:calc(var(--nav-h) - 10px);opacity:.9}
+  .t-credit{bottom:6px}
+  .t-copy{gap:14px}
+  .t-actions .z-btn{flex:1 1 auto}
+  .t-play{min-width:0}
+  .t-src{grid-template-columns:minmax(0,1fr) auto;padding:14px}
+  .t-q{display:flex;align-items:baseline;gap:10px}
+  .t-q small{margin:0}
+  .t-chips{grid-column:1/-1;grid-row:2}
+  .t-raw{display:none}
+  .t-src__end{grid-column:2;grid-row:1}
+  .t-dock{left:12px;right:12px;width:auto;translate:0 0}
+  .t-dock[data-off]{translate:0 140%}
+  .t-dock__t{flex:1}
+}
+@media (prefers-reduced-motion:reduce){.t-back>img{animation:none}}
+</style>
+</head>
+<body>
+<main>
+  <section class="t-hero" aria-labelledby="t-name">
+    <div class="z-art t-back" id="back"></div>
+    <div class="t-warrior" id="warrior" aria-hidden="true"><img src="img/guerreiro.webp" alt="" width="1741" height="2400"></div>
+    <div class="z-vignette"></div>
+    <div class="t-copy" id="copy">
+      <h1 class="t-title" id="t-name"><span class="z-sk z-sk--title" style="width:min(420px,70vw);height:64px"></span></h1>
+      <div class="z-meta t-meta" id="meta"></div>
+      <p class="t-syn" id="syn"></p>
+      <p class="t-cast" id="cast"></p>
+      <div class="t-actions">
+        <button class="z-btn z-btn--primary t-play" type="button" id="play">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z"/></svg><span id="play-l">Reproduzir</span>
+        </button>
+        <button class="z-btn z-btn--secondary" type="button" id="list" aria-pressed="false">A minha lista</button>
+        <a class="z-btn z-btn--ghost" id="trailer" href="#" target="_blank" rel="noopener" hidden>Trailer</a>
+      </div>
+    </div>
+    <a class="t-credit" href="https://commons.wikimedia.org/wiki/File:Borghese_Gladiator,_Louvre_Museum,_Paris_2_October_2014.jpg" target="_blank" rel="noopener">Foto: Ryan Bauman, CC BY 2.0</a>
+  </section>
+
+  <div class="t-body">
+    <section id="episodes" aria-labelledby="h-eps" hidden>
+      <div class="t-sec-head">
+        <h2 class="z-t2" id="h-eps">Episódios</h2>
+        <div class="z-tabs" role="tablist" aria-label="Temporadas" id="seasons"></div>
+      </div>
+      <ul class="t-eps" id="eps" role="tabpanel" aria-labelledby="h-eps"></ul>
+    </section>
+
+    <section id="fontes" aria-labelledby="h-src" style="scroll-margin-top:calc(var(--nav-h) + 12px)">
+      <div class="t-sec-head">
+        <h2 class="z-t2" id="h-src">Fontes</h2>
+        <span class="t-for" id="src-for"></span>
+        <div class="t-tools">
+          <div class="z-seg" role="radiogroup" aria-label="Ordenar fontes por" id="sort">
+            <label><input type="radio" name="sort" value="quality" checked>Qualidade</label><label><input type="radio" name="sort" value="size">Tamanho</label><label><input type="radio" name="sort" value="seeders">Seeders</label>
+          </div>
+          <button class="z-switch" type="button" role="switch" aria-checked="false" id="cache">Só em cache</button>
+        </div>
+      </div>
+      <div class="t-addons">
+        <div class="t-addons__row">
+          <p class="t-addons__status z-num" id="src-status" role="status">A perguntar aos Add-ons…</p>
+          <ul class="t-pips" id="pips"></ul>
+        </div>
+        <div class="t-bar"><i id="src-bar"></i></div>
+      </div>
+      <ol class="t-srcs" id="srcs"></ol>
+      <p class="t-empty" id="src-empty" hidden></p>
+    </section>
+  </div>
+</main>
+
+<div class="t-dock" id="dock" data-off>
+  <span class="t-dock__t" id="dock-t"></span>
+  <button class="z-btn z-btn--primary z-btn--sm" type="button" id="dock-play">Reproduzir</button>
+</div>
+<div class="z-menu t-menu" id="ep-menu" role="menu" aria-label="Episódio" hidden>
+  <button class="z-menu__item" type="button" role="menuitem" data-mark="upto">Marcar como visto até aqui</button>
+  <button class="z-menu__item" type="button" role="menuitem" data-mark="one">Marcar como visto</button>
+  <button class="z-menu__item" type="button" role="menuitem" data-mark="unseen">Marcar como não visto</button>
+</div>
+<canvas class="t-bolts" id="bolts" aria-hidden="true"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { lightning, cursorLight, reveal, toast, prefersReducedMotion, ICON } from './shared/fx.js';
+import { backdrop, logo, SOURCES } from '../data.js';
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const RM = prefersReducedMotion(), G = window.gsap;
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+mountNav({ active: 'cinema', page: 'inicio' });
+
+const qs = new URLSearchParams(location.search);
+const type = qs.get('type') === 'series' ? 'series' : 'movie';
+const id = /^tt\d+$/.test(qs.get('id') || '') ? qs.get('id') : (type === 'series' ? 'tt0944947' : 'tt1375666');
+const GEN = { Action: 'Acção', Adventure: 'Aventura', Animation: 'Animação', Biography: 'Biografia', Comedy: 'Comédia', Crime: 'Crime', Documentary: 'Documentário', Drama: 'Drama', Family: 'Família', Fantasy: 'Fantasia', History: 'História', Horror: 'Terror', Music: 'Música', Mystery: 'Mistério', Romance: 'Romance', 'Sci-Fi': 'Ficção científica', Sport: 'Desporto', Thriller: 'Thriller', War: 'Guerra', Western: 'Western' };
+const dur = r => { const m = parseInt(r, 10); if (!m) return ''; return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`; };
+const epCode = v => `T${v.season}:E${v.episode}`;
+
+/* Raios quentes: no nicho do guerreiro enquanto o herói está à vista, e do lado da fonte escolhida até ao botão. */
+const warrior = $('#warrior'), bolts = $('#bolts');
+let lastI = 0;
+const sky = lightning(bolts, {
+  palette: 'warm', every: [7000, 14000], first: [5200, 8000], area: { x: [.72, .94], y: [.12, .34] },
+  onFrame: I => { if (I || lastI) warrior.style.setProperty('--I', I.toFixed(3)); lastI = I; },
+});
+cursorLight(warrior, { size: .56, rest: [.3, .3], orbit: [.38, .36, .1, .09] });
+new IntersectionObserver(([e]) => sky.setAmbient(e.isIntersecting), { threshold: .35 }).observe($('.t-hero'));
+
+const center = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+// O raio cresce a partir da origem (máscara circular) para parecer viajar até ao alvo.
+function travel(fromEl, toEl, then) {
+  const a = center(fromEl), b = center(toEl);
+  if (RM || !G || !sky.strike(b, { from: a, palette: 'warm', pulses: 2, width: 1.6 })) { toEl.classList.add('is-struck'); return setTimeout(then, RM ? 150 : 300); }
+  fromEl.classList.add('is-struck');
+  bolts.classList.add('is-travel');
+  G.fromTo(bolts, { '--r': '0px', '--cx': a.x + 'px', '--cy': a.y + 'px' }, { '--r': Math.hypot(b.x - a.x, b.y - a.y) + 60 + 'px', duration: .2, ease: 'power2.in',
+    onComplete: () => { toEl.classList.add('is-struck'); setTimeout(() => bolts.classList.remove('is-travel'), 600); } });
+  setTimeout(then, 780);
+}
+
+/* Dados */
+let meta = null, cur = null;
+try {
+  const r = await fetch(`https://v3-cinemeta.strem.io/meta/${type}/${id}.json`, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(r.status);
+  meta = (await r.json()).meta;
+  if (!meta) throw new Error('vazio');
+} catch {
+  meta = { id, type, name: 'Título indisponível', description: 'Não foi possível obter os dados do catálogo. Verifica a ligação e recarrega a página.' };
+}
+document.title = `Zeus, ${meta.name}`;
+
+// Arte do herói
+const back = $('#back'), bimg = new Image();
+bimg.alt = ''; bimg.decoding = 'async';
+bimg.onload = () => bimg.classList.add('is-on');
+bimg.onerror = () => bimg.remove();
+bimg.src = meta.background || backdrop(id);
+back.append(bimg);
+
+// Logótipo com fallback para texto
+const h1 = $('#t-name');
+const logoUrl = meta.logo || logo(id);
+const textTitle = () => { h1.textContent = meta.name; };
+await new Promise(res => {
+  const li = new Image();
+  li.crossOrigin = 'anonymous'; li.alt = meta.name;
+  li.onload = () => { h1.innerHTML = ''; const w = document.createElement('span'); w.className = 't-logo'; w.style.setProperty('--logo', `url("${logoUrl}")`); w.append(li); h1.append(w); res(); };
+  li.onerror = () => { textTitle(); res(); };
+  li.src = logoUrl;
+  setTimeout(() => { if (!li.complete) { li.onload = li.onerror = null; textTitle(); res(); } }, 2500);
+});
+
+const genres = (meta.genres || meta.genre || []).slice(0, 3).map(g => GEN[g] || g);
+$('#meta').innerHTML = [
+  meta.imdbRating && `<span class="z-pill">IMDb ${esc(meta.imdbRating)}</span>`,
+  meta.releaseInfo && `<span class="z-num">${esc(meta.releaseInfo)}</span>`,
+  type === 'series' ? `<span>Série</span>` : meta.runtime && `<span class="z-num">${esc(dur(meta.runtime))}</span>`,
+  genres.length && `<span class="t-genres">${esc(genres.join(', '))}</span>`,
+].filter(Boolean).join('');
+$('#syn').textContent = meta.description || '';
+const cast = (meta.cast || []).slice(0, 4), dir = (meta.director || [])[0];
+$('#cast').innerHTML = [cast.length && `<b>Elenco</b> ${esc(cast.join(', '))}`, dir && `<b>Realização</b> ${esc(dir)}`].filter(Boolean).join('<br>');
+const tr = (meta.trailers || [])[0];
+if (tr?.source) { $('#trailer').href = `https://www.youtube.com/watch?v=${encodeURIComponent(tr.source)}`; $('#trailer').hidden = false; }
+const listKey = 'zeus.lista', inList = () => store.get(listKey, []).some(item => item.id === id);
+const paintList = () => { const on = inList(); $('#list').setAttribute('aria-pressed', on); $('#list').textContent = on ? 'Na minha lista' : 'A minha lista'; };
+paintList();
+$('#list').addEventListener('click', () => {
+  const l = store.get(listKey, []), on = !l.some(item => item.id === id);
+  const item = { id, type, name: meta.name, releaseInfo: meta.releaseInfo, imdbRating: meta.imdbRating, genres: meta.genres };
+  store.set(listKey, on ? [item, ...l] : l.filter(x => x.id !== id)); paintList();
+  toast(on ? 'Adicionado à tua lista.' : 'Removido da tua lista.');
+});
+
+/* Entrada orquestrada: a arte sobe do preto, um raio acende o logótipo, o texto chega em cascata. */
+const logoWrap = $('.t-logo');
+if (!RM && G) {
+  G.fromTo(back, { opacity: 0 }, { opacity: 1, duration: 2.2, ease: 'power2.out' });
+  G.fromTo(warrior, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 2.4, ease: 'expo.out', delay: .3, clearProps: 'transform,opacity' });
+  if (logoWrap) {
+    G.fromTo(logoWrap, { clipPath: 'inset(0 100% 0 0)', filter: 'blur(8px)' }, { clipPath: 'inset(0 0% 0 0)', filter: 'blur(0px)', duration: 1.1, ease: 'expo.out', delay: .95, clearProps: 'clipPath,filter' });
+    setTimeout(() => { const r = logoWrap.getBoundingClientRect(); sky.strike({ x: r.left + r.width * .6, y: r.top + r.height * .3 }, { pulses: 2 }); logoWrap.classList.add('is-lit'); }, 950);
+  } else G.fromTo(h1, { opacity: 0, letterSpacing: '.04em' }, { opacity: 1, letterSpacing: '-.04em', duration: 1.4, ease: 'expo.out', delay: .8 });
+  reveal(['#meta', '#syn', '#cast', '.t-actions'], { delay: 1.35, stagger: .08 });
+} else logoWrap?.classList.add('is-lit');
+
+/* Episódios */
+const vids = (meta.videos || []).filter(v => v.season != null && v.episode != null).sort((a, b) => a.season - b.season || a.episode - b.episode);
+const seenKey = `zeus:vistos:${id}`;
+let seen = new Set(store.get(seenKey, null) ?? vids.filter(v => v.season === 1 && v.episode <= 2).map(v => v.id));
+const prog = vid => store.get(`zeus:prog:${vid}`, null) ?? (store.get(seenKey, null) == null && vid === vids.find(v => v.season === 1 && v.episode === 3)?.id ? .35 : 0);
+let season = null;
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>';
+
+function renderSeasons() {
+  const ss = [...new Set(vids.map(v => v.season))].sort((a, b) => (a === 0) - (b === 0) || a - b);
+  $('#seasons').innerHTML = ss.map(s => `<button type="button" role="tab" aria-selected="${s === season}" aria-controls="eps" data-season="${s}" tabindex="${s === season ? 0 : -1}">${s === 0 ? 'Extras' : `Temporada ${s}`}</button>`).join('');
+}
+function renderEps() {
+  const list = vids.filter(v => v.season === season);
+  $('#eps').innerHTML = list.map(v => {
+    const p = seen.has(v.id) ? 0 : prog(v.id), isSeen = seen.has(v.id);
+    return `<li class="t-ep${isSeen ? ' is-seen' : ''}${cur?.id === v.id ? ' is-current' : ''}" data-vid="${esc(v.id)}">
+      <button class="t-ep__btn" type="button" aria-label="${esc(`Episódio ${v.episode}, ${v.name || v.title || ''}${isSeen ? ', visto' : p ? `, ${Math.round(p * 100)}% visto` : ''}`)}">
+        <span class="t-ep__art">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
+          ${isSeen ? `<span class="t-ep__seen">${CHECK}Visto</span>` : p ? `<span class="z-progress"><i style="--p:${p}"></i></span>` : ''}</span>
+        <span><span class="t-ep__no">E${v.episode}${v.released ? ` <span class="z-faint">${new Date(v.released).getFullYear()}</span>` : ''}</span><span class="t-ep__name">${esc(v.name || v.title || `Episódio ${v.episode}`)}</span></span>
+        <span class="t-ep__desc">${esc(v.overview || v.description || '')}</span>
+      </button>
+      <button class="z-icon-btn t-ep__more" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações para o episódio ${v.episode}">${DOTS}</button>
+    </li>`;
+  }).join('');
+}
+function pickEpisode(v, scroll) {
+  cur = v;
+  $$('.t-ep').forEach(li => li.classList.toggle('is-current', li.dataset.vid === v.id));
+  $('#play-l').textContent = `Reproduzir ${epCode(v)}`;
+  $('#src-for').textContent = `${epCode(v)} ${v.name || ''}`;
+  paintDock(); loadSources();
+  if (scroll) $('#fontes').scrollIntoView({ behavior: RM ? 'auto' : 'smooth', block: 'start' });
+}
+if (type === 'series' && vids.length) {
+  $('#episodes').hidden = false;
+  const next = vids.find(v => v.season > 0 && !seen.has(v.id)) || vids.find(v => v.season > 0) || vids[0];
+  cur = next; season = next.season; renderSeasons(); renderEps();
+  $('#play-l').textContent = `${seen.size ? 'Continuar' : 'Reproduzir'} ${epCode(next)}`;
+  $('#src-for').textContent = `${epCode(next)} ${next.name || ''}`;
+  requestAnimationFrame(() => $('.t-ep.is-current')?.scrollIntoView({ inline: 'start', block: 'nearest' }));
+  $('#seasons').addEventListener('click', e => { const b = e.target.closest('[data-season]'); if (!b) return; season = +b.dataset.season; renderSeasons(); renderEps(); $('#eps').scrollLeft = 0; });
+  $('#seasons').addEventListener('keydown', e => {
+    const tabs = $$('[role=tab]', e.currentTarget), i = tabs.indexOf(document.activeElement);
+    const n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (n === undefined || i < 0) return;
+    e.preventDefault(); tabs[(n + tabs.length) % tabs.length].click(); $('[aria-selected="true"]', e.currentTarget).focus();
+  });
+}
+
+// Menu de contexto do episódio («⋯» ou botão direito)
+const menu = $('#ep-menu'); let menuFor = null, menuBtn = null;
+function openMenu(li, x, y, btn) {
+  menuFor = vids.find(v => v.id === li.dataset.vid); menuBtn = btn;
+  const isSeen = seen.has(menuFor.id);
+  $('[data-mark="one"]', menu).hidden = isSeen; $('[data-mark="unseen"]', menu).hidden = !isSeen;
+  menu.hidden = false; btn?.setAttribute('aria-expanded', 'true');
+  const w = menu.offsetWidth, h = menu.offsetHeight;
+  menu.style.transform = `translate(${Math.max(12, Math.min(x, innerWidth - w - 12))}px,${Math.max(12, Math.min(y, innerHeight - h - 12))}px)`;
+  if (G) G.fromTo(menu, { opacity: 0, scale: .97 }, { opacity: 1, scale: 1, duration: .22, ease: 'power3.out' });
+  $('[role=menuitem]:not([hidden])', menu).focus();
+}
+function closeMenu(refocus) { if (menu.hidden) return; menu.hidden = true; menuBtn?.setAttribute('aria-expanded', 'false'); if (refocus) menuBtn?.focus(); }
+$('#eps').addEventListener('click', e => {
+  const li = e.target.closest('.t-ep'); if (!li) return;
+  const more = e.target.closest('.t-ep__more');
+  if (more) { const r = more.getBoundingClientRect(); return openMenu(li, r.right - 250, r.bottom + 6, more); }
+  pickEpisode(vids.find(v => v.id === li.dataset.vid), true);
+});
+$('#eps').addEventListener('contextmenu', e => { const li = e.target.closest('.t-ep'); if (!li) return; e.preventDefault(); openMenu(li, e.clientX, e.clientY, $('.t-ep__more', li)); });
+menu.addEventListener('click', e => {
+  const b = e.target.closest('[data-mark]'); if (!b || !menuFor) return;
+  const k = b.dataset.mark, v = menuFor;
+  if (k === 'upto') vids.filter(x => x.season > 0 && (x.season < v.season || (x.season === v.season && x.episode <= v.episode)) || x.id === v.id).forEach(x => seen.add(x.id));
+  else if (k === 'one') seen.add(v.id); else seen.delete(v.id);
+  store.set(seenKey, [...seen]); renderEps(); closeMenu(false);
+  $(`.t-ep[data-vid="${CSS.escape(v.id)}"] .t-ep__more`)?.focus();
+  toast(k === 'upto' ? `Marcado como visto até ${epCode(v)}.` : k === 'one' ? `${epCode(v)} marcado como visto.` : `${epCode(v)} marcado como não visto.`);
+});
+menu.addEventListener('keydown', e => {
+  const items = $$('[role=menuitem]:not([hidden])', menu), i = items.indexOf(document.activeElement);
+  const n = { ArrowDown: i + 1, ArrowUp: i - 1 }[e.key];
+  if (n !== undefined) { e.preventDefault(); items[(n + items.length) % items.length].focus(); }
+  if (e.key === 'Tab') closeMenu(false);
+});
+document.addEventListener('pointerdown', e => { if (!menu.contains(e.target) && !e.target.closest('.t-ep__more')) closeMenu(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(true); });
+addEventListener('scroll', () => closeMenu(false), { passive: true });
+
+/* Fontes: cinco Add-ons respondem a ritmos diferentes; os nomes em bruto são lidos e partidos em etiquetas. */
+const ADDONS = ['Torrentio', 'MediaFusion', 'Comet', 'Jackettio', 'Orion'];
+const GROUPS = ['FGT', 'NTb', 'FLUX', 'SPARKS', 'CMRG', 'playWEB'];
+function rawNames() {
+  const slug = (meta.name || 'Titulo').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '.').replace(/^\.|\.$/g, '');
+  const tag = cur ? `S${String(cur.season).padStart(2, '0')}E${String(cur.episode).padStart(2, '0')}` : String(meta.year || meta.releaseInfo || '').slice(0, 4);
+  const extra = [
+    { quality: '2160p', hdr: 'HDR10+', codec: 'AV1', size: '9.6 GB', seeders: 57, lang: 'PT', cached: true, src: 'WEB-DL', audio: 'DDP5.1' },
+    { quality: '2160p', hdr: 'DV', codec: 'HEVC', size: '61.2 GB', seeders: 23, lang: 'EN', cached: false, src: 'REMUX', audio: 'TrueHD.Atmos' },
+    { quality: '1080p', hdr: null, codec: 'HEVC', size: '1.6 GB', seeders: 2140, lang: 'PT', cached: true, src: 'WEB-DL', audio: 'AAC' },
+    { quality: '480p', hdr: null, codec: 'x264', size: '420 MB', seeders: 96, lang: 'EN', cached: false, src: 'DVDRip', audio: 'AC3' },
+  ];
+  return [...SOURCES.map((s, i) => ({ ...s, src: ['BluRay', 'WEB-DL', 'BluRay', 'HDTV'][i], audio: ['TrueHD.Atmos', 'AAC', 'DDP5.1', 'AAC'][i] })), ...extra].map((s, i) => ({
+    addon: i < 4 ? s.addon : ADDONS[1 + (i % 3)],
+    cached: s.cached,
+    raw: `${slug}.${tag}.${s.quality}.${s.src}${s.hdr ? '.' + s.hdr : ''}.${s.audio}.${s.codec === 'HEVC' ? 'H.265' : s.codec}-${GROUPS[i % GROUPS.length]}.mkv\n👤 ${s.seeders} 💾 ${s.size} ⚙️ ${i % 2 ? '1337x' : 'ThePirateBay'}\n${s.lang === 'PT' ? '🇵🇹' : '🇬🇧'}`,
+  }));
+}
+function parse(r) {
+  const t = r.raw, q = (t.match(/\b(2160p|1080p|720p|480p)\b/i) || [])[1] || '?';
+  const hdr = /\bDV\b|DoVi/i.test(t) ? 'DV' : (t.match(/\bHDR10\+|\bHDR10\b|\bHDR\b/i) || [])[0] || null;
+  const codec = /\bAV1\b/i.test(t) ? 'AV1' : /H\.?265|HEVC|x265/i.test(t) ? 'HEVC' : /H\.?264|x264|AVC/i.test(t) ? 'H.264' : null;
+  const sm = t.match(/💾\s*([\d.]+)\s*(GB|MB)/i), size = sm ? `${sm[1]} ${sm[2].toUpperCase()}` : null;
+  const bytes = sm ? +sm[1] * (sm[2].toUpperCase() === 'GB' ? 1024 : 1) : 0;
+  const seeders = +(t.match(/👤\s*(\d+)/) || [])[1] || 0;
+  const lang = t.includes('🇵🇹') ? 'PT' : t.includes('🇬🇧') ? 'EN' : null;
+  const src = (t.match(/\b(REMUX|WEB-DL|WEBRip|BluRay|HDTV|DVDRip)\b/i) || [])[1] || null;
+  const audio = (t.match(/\b(TrueHD\.Atmos|DDP5\.1|AC3|AAC)\b/i) || [])[1]?.replace('TrueHD.', 'TrueHD ') || null;
+  const rank = { '2160p': 4, '1080p': 3, '720p': 2, '480p': 1 }[q] || 0;
+  return { ...r, q, label: q === '2160p' ? '4K' : q, hdr, codec, size, bytes, seeders, lang, src, audio, rank, file: t.split('\n')[0] };
+}
+let all = [], cacheOnly = false, sortBy = 'quality', run = 0;
+const SORTS = {
+  quality: (a, b) => b.rank - a.rank || b.cached - a.cached || b.seeders - a.seeders,
+  size: (a, b) => b.bytes - a.bytes,
+  seeders: (a, b) => b.seeders - a.seeders,
+};
+const best = () => [...all].sort((a, b) => b.cached - a.cached || SORTS.quality(a, b))[0];
+function rowHTML(s) {
+  const hdr = s.hdr ? `<span class="z-tag z-tag--gold">${s.hdr === 'DV' ? 'Dolby Vision' : esc(s.hdr)}</span>` : '';
+  const chips = [hdr, s.codec && `<span class="z-tag z-tag--strong">${esc(s.codec)}</span>`, s.src && `<span class="z-tag">${esc(s.src)}</span>`, s.audio && `<span class="z-tag">${esc(s.audio)}</span>`,
+    s.size && `<span class="z-tag">${esc(s.size)}</span>`, `<span class="z-tag" title="Seeders">▲ ${s.seeders.toLocaleString('pt-PT')}</span>`, s.lang && `<span class="z-tag">${s.lang}</span>`].filter(Boolean).join('');
+  const label = [s.label, s.hdr === 'DV' ? 'Dolby Vision' : s.hdr, s.codec, s.size, `${s.seeders} seeders`, s.lang === 'PT' ? 'português' : 'inglês', s.cached && 'em cache', `via ${s.addon}`].filter(Boolean).join(', ');
+  return `<li data-key="${esc(s.file)}"><button class="t-src" type="button" aria-label="Reproduzir ${esc(label)}">
+    <span class="t-q">${esc(s.label)}<small>${esc(s.addon)}</small></span>
+    <span class="t-chips">${chips}</span>
+    <span class="t-raw" title="${esc(s.file)}">${esc(s.file)}</span>
+    <span class="t-src__end">${s.cached ? '<span class="z-badge z-badge--cache">em cache</span>' : ''}<span class="t-go" aria-hidden="true">${ICON.play}</span></span>
+  </button></li>`;
+}
+function renderSources(animate) {
+  const list = $('#srcs');
+  const shown = all.filter(s => !cacheOnly || s.cached).sort(SORTS[sortBy]);
+  const before = new Map($$('li', list).map(li => [li.dataset.key, li.getBoundingClientRect().top]));
+  list.innerHTML = shown.map(rowHTML).join('');
+  list._data = shown;
+  const empty = $('#src-empty');
+  empty.hidden = shown.length > 0 || !all.length;
+  if (!shown.length && all.length) empty.textContent = 'Nenhuma fonte em cache para este título. Desliga «Só em cache» para ver as restantes.';
+  if (!G || RM) return;
+  $$('li', list).forEach(li => {
+    const y0 = before.get(li.dataset.key);
+    if (y0 != null) { const dy = y0 - li.getBoundingClientRect().top; if (dy) G.fromTo(li, { y: dy }, { y: 0, duration: .55, ease: 'power3.out', clearProps: 'transform' }); }
+    else if (animate) G.fromTo(li, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: .6, ease: 'expo.out', clearProps: 'all' });
+  });
+}
+function loadSources() {
+  const my = ++run, pool = rawNames().map(parse);
+  all = [];
+  const state = Object.fromEntries(ADDONS.map(a => [a, 'wait']));
+  const counts = {};
+  const paint = () => {
+    const done = ADDONS.filter(a => state[a] !== 'wait').length, ok = ADDONS.filter(a => state[a] === 'ok').length;
+    $('#pips').innerHTML = ADDONS.map(a => `<li class="t-pip" data-state="${state[a]}">${a}${state[a] === 'ok' ? ` <b>${counts[a]}</b>` : state[a] === 'fail' ? ' sem resposta' : ''}</li>`).join('');
+    $('#src-bar').style.setProperty('--p', done / ADDONS.length);
+    if (done === ADDONS.length) paintDock();
+    $('#src-status').textContent = done < ADDONS.length ? `${ok} de ${ADDONS.length} Add-ons responderam` : `${all.length} fontes de ${ok} Add-ons${ok < ADDONS.length ? `; ${ADDONS.length - ok} sem resposta` : ''}`;
+  };
+  $('#srcs').innerHTML = Array.from({ length: 3 }, () => '<li><span class="z-sk" style="height:76px;border-radius:18px"></span></li>').join('');
+  $('#src-empty').hidden = true;
+  paint();
+  ADDONS.forEach((a, i) => {
+    const delay = RM ? 200 + i * 120 : [650, 1200, 1700, 2300, 4200][i] + Math.random() * 300;
+    setTimeout(() => {
+      if (my !== run) return;
+      const got = pool.filter(s => s.addon === a);
+      if (a === 'Orion') state[a] = 'fail'; else { state[a] = 'ok'; counts[a] = got.length; all.push(...got); }
+      paint();
+      if (got.length || $('#srcs .z-sk')) renderSources(true);
+    }, delay);
+  });
+}
+$('#sort').addEventListener('change', e => { sortBy = e.target.value; renderSources(false); });
+$('#cache').addEventListener('click', e => { cacheOnly = !cacheOnly; e.currentTarget.setAttribute('aria-checked', cacheOnly); renderSources(true); });
+
+/* Reproduzir: a fonte escolhida lança um raio até ao botão visível e abre o Leitor. */
+const dock = $('#dock'), playBtn = $('#play'), dockBtn = $('#dock-play');
+let heroVisible = true;
+new IntersectionObserver(([e]) => { heroVisible = e.isIntersecting; dock.toggleAttribute('data-off', heroVisible); }).observe(playBtn);
+const paintDock = () => { $('#dock-t').innerHTML = `${esc(meta.name)}<small>${cur ? epCode(cur) : (best()?.label || 'A procurar fontes')}</small>`; };
+paintDock();
+const target = () => heroVisible ? playBtn : dockBtn;
+function playerURL(s) {
+  const p = new URLSearchParams({ id, type });
+  if (cur) { p.set('s', cur.season); p.set('e', cur.episode); }
+  if (s) { p.set('q', s.q); p.set('src', s.addon); }
+  return `leitor.html?${p}`;
+}
+let going = false;
+function go(s, fromEl) {
+  if (going) return; going = true;
+  const t = target();
+  t.setAttribute('aria-busy', 'true');
+  toast(`A abrir ${s ? `${s.label}${s.hdr ? ' ' + (s.hdr === 'DV' ? 'Dolby Vision' : s.hdr) : ''} via ${s.addon}` : meta.name}…`);
+  const nav = () => { location.href = playerURL(s); };
+  if (fromEl) travel(fromEl, t, nav);
+  else { t.classList.add('is-struck'); setTimeout(nav, RM ? 150 : 520); }
+}
+$('#srcs').addEventListener('click', e => {
+  const b = e.target.closest('.t-src'); if (!b) return;
+  const li = b.parentElement, s = $('#srcs')._data[$$('li', $('#srcs')).indexOf(li)];
+  go(s, $('.t-go', b));
+});
+playBtn.addEventListener('click', () => go(best()));
+dockBtn.addEventListener('click', () => go(best()));
+addEventListener('pageshow', e => { if (e.persisted) { going = false; $$('[aria-busy]').forEach(b => b.removeAttribute('aria-busy')); } });
+
+loadSources();
+</script>
+</body>
+</html>

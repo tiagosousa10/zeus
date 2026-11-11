@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Conta</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/atena.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* Atena: ouro de Klimt em vez de ciano; o que é gravado (placa, égide) usa Palatino. */
+:root{--accent:#e9c46e;--cool:233,196,110;--leaf:#d4a845;--leaf-rgb:212,168,69;--serif:"Iowan Old Style",Palatino,"Palatino Linotype","Book Antiqua",Georgia,serif}
+.z-switch[aria-checked="true"]::before{background:#b98d2c}
+.at-hero{position:relative;min-height:min(66vh,620px);display:grid;align-items:end;overflow:hidden;isolation:isolate;padding:calc(var(--nav-h) + 24px) var(--gutter) clamp(36px,6vh,60px)}
+.at-hero::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(270deg,#000 0,rgba(0,0,0,.8) 30%,transparent 58%),linear-gradient(0deg,#000 0,transparent 30%)}
+.at-copy{position:relative;z-index:2;justify-self:end;width:min(440px,100%)}
+.at-copy .z-lede{margin-top:12px}
+.at-sum{display:flex;align-items:center;gap:10px;margin-top:20px;font-size:15px;color:var(--text-2)}
+.at-sum i{width:8px;height:8px;border-radius:50%;background:var(--leaf);box-shadow:0 0 0 4px rgba(var(--leaf-rgb),.18)}
+.layout{width:min(1180px,100%);margin:0 auto;padding:24px var(--gutter) 96px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;align-items:start}
+.side{position:sticky;top:calc(var(--nav-h) + 24px);display:grid;gap:2px}
+.side a{padding:9px 14px;border-radius:var(--r-md);color:var(--text-2);text-decoration:none;font-size:15px;transition:background .2s,color .2s}
+.side a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.side a[aria-current="true"]{color:var(--accent);background:rgba(var(--leaf-rgb),.1)}
+.sec{scroll-margin-top:calc(var(--nav-h) + 20px);padding:28px 0 36px;border-bottom:1px solid var(--hair)}
+.sec:last-child{border-bottom:0}
+.sec>h2{margin-bottom:6px}
+.sec>.z-callout{color:var(--text-2);max-width:60ch;margin-bottom:22px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;max-width:640px}
+.form{max-width:640px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px}
+.sub{margin:30px 0 14px;font-size:17px;font-weight:600}
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;padding:16px 18px;border-radius:var(--r-lg);background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.row p{color:var(--text-2);font-size:15px}
+/* Égide: escamas douradas que se fecham quando a segurança fica guardada */
+.sec-head{display:flex;align-items:center;gap:22px;margin-bottom:22px}
+.aegis{position:relative;flex:none;width:112px;height:112px}
+.aegis svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.aegis .sc{fill:#3a2f18;stroke:#6b5321;stroke-width:.8;opacity:.55;translate:0 -6px;transition:translate .6s var(--spring),fill .5s,opacity .5s,stroke .5s;transition-delay:calc(var(--i) * 22ms)}
+.aegis.is-locked .sc{fill:url(#gold);stroke:#7a5a1a;opacity:1;translate:0 0}
+.aegis .core{fill:#14110a;stroke:rgba(var(--leaf-rgb),.35);stroke-width:1}
+.aegis .lock{fill:none;stroke:var(--text-3);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .4s}
+.aegis.is-locked .lock{stroke:var(--accent)}
+.aegis .shackle{transition:translate .4s var(--spring) .45s;translate:0 -4px}
+.aegis.is-locked .shackle{translate:0 0}
+.aegis__gleam{position:absolute;inset:-4px;border-radius:50%;opacity:0;pointer-events:none;mix-blend-mode:screen;background:conic-gradient(from 0deg,transparent 0 300deg,rgba(255,240,200,.0) 310deg,rgba(255,246,220,.95) 340deg,transparent 360deg);
+  -webkit-mask:radial-gradient(closest-side,transparent 64%,#000 70%,#000 98%,transparent 100%);mask:radial-gradient(closest-side,transparent 64%,#000 70%,#000 98%,transparent 100%)}
+.aegis.is-locked{filter:drop-shadow(0 0 18px rgba(var(--leaf-rgb),.25))}
+.sec-head b{display:block;font-size:17px;font-weight:600}
+.sec-head span{color:var(--text-2);font-size:15px}
+/* Placa gravada dos códigos de recuperação */
+.plaque{position:relative;margin-top:16px;max-width:560px;padding:26px 30px 24px;border-radius:14px;color:#3a2806;
+  background:linear-gradient(128deg,#7d5b1b 0,#e6c46a 22%,#a97f2c 46%,#f2da92 70%,#8c6621 100%);
+  box-shadow:inset 0 1px 0 rgba(255,250,225,.6),inset 0 -2px 5px rgba(0,0,0,.35),inset 0 0 0 1px rgba(60,40,5,.4),0 28px 60px -28px #000}
+.plaque::before{content:"";position:absolute;inset:10px;border:1px solid rgba(60,40,5,.35);border-radius:8px;box-shadow:0 1px 0 rgba(255,245,210,.45)}
+.plaque h3{position:relative;font:600 19px/1.2 var(--serif);text-shadow:0 1px 0 rgba(255,244,205,.6)}
+.plaque p{position:relative;margin-top:2px;font:italic 14px/1.4 var(--serif);color:rgba(58,40,6,.8)}
+.plaque ol{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 28px;margin:18px 0 0;padding:0;list-style:none;counter-reset:c}
+.plaque li{counter-increment:c;display:flex;gap:10px;align-items:baseline;font:600 17px/1.3 var(--mono);letter-spacing:.04em;color:#3b2905;text-shadow:0 1px 0 rgba(255,244,205,.7),0 -1px 0 rgba(40,25,0,.45)}
+.plaque li::before{content:counter(c);min-width:1.4em;font:500 12px var(--serif);color:rgba(58,40,6,.6);text-shadow:none}
+.rivet{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c4,#8a6420 60%,#4a3108)}
+.rivet:nth-of-type(1){top:6px;left:6px}.rivet:nth-of-type(2){top:6px;right:6px}.rivet:nth-of-type(3){bottom:6px;left:6px}.rivet:nth-of-type(4){bottom:6px;right:6px}
+.sessions{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.sessions li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;padding:14px 16px;border-radius:var(--r-lg);background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.sessions svg{width:26px;height:26px;color:var(--text-2)}
+.sessions b{font-weight:600}
+.sessions small{display:block;font-size:13px;color:var(--text-2)}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:14px 16px;border-radius:var(--r-lg);background:rgba(var(--leaf-rgb),.08);box-shadow:inset 0 0 0 1px rgba(var(--leaf-rgb),.3);font-size:15px}
+.confirm p{flex:1 1 260px}
+fieldset{border:0;margin:0 0 20px;padding:0;min-width:0}
+legend{padding:0;margin-bottom:10px}
+.toggles{display:grid;gap:14px;margin:4px 0 24px}
+.preview{position:relative;aspect-ratio:16/7;max-width:640px;margin-top:6px;border-radius:var(--r-lg);overflow:hidden;display:grid;align-items:end;justify-items:center;padding:0 24px 7%;
+  background:radial-gradient(70% 90% at 30% 20%,rgba(212,168,69,.28),transparent 60%),radial-gradient(60% 80% at 80% 70%,rgba(40,70,52,.55),transparent 70%),linear-gradient(160deg,#1d1a10,#0a0d0a);box-shadow:inset 0 0 0 1px var(--hair)}
+.preview span{max-width:90%;text-align:center;font-weight:600;line-height:1.3;color:var(--sub-c,#fff);font-size:var(--sub-s,22px);transition:font-size .25s var(--out),color .25s}
+.preview[data-bg="sombra"] span{text-shadow:0 2px 3px #000,0 0 8px rgba(0,0,0,.9)}
+.preview[data-bg="caixa"] span{background:rgba(0,0,0,.72);padding:2px 10px;border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.segs{display:flex;flex-wrap:wrap;gap:16px 24px;margin-bottom:6px}
+.segs .z-label{display:block;margin-bottom:8px}
+.drop{position:relative;display:grid;justify-items:center;gap:8px;max-width:640px;padding:36px 24px;border-radius:var(--r-lg);border:1.5px dashed rgba(var(--leaf-rgb),.4);background:rgba(var(--leaf-rgb),.04);text-align:center;cursor:pointer;transition:background .25s,border-color .25s}
+.drop:hover,.drop.is-over{background:rgba(var(--leaf-rgb),.1);border-color:var(--accent)}
+.drop:focus-within{outline:2px solid var(--accent);outline-offset:3px}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop svg{width:34px;height:34px;color:var(--accent)}
+.found{max-width:640px;margin-top:14px}
+.found ul{margin:10px 0 14px;padding-left:20px;color:var(--text-2);font-size:15px}
+.save-note{font-size:14px;color:var(--text-3);min-height:20px;margin-top:8px}
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:8px}
+  .side{position:static;display:flex;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter)}
+  .side a{white-space:nowrap}
+}
+@media (max-width:760px){
+  .at-hero{min-height:640px}
+  .at-hero::after{background:linear-gradient(0deg,#000 0,#000 34%,rgba(0,0,0,.5) 56%,transparent 76%)}
+  .at-copy{justify-self:start}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .plaque{padding:22px 20px}
+  .plaque ol{grid-template-columns:minmax(0,1fr)}
+  .sessions li{grid-template-columns:auto minmax(0,1fr)}
+  .sessions li .z-btn,.sessions li .z-tag{grid-column:2;justify-self:start}
+  .sec-head{align-items:flex-start}
+  .aegis{width:84px;height:84px}
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="at-hero" aria-labelledby="h-title">
+    <div id="painting" aria-hidden="true"></div>
+    <div class="at-copy">
+      <h1 class="z-display" id="h-title">Conta</h1>
+      <p class="z-lede">O teu perfil, a segurança da conta e a forma como o leitor se comporta. Só tu vês estas definições.</p>
+      <p class="at-sum"><i aria-hidden="true"></i>Inês Duarte, Membro desde março de 2026</p>
+    </div>
+  </section>
+
+  <div class="layout">
+    <nav class="side" aria-label="Definições da conta">
+      <a href="#perfil">Perfil</a><a href="#seguranca">Segurança</a><a href="#tmdb">Chave TMDB</a><a href="#leitor">Leitor</a><a href="#importar">Importar do MacStream</a>
+    </nav>
+    <div>
+      <section class="sec" id="perfil" aria-labelledby="h-perfil">
+        <h2 class="z-t2" id="h-perfil">Perfil</h2>
+        <p class="z-callout">O nome aparece aos outros Membros. Se mudares o email, enviamos um link de confirmação para o novo endereço.</p>
+        <form class="form" id="f-perfil" novalidate>
+          <div class="grid2">
+            <div class="z-field"><label class="z-label" for="p-name">Nome</label><input class="z-input" id="p-name" name="name" autocomplete="name" value="Inês Duarte" required></div>
+            <div class="z-field"><label class="z-label" for="p-email">Email</label><input class="z-input" id="p-email" name="email" type="email" autocomplete="email" value="ines.duarte@exemplo.pt" spellcheck="false" required></div>
+          </div>
+          <div class="actions"><button class="z-btn z-btn--primary z-btn--sm" type="submit">Guardar perfil</button></div>
+          <p class="z-msg" id="m-perfil" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="sec" id="seguranca" aria-labelledby="h-seg">
+        <div class="sec-head">
+          <div class="aegis is-locked" id="aegis" aria-hidden="true">
+            <svg viewBox="0 0 120 120" id="aegis-svg"><defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6df9a"/><stop offset=".5" stop-color="#c99a3a"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs>
+              <g id="scales"></g>
+              <circle class="core" cx="60" cy="60" r="38"/>
+              <g class="lock"><rect x="48" y="58" width="24" height="18" rx="4"/><path class="shackle" d="M53 58v-6a7 7 0 0 1 14 0v6"/></g>
+            </svg>
+            <span class="aegis__gleam" id="gleam"></span>
+          </div>
+          <div><h2 class="z-t2" id="h-seg">Segurança</h2><p aria-live="polite"><b id="aegis-state">A tua conta está protegida</b><span id="aegis-sub">Palavra-passe, verificação em dois passos e sessões em ordem.</span></p></div>
+        </div>
+
+        <h3 class="sub">Alterar palavra-passe</h3>
+        <form class="form" id="f-pw" novalidate>
+          <input type="email" autocomplete="username" value="ines.duarte@exemplo.pt" hidden>
+          <div class="z-field"><label class="z-label" for="pw-cur">Palavra-passe actual</label>
+            <div class="z-input-wrap"><input class="z-input" id="pw-cur" type="password" autocomplete="current-password" required><button type="button" data-reveal="pw-cur" aria-pressed="false">Mostrar</button></div></div>
+          <div class="grid2">
+            <div class="z-field"><label class="z-label" for="pw-new">Nova palavra-passe</label><input class="z-input" id="pw-new" type="password" autocomplete="new-password" aria-describedby="pw-h" required></div>
+            <div class="z-field"><label class="z-label" for="pw-rep">Repetir nova palavra-passe</label><input class="z-input" id="pw-rep" type="password" autocomplete="new-password" required></div>
+          </div>
+          <p class="z-help" id="pw-h">Pelo menos 12 caracteres. As outras sessões terminam quando a alterares.</p>
+          <div class="actions"><button class="z-btn z-btn--primary z-btn--sm" type="submit" id="pw-save">Alterar palavra-passe</button></div>
+          <p class="z-msg" id="m-pw" aria-live="assertive"></p>
+        </form>
+
+        <h3 class="sub">Verificação em dois passos</h3>
+        <div class="row"><div><b>App de autenticação</b><p>Activa desde 3 de março de 2026. Restam <span id="left">7</span> de 10 códigos de recuperação.</p></div><span class="z-tag z-tag--gold">Activa</span></div>
+        <div class="actions" style="margin-top:12px"><button class="z-btn z-btn--secondary z-btn--sm" type="button" id="gen" aria-controls="gen-confirm" aria-expanded="false">Gerar novos códigos de recuperação</button></div>
+        <div class="confirm" id="gen-confirm" hidden><p>Os códigos actuais deixam de funcionar logo que gerares novos.</p><button class="z-btn z-btn--primary z-btn--sm" type="button" id="gen-go">Gerar códigos</button><button class="z-btn z-btn--ghost z-btn--sm" type="button" id="gen-no">Cancelar</button></div>
+        <div id="codes" hidden>
+          <div class="plaque" role="group" aria-labelledby="pl-h"><i class="rivet"></i><i class="rivet"></i><i class="rivet"></i><i class="rivet"></i>
+            <h3 id="pl-h">Códigos de recuperação</h3><p>Cada código serve uma vez. Guarda-os fora do Zeus.</p><ol id="code-list"></ol></div>
+          <div class="actions" style="margin-top:14px"><button class="z-btn z-btn--secondary z-btn--sm" type="button" id="c-copy">Copiar</button><button class="z-btn z-btn--secondary z-btn--sm" type="button" id="c-dl">Descarregar .txt</button><button class="z-btn z-btn--ghost z-btn--sm" type="button" id="c-done">Já os guardei</button></div>
+        </div>
+        <p class="z-msg is-ok" id="m-codes" aria-live="polite"></p>
+
+        <h3 class="sub">Sessões activas</h3>
+        <ul class="sessions" id="sessions"></ul>
+        <div class="actions" style="margin-top:12px"><button class="z-btn z-btn--danger z-btn--sm" type="button" id="end-all">Terminar todas as outras sessões</button></div>
+        <p class="z-msg is-ok" id="m-sess" aria-live="polite"></p>
+      </section>
+
+      <section class="sec" id="tmdb" aria-labelledby="h-tmdb">
+        <h2 class="z-t2" id="h-tmdb">Chave TMDB</h2>
+        <p class="z-callout">Os cartazes, sinopses e elencos vêm do The Movie Database. Com a tua chave, os pedidos contam na tua conta TMDB.</p>
+        <form class="form" id="f-tmdb" novalidate>
+          <div class="z-field"><label class="z-label" for="tmdb-key">Chave da API (v3)</label>
+            <div class="z-input-wrap"><input class="z-input z-input--mono" id="tmdb-key" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" value="8c2f61d0b9e34a7c95f1e06d2ab4c718" aria-describedby="tmdb-h"><button type="button" data-reveal="tmdb-key" aria-pressed="false">Mostrar</button></div>
+            <p class="z-help is-ok" id="tmdb-h">Chave verificada a 2 de novembro de 2026.</p></div>
+          <div class="actions"><button class="z-btn z-btn--primary z-btn--sm" type="submit" id="tmdb-save">Verificar e guardar</button></div>
+        </form>
+      </section>
+
+      <section class="sec" id="leitor" aria-labelledby="h-leitor">
+        <h2 class="z-t2" id="h-leitor">Preferências do leitor</h2>
+        <p class="z-callout">Valem para todos os filmes e séries. A ordem dos idiomas decide qual é escolhido primeiro.</p>
+        <fieldset><legend class="z-label">Idiomas de áudio, por ordem de preferência</legend><div class="z-chips" data-order id="audio"></div></fieldset>
+        <fieldset><legend class="z-label">Idiomas das legendas, por ordem de preferência</legend><div class="z-chips" data-order id="subs"></div></fieldset>
+        <div class="toggles">
+          <button class="z-switch" type="button" role="switch" aria-checked="true" data-pref>Reproduzir o episódio seguinte automaticamente</button>
+          <button class="z-switch" type="button" role="switch" aria-checked="false" data-pref>Mostrar pré-visualizações ao passar o rato</button>
+        </div>
+        <h3 class="sub" style="margin-top:0">Aparência das legendas</h3>
+        <div class="segs">
+          <div><span class="z-label" id="l-size">Tamanho</span><div class="z-seg" role="radiogroup" aria-labelledby="l-size" data-sub="size"><label><input type="radio" name="s-size" value="18px">Pequeno</label><label><input type="radio" name="s-size" value="23px" checked>Médio</label><label><input type="radio" name="s-size" value="30px">Grande</label></div></div>
+          <div><span class="z-label" id="l-col">Cor</span><div class="z-seg" role="radiogroup" aria-labelledby="l-col" data-sub="color"><label><input type="radio" name="s-col" value="#ffffff" checked>Branco</label><label><input type="radio" name="s-col" value="#ffe45c">Amarelo</label></div></div>
+          <div><span class="z-label" id="l-bg">Fundo</span><div class="z-seg" role="radiogroup" aria-labelledby="l-bg" data-sub="bg"><label><input type="radio" name="s-bg" value="nenhum">Nenhum</label><label><input type="radio" name="s-bg" value="sombra" checked>Sombra</label><label><input type="radio" name="s-bg" value="caixa">Caixa</label></div></div>
+        </div>
+        <div class="preview" id="preview" data-bg="sombra" role="img" aria-label="Pré-visualização das legendas"><span>Ninguém atravessa estas portas sem o meu consentimento.</span></div>
+        <p class="save-note" id="m-pref" aria-live="polite"></p>
+      </section>
+
+      <section class="sec" id="importar" aria-labelledby="h-imp">
+        <h2 class="z-t2" id="h-imp">Importar dados do MacStream</h2>
+        <p class="z-callout">Pré-visualização de uma possível importação. A migração ainda está por decidir; este ecrã não lê nem importa os dados do ficheiro.</p>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".json,.zip,application/json,application/zip" aria-describedby="drop-h">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <b>Larga aqui a exportação do MacStream</b>
+          <span class="z-foot" id="drop-h">Ou carrega para escolher o ficheiro. Aceita .json ou .zip, até 20 MB.</span>
+        </label>
+        <div class="found" id="found" hidden>
+          <div class="row"><div><b id="f-name"></b><p id="f-size"></p></div><button class="z-btn z-btn--ghost z-btn--sm" type="button" id="f-clear">Escolher outro</button></div>
+          <ul><li>132 títulos na tua lista</li><li>48 filmes e episódios com progresso</li><li>6 Add-ons, dos quais 4 aprovados; os outros ficam de fora até o Administrador os aprovar</li></ul>
+          <span class="z-progress" id="f-prog" hidden><i style="--p:0"></i></span>
+          <div class="actions" style="margin-top:14px"><button class="z-btn z-btn--primary z-btn--sm" type="button" id="f-go">Importar</button></div>
+        </div>
+        <p class="z-msg" id="m-imp" aria-live="polite"></p>
+      </section>
+    </div>
+  </div>
+<p class="z-foot z-muted" style="padding:0 var(--gutter) 28px">Protótipo interactivo · Dados de demonstração. As alterações duram até recarregares esta página; nenhum email é enviado.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { livingPainting, toast, reveal, prefersReducedMotion } from './shared/fx.js';
+
+mountNav({ active: 'cinema', page: 'conta' });
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion(), G = window.gsap;
+const GOLD = [1.25, 1.02, .62];
+
+/* Pintura viva com o rosto e o elmo como foco; o fundo verde de Klimt respira devagar. */
+const painting = livingPainting($('#painting'), 'img/atena.webp', {
+  focus: { x: .33, y: .17 }, anchor: { x: .3, y: .4 }, anchorNarrow: { x: .5, y: .27 },
+  figure: [[.33, .2, .14, .18], [.4, .64, .36, .4], [.92, .5, .06, .5]],
+  size: (W, H) => W < 700 ? Math.max(H * .95, W * 1.5) : Math.max(H * 1.45, W * .64),
+  kenBurns: .035, parallax: [12, 8],
+});
+const facePoint = () => { const r = $('#painting').getBoundingClientRect(); return { x: r.width * (innerWidth < 700 ? .5 : .3), y: r.height * (innerWidth < 700 ? .27 : .4) }; };
+
+/* Égide */
+const aegis = $('#aegis'), NS = 'http://www.w3.org/2000/svg';
+for (let ring = 0; ring < 2; ring++) for (let i = 0; i < 24; i++) {
+  const g = document.createElementNS(NS, 'g'), p = document.createElementNS(NS, 'path');
+  g.setAttribute('transform', `rotate(${i * 15 + ring * 7.5} 60 60)`);
+  p.setAttribute('class', 'sc'); p.style.setProperty('--i', i + ring * 3);
+  p.setAttribute('d', ring ? 'M54.5 17 a5.5 5.5 0 0 0 11 0 z' : 'M53 7 a7 7 0 0 0 14 0 z');
+  g.append(p); $('#scales').append(g);
+}
+function unlock(msg = 'Alterações por guardar') {
+  if (!aegis.classList.contains('is-locked')) return;
+  aegis.classList.remove('is-locked');
+  $('#aegis-state').textContent = msg; $('#aegis-sub').textContent = 'Guarda para voltares a fechar a égide.';
+}
+function lock(sub) {
+  aegis.classList.add('is-locked');
+  $('#aegis-state').textContent = 'A tua conta está protegida'; $('#aegis-sub').textContent = sub;
+  if (RM || !G) return;
+  G.timeline({ delay: .55 })
+    .fromTo('#gleam', { opacity: 0, rotate: -40 }, { opacity: 1, rotate: 80, duration: .35, ease: 'power2.in' })
+    .to('#gleam', { rotate: 360, duration: .7, ease: 'power2.out' })
+    .to('#gleam', { opacity: 0, duration: .3 }, '-=.3');
+  G.fromTo(aegis, { scale: 1 }, { scale: 1.06, duration: .18, yoyo: true, repeat: 1, ease: 'power2.out', delay: .5 });
+  painting.flash(facePoint(), GOLD, 1);
+}
+
+/* Utilitários de formulário */
+function say(el, text, field, ok) {
+  el.textContent = text; el.classList.toggle('is-ok', !!ok);
+  $$('[aria-invalid]', el.closest('form') || document).forEach(f => f.removeAttribute('aria-invalid'));
+  if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
+}
+const busy = (btn, label, ms, done) => { const t = btn.textContent; btn.setAttribute('aria-busy', 'true'); btn.textContent = label; setTimeout(() => { btn.removeAttribute('aria-busy'); btn.textContent = t; done(); }, RM ? 200 : ms); };
+document.addEventListener('click', e => {
+  const r = e.target.closest('[data-reveal]'); if (!r) return;
+  const f = document.getElementById(r.dataset.reveal), show = f.type === 'password';
+  f.type = show ? 'text' : 'password'; r.textContent = show ? 'Ocultar' : 'Mostrar'; r.setAttribute('aria-pressed', show);
+});
+
+$('#f-perfil').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('#p-name'), m = $('#p-email'), msg = $('#m-perfil');
+  if (!n.value.trim()) return say(msg, 'Escreve o teu nome.', n);
+  if (!/^\S+@\S+\.\S+$/.test(m.value.trim())) return say(msg, 'Escreve um email válido, por exemplo nome@dominio.pt.', m);
+  const changed = m.value.trim() !== m.defaultValue;
+  busy(e.submitter, 'A guardar…', 600, () => say(msg, changed ? `Alteração simulada para ${m.value.trim()}. Nenhum email foi enviado.` : 'Perfil guardado.', null, true));
+});
+
+$$('#f-pw input').forEach(i => i.addEventListener('input', () => unlock()));
+$('#f-pw').addEventListener('submit', e => {
+  e.preventDefault();
+  const cur = $('#pw-cur'), nw = $('#pw-new'), rep = $('#pw-rep'), msg = $('#m-pw');
+  if (!cur.value) return say(msg, 'Escreve a palavra-passe actual.', cur);
+  if (nw.value.length < 12) return say(msg, 'A nova palavra-passe precisa de pelo menos 12 caracteres.', nw);
+  if (nw.value === cur.value) return say(msg, 'Escolhe uma palavra-passe diferente da actual.', nw);
+  if (rep.value !== nw.value) return say(msg, 'As duas palavras-passe novas não coincidem.', rep);
+  busy($('#pw-save'), 'A alterar…', 800, () => {
+    e.target.reset(); say(msg, 'Palavra-passe alterada. As outras sessões foram terminadas.', null, true);
+    sessions.splice(1); renderSessions(); lock('Palavra-passe alterada agora mesmo.');
+  });
+});
+
+/* Códigos de recuperação gravados na placa */
+const gen = $('#gen'), conf = $('#gen-confirm');
+gen.addEventListener('click', () => { conf.hidden = false; gen.setAttribute('aria-expanded', 'true'); unlock('Confirma para gerar códigos'); $('#gen-go').focus(); });
+$('#gen-no').addEventListener('click', () => { conf.hidden = true; gen.setAttribute('aria-expanded', 'false'); lock('Nada foi alterado.'); gen.focus(); });
+const ALPHA = 'abcdefghjkmnpqrstuvwxyz23456789';
+const code = () => { const b = crypto.getRandomValues(new Uint8Array(12)); return [...b].map(x => ALPHA[x % ALPHA.length]).join('').replace(/(.{4})(?=.)/g, '$1-'); };
+let codes = [];
+$('#gen-go').addEventListener('click', e => busy(e.currentTarget, 'A gerar…', 700, () => {
+  codes = Array.from({ length: 10 }, code);
+  conf.hidden = true; gen.setAttribute('aria-expanded', 'false');
+  $('#code-list').innerHTML = codes.map(c => `<li>${c}</li>`).join('');
+  $('#codes').hidden = false; $('#left').textContent = 10;
+  $('#m-codes').textContent = 'Foram gerados 10 códigos novos. Os anteriores já não funcionam.';
+  lock('Códigos de recuperação renovados.');
+  if (G && !RM) {
+    G.fromTo('.plaque', { opacity: 0, y: 14, filter: 'brightness(2)' }, { opacity: 1, y: 0, filter: 'brightness(1)', duration: .9, ease: 'expo.out' });
+    G.fromTo('#code-list li', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: .5, stagger: .07, ease: 'power2.inOut', delay: .3 });
+  }
+  $('#c-copy').focus();
+}));
+$('#c-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(codes.join('\n')); toast('Códigos copiados.'); }
+  catch { $('#m-codes').textContent = 'Não foi possível copiar. Selecciona os códigos e copia-os à mão.'; }
+});
+$('#c-dl').addEventListener('click', () => {
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([`Zeus, códigos de recuperação de ines.duarte@exemplo.pt\n\n${codes.join('\n')}\n`], { type: 'text/plain' })), download: 'zeus-codigos-recuperacao.txt' });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#c-done').addEventListener('click', () => { $('#codes').hidden = true; $('#m-codes').textContent = 'Os códigos ficaram escondidos. Podes gerar novos a qualquer momento.'; gen.focus(); });
+
+/* Sessões */
+const DEV = {
+  laptop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  tv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8"/></svg>',
+};
+const sessions = [
+  { d: 'laptop', name: 'Zeus para macOS, MacBook Pro', where: 'Lisboa, Portugal', when: 'Agora', me: true },
+  { d: 'phone', name: 'Safari, iPhone', where: 'Porto, Portugal', when: 'Há 2 horas' },
+  { d: 'tv', name: 'Zeus para tvOS, Apple TV da sala', where: 'Lisboa, Portugal', when: 'Ontem às 22:14' },
+  { d: 'laptop', name: 'Firefox, Windows', where: 'Braga, Portugal', when: 'Há 9 dias' },
+];
+function renderSessions() {
+  $('#sessions').innerHTML = sessions.map((s, i) => `<li>${DEV[s.d]}<div><b>${s.name}</b><small>${s.where}. Último acesso: ${s.when.toLowerCase()}</small></div>${s.me ? '<span class="z-tag z-tag--gold">Esta sessão</span>' : `<button class="z-btn z-btn--ghost z-btn--sm" type="button" data-end="${i}" aria-label="Terminar sessão ${s.name}">Terminar sessão</button>`}</li>`).join('');
+  $('#end-all').hidden = sessions.length < 2;
+}
+$('#sessions').addEventListener('click', e => {
+  const b = e.target.closest('[data-end]'); if (!b) return;
+  const s = sessions[+b.dataset.end], li = b.closest('li');
+  const done = () => { sessions.splice(sessions.indexOf(s), 1); renderSessions(); $('#m-sess').textContent = `Sessão terminada: ${s.name}.`; lock('Sessão terminada agora mesmo.'); ($('#sessions [data-end]') || $('#h-seg')).focus?.(); };
+  unlock('A terminar sessão');
+  if (G && !RM) G.to(li, { opacity: 0, x: 24, duration: .3, ease: 'power2.in', onComplete: done }); else done();
+});
+$('#end-all').addEventListener('click', e => busy(e.currentTarget, 'A terminar…', 600, () => {
+  const n = sessions.length - 1; sessions.splice(1); renderSessions();
+  $('#m-sess').textContent = `${n} ${n === 1 ? 'sessão terminada' : 'sessões terminadas'}. Só esta continua aberta.`; lock('Só esta sessão está aberta.');
+}));
+renderSessions();
+
+/* TMDB */
+$('#tmdb-key').addEventListener('input', () => { const h = $('#tmdb-h'); h.className = 'z-help'; h.textContent = 'A chave tem 32 letras e números (0 a 9, a a f).'; });
+$('#f-tmdb').addEventListener('submit', e => {
+  e.preventDefault();
+  const k = $('#tmdb-key'), h = $('#tmdb-h');
+  if (!/^[0-9a-f]{32}$/i.test(k.value.trim())) { k.setAttribute('aria-invalid', 'true'); h.className = 'z-help is-error'; h.textContent = 'Esta chave não é válida: tem de ter 32 letras e números (0 a 9, a a f).'; return k.focus(); }
+  k.removeAttribute('aria-invalid');
+  busy($('#tmdb-save'), 'A verificar…', 900, () => { h.className = 'z-help is-ok'; h.textContent = 'Formato válido. Neste protótipo a chave não é verificada no TMDB nem guardada.'; });
+});
+
+/* Leitor */
+const note = t => { const m = $('#m-pref'); m.textContent = t; clearTimeout(note.t); note.t = setTimeout(() => (m.textContent = ''), 2600); };
+const ORDER = { audio: [['Português', 1], ['Original', 2], ['Inglês', 0], ['Espanhol', 0], ['Francês', 0]], subs: [['Português (Portugal)', 1], ['Português (Brasil)', 2], ['Inglês', 0], ['Espanhol', 0]] };
+for (const [id, list] of Object.entries(ORDER)) $('#' + id).innerHTML = list.map(([t, n]) => `<button class="z-chip" type="button" aria-pressed="${!!n}">${n ? `<span class="z-chip__n">${n}</span>` : ''}${t}</button>`).join('');
+$$('[data-order]').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('.z-chip'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  if (!on && $$('[aria-pressed="true"]', g).length === 1) return note('Escolhe pelo menos um idioma.');
+  b.setAttribute('aria-pressed', on); $('.z-chip__n', b)?.remove();
+  const chosen = $$('[aria-pressed="true"]', g).sort((a, c) => (+$('.z-chip__n', a)?.textContent || 99) - (+$('.z-chip__n', c)?.textContent || 99));
+  chosen.forEach((c, i) => { ($('.z-chip__n', c) || c.insertAdjacentElement('afterbegin', Object.assign(document.createElement('span'), { className: 'z-chip__n' }))).textContent = i + 1; });
+  note(`Guardado. ${chosen.map(c => c.lastChild.textContent).join(', ')}.`);
+}));
+$$('[data-pref]').forEach(s => s.addEventListener('click', () => { const on = s.getAttribute('aria-checked') !== 'true'; s.setAttribute('aria-checked', on); note('Guardado.'); }));
+const pv = $('#preview');
+$$('[data-sub] input').forEach(r => r.addEventListener('change', () => {
+  const k = r.closest('[data-sub]').dataset.sub;
+  if (k === 'size') pv.style.setProperty('--sub-s', r.value);
+  if (k === 'color') pv.style.setProperty('--sub-c', r.value);
+  if (k === 'bg') pv.dataset.bg = r.value;
+  note('Guardado.');
+}));
+
+/* Importar */
+const drop = $('#drop'), file = $('#file');
+const kb = n => n > 1048576 ? `${(n / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
+function take(f) {
+  const m = $('#m-imp');
+  if (!f) return;
+  if (!/\.(json|zip)$/i.test(f.name)) { m.textContent = `«${f.name}» não é uma exportação do MacStream. Escolhe um ficheiro .json ou .zip.`; return; }
+  if (f.size > 20 * 1048576) { m.textContent = 'O ficheiro tem mais de 20 MB. Exporta só a lista e o progresso.'; return; }
+  m.textContent = 'Ficheiro seleccionado. Os números abaixo são exemplos da demonstração.';
+  $('#f-name').textContent = f.name; $('#f-size').textContent = kb(f.size);
+  drop.hidden = true; $('#found').hidden = false; $('#f-prog').hidden = true; $('#f-go').disabled = false; $('#f-go').focus();
+}
+file.addEventListener('change', () => take(file.files[0]));
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('is-over')));
+drop.addEventListener('drop', e => { e.preventDefault(); take(e.dataTransfer.files[0]); });
+$('#f-clear').addEventListener('click', () => { file.value = ''; $('#found').hidden = true; drop.hidden = false; $('#m-imp').textContent = ''; file.focus(); });
+$('#f-go').addEventListener('click', e => {
+  const btn = e.currentTarget, bar = $('#f-prog'), i = $('i', bar);
+  btn.disabled = true; bar.hidden = false; $('#m-imp').textContent = 'A importar…';
+  let p = 0;
+  const t = setInterval(() => {
+    p = Math.min(1, p + .08 + Math.random() * .1); i.style.setProperty('--p', p.toFixed(2));
+    if (p >= 1) { clearInterval(t); $('#m-imp').textContent = 'Demonstração concluída. Nenhum dado foi importado.'; toast('Pré-visualização da importação concluída.'); }
+  }, RM ? 60 : 180);
+});
+
+/* Índice lateral acompanha a secção visível */
+const links = $$('.side a');
+const spy = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) links.forEach(a => a.setAttribute('aria-current', a.hash === '#' + en.target.id)); }), { rootMargin: '-35% 0px -60% 0px' });
+$$('.sec').forEach(s => spy.observe(s));
+
+/* Entrada: Atena surge do escuro e o primeiro brilho dourado passa-lhe pelo elmo. */
+if (G && !RM) {
+  painting.state.exposure = 0; painting.state.zoom = 1.12;
+  G.timeline()
+    .to(painting.state, { exposure: 1.22, duration: 2.6, ease: 'power2.out' }, .1)
+    .to(painting.state, { zoom: 1, duration: 3.4, ease: 'power3.out' }, .1)
+    .call(() => painting.flash(facePoint(), GOLD, 1), null, 1.5);
+  reveal(['.at-copy > *'], { delay: .9, stagger: .1 });
+  G.from('#scales .sc', { opacity: 0, duration: .6, stagger: .015, delay: .4 });
+} else painting.state.exposure = 1.22;
+</script>
+</body>
+</html>
