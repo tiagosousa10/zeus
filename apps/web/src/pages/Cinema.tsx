@@ -150,9 +150,6 @@ export default function Cinema() {
           <div className="curtain__half curtain__right">
             <img src="/art/img/aquiles.webp" alt="" />
           </div>
-          <p className="curtain__label">
-            Rubens, <i>Aquiles vence Heitor</i>, 1630
-          </p>
           <svg
             className="curtain__bolt"
             viewBox="0 0 100 100"
@@ -359,7 +356,7 @@ export default function Cinema() {
         {notice}
       </p>
       <footer className="cine-foot">
-        Catálogo: Cinemeta. Rubens, Aquiles vence Heitor, 1630. Domínio público.
+        Catálogo: Cinemeta.
       </footer>
     </Page>
   );

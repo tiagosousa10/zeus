@@ -2,7 +2,7 @@
 
 Todas as imagens foram redimensionadas (máx. 2400 px no lado maior), convertidas para sRGB e codificadas em WebP (qualidade 80); cada uma tem uma miniatura `<slot>-thumb.webp` com 600 px no lado maior. A licença foi confirmada na página de origem de cada ficheiro em 2026-11-11.
 
-Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, `medusa` e `ulisses` foram geradas por IA; as restantes são domínio público ou CC0.
+Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, `medusa` e `ulisses` foram geradas por IA; `aquiles` e `icaro` foram fornecidas pelo utilizador; as restantes são domínio público ou CC0.
 
 ## batalha
 - **Obra:** Léonidas aux Thermopyles (Leónidas nas Termópilas)
@@ -60,14 +60,10 @@ Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, 
 - **Foco:** Ulisses a ≈78 % x, 25 % y; esquerda é mar escuro para texto; `object-position: 70% 35%`.
 
 ## icaro
-- **Obra:** The Lament for Icarus (O lamento por Ícaro)
-- **Artista:** Herbert James Draper
-- **Data:** 1898
-- **Instituição:** Tate, Londres (N01679)
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Herbert_Draper_-_The_Lament_for_Icarus_-_Google_Art_Project.jpg
-- **Licença:** domínio público (PD-Art; Google Art Project)
-- **Dimensões finais:** 2029 × 2400
-- **Foco:** o corpo de Ícaro está no centro (≈40 % x, 45 % y), entre grandes asas castanhas; há uma faixa dourada no topo e a zona inferior esquerda é escura; contém nudez.
+- **Imagem:** Ícaro de asas abertas diante do sol, sobre o mar e as falésias.
+- **Origem:** fornecida pelo utilizador em 2026-11-12 (imagem gerada por IA, estilo pintura; tem marca de água no canto inferior direito, fora do recorte).
+- **Dimensões finais:** 1024 × 1024 (não ampliada)
+- **Foco:** figura ao centro (≈50 % x, 45 % y).
 
 ## medusa
 - **Imagem:** retrato de Medusa com serpentes realistas, fundo preto puro.
@@ -76,14 +72,10 @@ Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, 
 - **Foco:** rosto ao centro (≈50 % x, 45 % y); fundo preto, dispensa máscara circular dura.
 
 ## aquiles
-- **Obra:** Achille vainqueur d'Hector (Aquiles vence Heitor)
-- **Artista:** Peter Paul Rubens
-- **Data:** 1630
-- **Instituição:** Musée des Beaux-Arts de Pau (887.7.2)
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Peter_Paul_Rubens_-_Achille_vainqueur_d%27Hector_01.jpg
-- **Licença:** domínio público (PD-old; fotografia de Tylwyth Eldar, 2018)
-- **Dimensões finais:** 2400 × 2060
-- **Foco:** duelo no centro (≈45 % x, 45 % y), com Atena no centro-superior e moldura arquitectónica pintada nas laterais; é uma fotografia de sala, com algum reflexo do verniz.
+- **Imagem:** guerreiro de bronze com lança e escudo na praia, Tróia a arder ao fundo.
+- **Origem:** fornecida pelo utilizador em 2026-11-12 (imagem gerada por IA).
+- **Dimensões finais:** 716 × 1024 (retrato; não ampliada)
+- **Foco:** rosto a ≈52 % x, 13 % y; `object-position: 50% 8%` na cortina do Cinema.
 
 ## capacete
 - **Obra:** Bronze helmet of the Corinthian type (Capacete coríntio)
