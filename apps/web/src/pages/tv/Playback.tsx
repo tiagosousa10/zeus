@@ -1,6 +1,9 @@
+import { ZeusLoader } from "../../components/ZeusLoader";
+import { PlaybackRecovery } from "./recovery";
+import { formatTime } from "../../lib/catalog";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 import { api } from "../../lib/api";
 import { useTV } from "./state";
 import { Modal, ownsModalInteraction } from "./ui";
@@ -36,6 +39,10 @@ function PlaybackView() {
   const [error, setError] = useState(""),
     [attempt, setAttempt] = useState(0),
     [visible, setVisible] = useState(true),
+    [loading, setLoading] = useState(true),
+    [retrying, setRetrying] = useState(0),
+    [paused, setPaused] = useState(false),
+    [channelsOpen, setChannelsOpen] = useState(false),
     [guideOpen, setGuideOpen] = useState(false),
     [tracks, setTracks] = useState(false),
     [page, setPage] = useState<number | null>(null),
@@ -48,6 +55,11 @@ function PlaybackView() {
     total = useRef(duration),
     timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     saveRef = useRef<(element?: HTMLVideoElement | null) => void>(() => {});
+  const failure = useRef<() => void>(() => {});
+  const [recovery] = useState(
+    () => new PlaybackRecovery(() => setAttempt((x) => x + 1)),
+  );
+  useEffect(() => () => recovery.dispose(), [recovery]);
   const isLive = target.section === "live";
   const dock = useQuery({
     queryKey: [
@@ -144,9 +156,71 @@ function PlaybackView() {
     let disposed = false,
       destroy = () => {};
     setError("");
+    setLoading(true);
+    setAudio([]);
+    setCaptions([]);
     const v = video.current!;
     const startController = new AbortController();
     requestLifetime.current = startController;
+    let watchdog: ReturnType<typeof setTimeout>;
+    let failed = false;
+    const fail = () => {
+      if (disposed || failed) return;
+      failed = true;
+      startController.abort();
+      clearTimeout(watchdog);
+      setLoading(false);
+      destroy();
+      destroy = () => {};
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+      if (session.current) {
+        const old = session.current;
+        session.current = null;
+        void serializeStart(() => stopToken(old));
+      }
+      if (isLive && recovery.fail()) {
+        setRetrying(recovery.count);
+        setError("");
+      } else {
+        setRetrying(0);
+        setError(
+          isLive
+            ? "O canal não respondeu após cinco novas tentativas. Escolhe outro canal ou tenta novamente."
+            : "Não foi possível reproduzir. Tenta de novo.",
+        );
+      }
+    };
+    failure.current = fail;
+    const waiting = () => {
+      if (disposed || failed) return;
+      setLoading(true);
+      clearTimeout(watchdog);
+      watchdog = setTimeout(fail, 20000);
+    };
+    const playing = () => {
+      if (disposed || failed) return;
+      clearTimeout(watchdog);
+      recovery.playing();
+      setLoading(false);
+      setRetrying(0);
+      setError("");
+    };
+    let lastTime = -1;
+    const progress = () => {
+      if (v.currentTime > lastTime && !v.paused) {
+        lastTime = v.currentTime;
+        playing();
+      }
+    };
+    const pause = () => clearTimeout(watchdog);
+    v.addEventListener("waiting", waiting);
+    v.addEventListener("playing", playing);
+    v.addEventListener("pause", pause);
+    v.addEventListener("stalled", waiting);
+    v.addEventListener("timeupdate", progress);
+    watchdog = setTimeout(fail, 20000);
     void serializeStart(async () => {
       if (disposed) return;
       const s = await api<PlaybackSession>(listPath(listId) + "/play", {
@@ -158,7 +232,7 @@ function PlaybackView() {
           ...(target.episodeId ? { episodeId: target.episodeId } : {}),
         }),
       });
-      if (disposed) {
+      if (disposed || failed) {
         await stopToken(s);
         return;
       }
@@ -170,6 +244,8 @@ function PlaybackView() {
       base.current = s.remux ? start : 0;
       const url = s.url + (s.remux && start ? `?t=${start}` : "");
       if (s.type === "hls" && !v.canPlayType("application/vnd.apple.mpegurl")) {
+        const { default: Hls } = await import("hls.js");
+        if (disposed || failed) return;
         const h = new Hls();
         hls.current = h;
         const updateTracks = () => {
@@ -194,14 +270,13 @@ function PlaybackView() {
           h.destroy();
         };
         h.on(Hls.Events.ERROR, (_, d) => {
-          if (d.fatal && !disposed)
-            setError("Não foi possível reproduzir. Tenta de novo.");
+          if (d.fatal && !disposed) fail();
         });
         h.loadSource(url);
         h.attachMedia(v);
       } else if (s.type === "mpegts") {
         const { default: m } = await import("mpegts.js");
-        if (disposed) return;
+        if (disposed || failed) return;
         if (!m.isSupported())
           throw new Error("Este navegador não suporta este canal.");
         const p = m.createPlayer({ type: "mpegts", isLive: true, url });
@@ -211,8 +286,7 @@ function PlaybackView() {
           p.destroy();
         };
         p.on(m.Events.ERROR, () => {
-          if (!disposed)
-            setError("Não foi possível reproduzir. Tenta de novo.");
+          if (!disposed) fail();
         });
         p.attachMediaElement(v);
         p.load();
@@ -226,13 +300,8 @@ function PlaybackView() {
           { once: true },
         );
       void v.play().catch(() => {});
-    }).catch((e) => {
-      if (!disposed)
-        setError(
-          e instanceof Error
-            ? e.message
-            : "Não foi possível iniciar a reprodução.",
-        );
+    }).catch(() => {
+      if (!disposed) fail();
     });
     const interval = setInterval(() => saveRef.current(), 10000);
     const leavePage = () => {
@@ -245,13 +314,20 @@ function PlaybackView() {
       disposed = true;
       startController.abort();
       clearInterval(interval);
+      clearTimeout(watchdog);
+      v.removeEventListener("waiting", waiting);
+      v.removeEventListener("playing", playing);
+      v.removeEventListener("pause", pause);
+      v.removeEventListener("stalled", waiting);
+      v.removeEventListener("timeupdate", progress);
       window.removeEventListener("pagehide", leavePage);
       destroy();
       v.pause();
       v.removeAttribute("src");
       v.load();
       if (session.current) {
-        void stopToken(session.current);
+        const old = session.current;
+        void serializeStart(() => stopToken(old));
         session.current = null;
       }
     };
@@ -365,22 +441,23 @@ function PlaybackView() {
       title={target.title || "Reprodução"}
       onClose={tv.stop}
       className="tv-player-modal"
+      fullViewport
     >
       <div
         ref={root}
         className={`tv-player ${visible ? "" : "tv-controls-hidden"}`}
-        onPointerMove={wake}
-        onPointerDown={wake}
       >
         <video
           ref={video}
           autoPlay
           playsInline
           controls={tracks}
-          onPause={() => saveRef.current()}
-          onError={() =>
-            setError("Não foi possível reproduzir. Tenta de novo.")
-          }
+          onPlay={() => setPaused(false)}
+          onPause={() => {
+            setPaused(true);
+            saveRef.current();
+          }}
+          onError={() => failure.current()}
           onTimeUpdate={() => {
             const v = video.current!;
             setPosition(playbackPosition(v.currentTime, base.current));
@@ -394,7 +471,29 @@ function PlaybackView() {
             setDuration(d);
           }}
         />
-        <div className="tv-player-top tv-player-controls">
+        <button
+          className="player-menu-toggle"
+          aria-label="Controlos do leitor"
+          aria-expanded={visible}
+          onClick={() => {
+            clearTimeout(timer.current);
+            setVisible((x) => !x);
+          }}
+        >
+          ☷ <span>Controlos</span>
+        </button>
+        {(loading || retrying > 0) && !error && (
+          <div className="tv-player-loading">
+            <ZeusLoader
+              label={
+                retrying
+                  ? `A tentar novamente · ${retrying}/5`
+                  : "A ligar ao vídeo…"
+              }
+            />
+          </div>
+        )}
+        <div className="tv-player-top tv-player-controls" inert={!visible}>
           <div className="tv-programme-capsule">
             {isLive && <span className="tv-live-dot" />}
             <strong>{target.title || "Reprodução"}</strong>
@@ -410,7 +509,7 @@ function PlaybackView() {
             {nextProgramme && <span>A seguir · {nextProgramme.title}</span>}
             {programme && (
               <>
-                <span>{programme.title}</span>
+                <span className="tv-now-programme">{programme.title}</span>
                 <span
                   className="tv-programme-ring"
                   style={{
@@ -423,6 +522,14 @@ function PlaybackView() {
           <div className="tv-toolbar">
             {isLive && (
               <button onClick={() => setGuideOpen(true)}>Guia do canal</button>
+            )}
+            {isLive && (
+              <button
+                aria-pressed={channelsOpen}
+                onClick={() => setChannelsOpen((x) => !x)}
+              >
+                Canais
+              </button>
             )}
             <button onClick={() => setTracks((x) => !x)}>
               Legendas / Áudio
@@ -446,24 +553,79 @@ function PlaybackView() {
         {error && (
           <div className="tv-player-error" role="alert">
             <p>{error}</p>
-            <button onClick={() => setAttempt((x) => x + 1)}>
+            <button
+              onClick={() => {
+                recovery.reset();
+                setRetrying(0);
+                setAttempt((x) => x + 1);
+              }}
+            >
               Tentar de novo
             </button>
           </div>
         )}
-        <div className="tv-player-bottom tv-player-controls">
+        <div className="tv-player-bottom tv-player-controls" inert={!visible}>
           <div className="tv-toolbar">
             <button
+              aria-label="Reproduzir / Pausa"
               onClick={() => {
                 const v = video.current!;
                 if (v.paused) void v.play().catch(() => {});
                 else v.pause();
               }}
             >
-              Reproduzir / Pausa
+              <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
             </button>
+            {!isLive && (
+              <>
+                <button
+                  aria-label="Recuar 10 segundos"
+                  onClick={() => seek(Math.max(0, position - 10))}
+                >
+                  −10
+                </button>
+                <button
+                  aria-label="Avançar 10 segundos"
+                  onClick={() => seek(Math.min(duration, position + 10))}
+                >
+                  +10
+                </button>
+                <select
+                  aria-label="Velocidade"
+                  defaultValue="1"
+                  onChange={(e) => {
+                    if (video.current)
+                      video.current.playbackRate = Number(e.target.value);
+                  }}
+                >
+                  {[0.5, 1, 1.25, 1.5, 2].map((n) => (
+                    <option key={n} value={n}>
+                      {n}×
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+            {document.pictureInPictureEnabled && (
+              <button
+                aria-label="Janela flutuante"
+                onClick={() => {
+                  void (
+                    document.pictureInPictureElement
+                      ? document.exitPictureInPicture()
+                      : video.current?.requestPictureInPicture()
+                  )?.catch(() =>
+                    setError(
+                      "A janela flutuante não está disponível para este vídeo.",
+                    ),
+                  );
+                }}
+              >
+                ▣
+              </button>
+            )}
             <label>
-              Volume{" "}
+              <span aria-hidden="true">♪</span>{" "}
               <input
                 aria-label="Volume"
                 type="range"
@@ -479,7 +641,7 @@ function PlaybackView() {
           </div>
           {!isLive && duration > 0 && (
             <label className="tv-seek">
-              {Math.floor(position / 60)} / {Math.ceil(duration / 60)} min
+              {formatTime(position)} / {formatTime(duration)}
               <input
                 aria-label="Posição"
                 type="range"
@@ -538,7 +700,7 @@ function PlaybackView() {
               disponibilidade depende do canal e do navegador.
             </p>
           )}
-          {isLive && (
+          {isLive && channelsOpen && (
             <div className="tv-channel-dock">
               <button aria-label="Canal anterior" onClick={() => change(-1)}>
                 ←
@@ -565,7 +727,7 @@ function PlaybackView() {
               </button>
             </div>
           )}
-          {isLive && dock.data && dock.data.total > 48 && (
+          {isLive && channelsOpen && dock.data && dock.data.total > 48 && (
             <div className="tv-toolbar">
               <button
                 disabled={!dock.data?.page}
