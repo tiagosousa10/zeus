@@ -1,0 +1,20 @@
+rules:
+  - id: no-disabled-tls-verification
+    message: Keep TLS certificate verification enabled.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: "{..., rejectUnauthorized: false, ...}"
+  - id: no-eval-external-code
+    message: Do not evaluate strings as code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: no-shell-exec
+    message: Use execFile/spawn with explicit arguments instead of shell execution.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: require('child_process').exec(...)
+      - pattern: require('node:child_process').exec(...)

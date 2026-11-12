@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+[allowlist]
+description = "Generated dependencies and build outputs are not source"
+paths = [
+  '''(^|/)node_modules/''', '''(^|/)dist/''', '''(^|/)build/''',
+  '''(^|/)coverage/''', '''(^|/)\.git/''', '''(^|/)\.history/''',
+  '''(^|/)\.claude/worktrees/''', '''(^|/)\.next/''', '''(^|/)vendor/'''
+]
