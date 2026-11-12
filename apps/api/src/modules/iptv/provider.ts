@@ -20,6 +20,7 @@ export function setProviderFetch(f: typeof safeFetch): void {
 
 async function request(url: string): Promise<Response> {
   const r = await fetcher(url, { timeout: 60_000, maxBytes: 64 * 1024 * 1024 });
+  if (r.status === 401) throw new ProviderError(REFUSED);
   if (!r.ok) throw new ProviderError();
   return r;
 }
@@ -36,20 +37,33 @@ async function guard<T>(load: () => Promise<T>): Promise<T> {
 const xtream = async (list: IPTVList, action: string, params?: Record<string, string>): Promise<unknown> =>
   (await request(xtreamUrl(list, action, params))).json();
 
-const refused = (v: unknown): boolean =>
-  !!v && typeof v === "object" && !Array.isArray(v) && (v as { user_info?: { auth?: unknown } }).user_info?.auth === 0;
+const refused = (v: unknown): boolean => {
+  const auth = (v as { user_info?: { auth?: unknown } } | null)?.user_info?.auth;
+  return auth === 0 || auth === "0";
+};
+
+async function xtreamList(list: IPTVList, action: string): Promise<unknown[]> {
+  const v = await xtream(list, action);
+  if (Array.isArray(v)) return v;
+  throw new ProviderError(refused(v) ? REFUSED : undefined);
+}
+
+async function loadCatalog(list: IPTVList, now: number): Promise<TVCatalog> {
+  if (list.type === "m3u") return normalizeM3U(await (await request(list.url)).text(), list.url, now);
+  const liveCategories = await xtreamList(list, "get_live_categories");
+  const live = await xtreamList(list, "get_live_streams");
+  const vodCategories = await xtreamList(list, "get_vod_categories");
+  const vod = await xtreamList(list, "get_vod_streams");
+  const seriesCategories = await xtreamList(list, "get_series_categories");
+  const series = await xtreamList(list, "get_series");
+  return normalizeXtreamCatalog({ liveCategories, live, vodCategories, vod, seriesCategories, series }, now);
+}
 
 export function fetchCatalog(list: IPTVList, now: number): Promise<TVCatalog> {
   return guard(async () => {
-    if (list.type === "m3u") return normalizeM3U(await (await request(list.url)).text(), list.url, now);
-    const liveCategories = await xtream(list, "get_live_categories");
-    if (refused(liveCategories)) throw new ProviderError(REFUSED);
-    const live = await xtream(list, "get_live_streams");
-    const vodCategories = await xtream(list, "get_vod_categories");
-    const vod = await xtream(list, "get_vod_streams");
-    const seriesCategories = await xtream(list, "get_series_categories");
-    const series = await xtream(list, "get_series");
-    return normalizeXtreamCatalog({ liveCategories, live, vodCategories, vod, seriesCategories, series }, now);
+    const catalog = await loadCatalog(list, now);
+    if (!catalog.live.items.length && !catalog.movie.items.length && !catalog.series.items.length) throw new ProviderError();
+    return catalog;
   });
 }
 

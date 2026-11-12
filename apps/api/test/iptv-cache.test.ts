@@ -72,3 +72,28 @@ test("M3U details come from the catalog without extra requests", async () => {
   assert.deepEqual(await getMovie("u8", m3u, base.id), { ...base, cast: [] });
   assert.equal(f.calls.length, 1);
 });
+const REFUSED = /recusou o utilizador ou a palavra-passe/;
+const UNAVAILABLE = /O fornecedor da lista não respondeu/;
+test("auth \"0\" and HTTP 401 are credential errors", async () => {
+  setProviderFetch(fakeFetch(() => ({ user_info: { auth: "0" } })));
+  await assert.rejects(getCatalog("u9", list), REFUSED);
+  setProviderFetch(fakeFetch(() => new Response("", { status: 401 })));
+  await assert.rejects(getCatalog("u10", list), REFUSED);
+});
+test("every Xtream list payload must be an array", async () => {
+  const refusedLater = (url: URL) => (url.searchParams.get("action") === "get_vod_streams" ? { user_info: { auth: 0 } } : xtreamRoutes(url));
+  setProviderFetch(fakeFetch(refusedLater));
+  await assert.rejects(getCatalog("u11", list), REFUSED);
+  const objectLater = (url: URL) => (url.searchParams.get("action") === "get_series" ? { error: "x" } : xtreamRoutes(url));
+  setProviderFetch(fakeFetch(objectLater));
+  await assert.rejects(getCatalog("u12", list), UNAVAILABLE);
+});
+test("an empty catalog is an error and is not cached", async () => {
+  setProviderFetch(fakeFetch(() => []));
+  await assert.rejects(getCatalog("u13", list), UNAVAILABLE);
+  const f = fakeFetch(xtreamRoutes); setProviderFetch(f);
+  assert.equal((await getCatalog("u13", list)).live.items.length, 4);
+  const m3u = { id: "l3", name: "M3U", type: "m3u" as const, url: "https://tv.example.test/empty.m3u" };
+  setProviderFetch(fakeFetch(() => new Response("#EXTM3U\n")));
+  await assert.rejects(getCatalog("u13", m3u), UNAVAILABLE);
+});
