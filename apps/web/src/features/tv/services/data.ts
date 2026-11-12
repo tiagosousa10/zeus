@@ -80,13 +80,21 @@ export const tvAPI = {
         }),
       { signal },
     ),
-  start: (id: string, target: PlaybackTarget, signal?: AbortSignal) =>
+  start: (
+    id: string,
+    target: PlaybackTarget,
+    signal?: AbortSignal,
+    options: { compatibility?: boolean } = {},
+  ) =>
     api<PlaybackSession>(listPath(id) + "/play", {
       method: "POST",
       signal,
       body: JSON.stringify({
         section: target.section,
         id: target.id,
+        ...(target.section === "live" && options.compatibility
+          ? { compatibility: true }
+          : {}),
         ...(target.episodeId ? { episodeId: target.episodeId } : {}),
       }),
     }),

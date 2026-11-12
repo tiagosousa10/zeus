@@ -36,6 +36,7 @@ function PlaybackView() {
     [captions, setCaptions] = useState<{ id: number; label: string }[]>([]);
   const [error, setError] = useState(""),
     [attempt, setAttempt] = useState(0),
+    [compatibility, setCompatibility] = useState(false),
     [visible, setVisible] = useState(true),
     [loading, setLoading] = useState(true),
     [retrying, setRetrying] = useState(0),
@@ -161,6 +162,8 @@ function PlaybackView() {
     const fail = () => {
       if (disposed || failed) return;
       failed = true;
+      const useCompatibility =
+        isLive && !compatibility && session.current?.compatibilityAvailable;
       startController.abort();
       clearTimeout(watchdog);
       setLoading(false);
@@ -174,7 +177,12 @@ function PlaybackView() {
         session.current = null;
         void serializeStart(() => stopToken(old));
       }
-      if (isLive && recovery.fail()) {
+      if (useCompatibility) {
+        setRetrying(0);
+        setError("");
+        setLoading(true);
+        setCompatibility(true);
+      } else if (isLive && recovery.fail()) {
         setRetrying(recovery.count);
         setError("");
       } else {
@@ -217,7 +225,9 @@ function PlaybackView() {
     watchdog = setTimeout(fail, 20000);
     void serializeStart(async () => {
       if (disposed) return;
-      const s = await tvAPI.start(listId, target, startController.signal);
+      const s = await tvAPI.start(listId, target, startController.signal, {
+        compatibility,
+      });
       if (disposed || failed) {
         await stopToken(s);
         return;
@@ -225,40 +235,46 @@ function PlaybackView() {
       session.current = s;
       if (!s.url.startsWith("/api/iptv/play/"))
         throw new Error("Endereço de reprodução inválido.");
-      const start = resumePosition();
+      const start = isLive ? 0 : resumePosition();
       base.current = s.remux ? start : 0;
       const url = s.url + (s.remux && start ? `?t=${start}` : "");
-      if (s.type === "hls" && !v.canPlayType("application/vnd.apple.mpegurl")) {
+      if (s.type === "hls") {
         const { default: Hls } = await import("hls.js");
         if (disposed || failed) return;
-        const h = new Hls();
-        hls.current = h;
-        const updateTracks = () => {
-          setAudio(
-            h.audioTracks.map((track, id) => ({
-              id,
-              label: track.name || track.lang || `Faixa ${id + 1}`,
-            })),
-          );
-          setCaptions(
-            h.subtitleTracks.map((track, id) => ({
-              id,
-              label: track.name || track.lang || `Legenda ${id + 1}`,
-            })),
-          );
-        };
-        h.on(Hls.Events.MANIFEST_PARSED, updateTracks);
-        h.on(Hls.Events.AUDIO_TRACKS_UPDATED, updateTracks);
-        h.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, updateTracks);
-        destroy = () => {
-          hls.current = null;
-          h.destroy();
-        };
-        h.on(Hls.Events.ERROR, (_, d) => {
-          if (d.fatal && !disposed) fail();
-        });
-        h.loadSource(url);
-        h.attachMedia(v);
+        // Electron advertises native HLS as "maybe" even for channels it cannot decode.
+        // Use MSE when available and retain native HLS for browsers without it.
+        if (!Hls.isSupported()) {
+          v.src = url;
+        } else {
+          const h = new Hls();
+          hls.current = h;
+          const updateTracks = () => {
+            setAudio(
+              h.audioTracks.map((track, id) => ({
+                id,
+                label: track.name || track.lang || `Faixa ${id + 1}`,
+              })),
+            );
+            setCaptions(
+              h.subtitleTracks.map((track, id) => ({
+                id,
+                label: track.name || track.lang || `Legenda ${id + 1}`,
+              })),
+            );
+          };
+          h.on(Hls.Events.MANIFEST_PARSED, updateTracks);
+          h.on(Hls.Events.AUDIO_TRACKS_UPDATED, updateTracks);
+          h.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, updateTracks);
+          destroy = () => {
+            hls.current = null;
+            h.destroy();
+          };
+          h.on(Hls.Events.ERROR, (_, d) => {
+            if (d.fatal && !disposed) fail();
+          });
+          h.loadSource(url);
+          h.attachMedia(v);
+        }
       } else if (s.type === "mpegts") {
         const { default: m } = await import("mpegts.js");
         if (disposed || failed) return;
@@ -316,7 +332,7 @@ function PlaybackView() {
         session.current = null;
       }
     };
-  }, [listId, attempt, isLive, recovery, target]);
+  }, [listId, attempt, compatibility, isLive, recovery, target]);
   const wake = () => {
     setVisible(true);
     clearTimeout(timer.current);
@@ -474,7 +490,9 @@ function PlaybackView() {
               label={
                 retrying
                   ? `A tentar novamente · ${retrying}/5`
-                  : "A ligar ao vídeo…"
+                  : compatibility
+                    ? "A preparar vídeo compatível…"
+                    : "A ligar ao vídeo…"
               }
             />
           </div>

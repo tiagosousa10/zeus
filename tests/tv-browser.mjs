@@ -1079,6 +1079,15 @@ try {
     "cancelled start never reopens old target",
   );
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  // Electron can advertise native HLS without actually decoding the channel.
+  await page.evaluate(() => {
+    const original = HTMLMediaElement.prototype.canPlayType;
+    HTMLMediaElement.prototype.canPlayType = function (type) {
+      return type === "application/vnd.apple.mpegurl"
+        ? "maybe"
+        : original.call(this, type);
+    };
+  });
   const decoded = [];
   for (const mode of ["mp4", "hls", "mpegts", "remux"]) {
     fixture.setMode(mode);
@@ -1103,9 +1112,63 @@ try {
       0,
       "red only live",
     );
+    if (mode === "hls")
+      assert.ok(
+        await page
+          .locator("video")
+          .evaluate((v) => v.currentSrc.startsWith("blob:")),
+        "HLS uses MSE despite native maybe support",
+      );
     decoded.push(mode);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
   }
+  fixture.setMode("mp4");
+  fixture.setCompatibilityAvailable(true);
+  const startsBeforeCompatibility = fixture.starts.length;
+  await page.evaluate(() =>
+    window.__tvFixture.play({
+      section: "live",
+      id: "compatible",
+      title: "Canal compatível",
+      start: 30,
+    }),
+  );
+  await page.waitForFunction(
+    () => document.querySelector("video")?.videoWidth === 320,
+  );
+  const requestsBeforeFailure = fixture.requests.length;
+  await page
+    .locator("video")
+    .evaluate((v) => v.dispatchEvent(new Event("error")));
+  await page.waitForFunction(
+    () => document.querySelector("video")?.videoWidth === 320,
+  );
+  await page.waitForFunction(
+    () => document.querySelector("video")?.currentTime > 0.3,
+  );
+  assert.equal(
+    fixture.starts.length,
+    startsBeforeCompatibility + 2,
+    "one compatibility fallback",
+  );
+  assert.equal(fixture.starts.at(-1).compatibility, true);
+  const recoveryRequests = fixture.requests.slice(requestsBeforeFailure);
+  assert.ok(
+    recoveryRequests
+      .filter((r) => r.path.endsWith("/remux"))
+      .every((r) => !r.query),
+    "live compatibility never seeks to a saved position",
+  );
+  const stopIndex = recoveryRequests.findIndex((r) => r.path.endsWith("/stop"));
+  const startIndex = recoveryRequests.findIndex((r) =>
+    r.path.endsWith("/play"),
+  );
+  assert.ok(
+    stopIndex >= 0 && startIndex > stopIndex,
+    "old connection closes before compatible start",
+  );
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  fixture.setCompatibilityAvailable(false);
   assert.ok(fixture.stops.length >= 5);
   assert.ok(fixture.starts.every((s) => s.id));
   assert.ok(
@@ -1137,6 +1200,8 @@ try {
       episodes: true,
       guideRetry: true,
       playbackRetry: true,
+      liveCompatibilityFallback: true,
+      hlsMsePreference: true,
       globalSearchScope: true,
       abandonedStart: true,
       search50000: true,
