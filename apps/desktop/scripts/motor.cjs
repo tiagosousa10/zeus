@@ -1,5 +1,5 @@
-require("./local-config.cjs").ensureLocalConfig();
-const { startEngine } = require("../engine");
+require("../src/local-config.cjs").ensureLocalConfig();
+const { startEngine } = require("../src/engine");
 const motor = startEngine({
   port: 11471,
   token: process.env.ZEUS_MOTOR_TOKEN,

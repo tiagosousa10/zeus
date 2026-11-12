@@ -27,6 +27,7 @@
     "apps/api/src",
     "scripts/*.ts",
     "scripts/*.mts",
-    "tests/*.ts"
+    "tests/*.ts",
+    "apps/desktop/test/*.ts"
   ]
 }

@@ -8,7 +8,7 @@ const { join } = require("node:path");
 const { homedir } = require("node:os");
 const { randomBytes } = require("node:crypto");
 function ensureLocalConfig({ loadEnv = true } = {}) {
-  const envFile = join(__dirname, "..", ".env");
+  const envFile = join(__dirname, "..", "..", "..", ".env");
   if (loadEnv && process.loadEnvFile && existsSync(envFile))
     process.loadEnvFile(envFile);
   const dir =

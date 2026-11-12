@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { once, EventEmitter } from "node:events";
 const require = createRequire(import.meta.url);
-const { startEngine } = require("../engine.js");
+const { startEngine } = require("../src/engine.js");
 test("loading the idle Motor does not load WebTorrent", () => {
   assert.equal(
     Object.keys(require.cache).some((path) => path.includes("/webtorrent/")),

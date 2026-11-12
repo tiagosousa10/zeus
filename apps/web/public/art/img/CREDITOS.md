@@ -101,4 +101,4 @@ Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, 
 Imagem original gerada por IA para esta aplicação: busto clássico de Zeus em mármore, composição panorâmica. Exportada para WebP a 1672 × 941. O ícone usa o original local fornecido `images-zeus/zeus-4.png` (1024 × 1024), também usado no retrato zeus-4.
 
 ## Ícone macOS — 1.2.5
-A imagem original `images-zeus/zeus-4.png` é preservada. `scripts/build-icon.mjs` aplica por código uma máscara com cantos contínuos, margem transparente e contorno subtil para gerar `build/icon.png` (1024 × 1024), usado no Dock e no pacote macOS.
+A imagem original `images-zeus/zeus-4.png` é preservada. `apps/desktop/scripts/build-icon.mjs` aplica por código uma máscara com cantos contínuos, margem transparente e contorno subtil para gerar `apps/desktop/build/icon.png` (1024 × 1024), usado no Dock e no pacote macOS.

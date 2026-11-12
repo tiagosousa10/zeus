@@ -1,31 +1,31 @@
 const release = process.env.ZEUS_RELEASE === "1";
+// Paths are relative to the repo root: the Electron app (package.json "main") lives there.
 module.exports = {
   appId: "pt.zeus.app",
   productName: "Zeus",
   npmRebuild: false,
   artifactName: "Zeus-${version}-${arch}.${ext}",
-  directories: { output: "dist" },
+  directories: {
+    output: "apps/desktop/dist",
+    buildResources: "apps/desktop/build",
+  },
   files: [
-    "main.js",
-    "engine.js",
-    "engine-process.js",
-    "preload.js",
-    "build/icon.png",
+    "apps/desktop/src/**/*",
+    "apps/desktop/build/icon.png",
     "package.json",
     "apps/web/dist/**/*",
     "apps/api/dist/**/*",
-    "scripts/local-config.cjs",
     "!**/*.map",
   ],
   asarUnpack: ["node_modules/ffmpeg-static/**"],
   forceCodeSigning: release,
   mac: {
     category: "public.app-category.entertainment",
-    icon: "build/icon.png",
+    icon: "apps/desktop/build/icon.png",
     target: ["dmg"],
     hardenedRuntime: true,
-    entitlements: "scripts/entitlements.mac.plist",
-    entitlementsInherit: "scripts/entitlements.mac.plist",
+    entitlements: "apps/desktop/scripts/entitlements.mac.plist",
+    entitlementsInherit: "apps/desktop/scripts/entitlements.mac.plist",
     ...(release ? { notarize: true } : { identity: null, notarize: false }),
   },
   dmg: {

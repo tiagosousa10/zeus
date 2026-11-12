@@ -19,7 +19,7 @@ npm ci
 npm start
 ```
 
-`npm start` compila e abre a janela Electron. `iniciar.command` permite duplo clique na pasta do projecto. Para trabalhar no código com recarregamento automático:
+`npm start` compila e abre a janela Electron. `apps/desktop/iniciar.command` permite arrancar com duplo clique. Para trabalhar no código com recarregamento automático:
 
 ```sh
 npm run dev
@@ -100,7 +100,7 @@ npm run dist:arm    # num Mac Apple Silicon
 npm run dist:intel  # num Mac Intel
 ```
 
-Resultado: `dist/Zeus-1.2.6-arm64.dmg` ou `dist/Zeus-1.2.6-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** gera ambos no GitHub Actions, testa os pacotes e guarda os DMG como artefactos; não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
+Resultado: `apps/desktop/dist/Zeus-1.2.6-arm64.dmg` ou `apps/desktop/dist/Zeus-1.2.6-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** gera ambos no GitHub Actions, testa os pacotes e guarda os DMG como artefactos; não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
 
 ## Interface e reprodução — 1.2.1
 

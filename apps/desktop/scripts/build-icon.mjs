@@ -1,10 +1,10 @@
 // Rebuild the macOS icon without altering the original Zeus artwork.
-// Run manually with `node scripts/build-icon.mjs` (requires local Chrome).
+// Run manually with `node apps/desktop/scripts/build-icon.mjs` (requires local Chrome).
 import { chromium } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 
 const source = await readFile(
-  new URL("../images-zeus/zeus-4.png", import.meta.url),
+  new URL("../../../images-zeus/zeus-4.png", import.meta.url),
 );
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 try {

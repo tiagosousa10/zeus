@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 async function main() {
-  require("./local-config.cjs").ensureLocalConfig();
+  require("../apps/desktop/src/local-config.cjs").ensureLocalConfig();
   const children: ChildProcess[] = [];
   function run(cmd: string, args: string[]) {
     const p = spawn(cmd, args, { stdio: "inherit" });
@@ -23,7 +23,7 @@ async function main() {
     });
     console.log("Motor local já disponível.");
   } catch {
-    run(process.execPath, ["scripts/motor.cjs"]);
+    run(process.execPath, ["apps/desktop/scripts/motor.cjs"]);
   }
   run(process.execPath, [
     "node_modules/vite/bin/vite.js",

@@ -185,7 +185,7 @@ try {
         process.execPath,
         [
           "-e",
-          `const t=performance.now();require('./engine.js');console.log(JSON.stringify({milliseconds:performance.now()-t,rss:process.memoryUsage().rss,heap:process.memoryUsage().heapUsed,modules:Object.keys(require.cache).length,torrentLoaded:Object.keys(require.cache).some(p=>p.includes('/webtorrent/'))}));`,
+          `const t=performance.now();require('./apps/desktop/src/engine.js');console.log(JSON.stringify({milliseconds:performance.now()-t,rss:process.memoryUsage().rss,heap:process.memoryUsage().heapUsed,modules:Object.keys(require.cache).length,torrentLoaded:Object.keys(require.cache).some(p=>p.includes('/webtorrent/'))}));`,
         ],
         { encoding: "utf8" },
       ),

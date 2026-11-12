@@ -6,7 +6,7 @@ import {
   type Snapshot,
 } from "../apps/api/src/db/import-snapshot.js";
 const require = createRequire(import.meta.url);
-require("./local-config.cjs").ensureLocalConfig();
+require("../apps/desktop/src/local-config.cjs").ensureLocalConfig();
 const { config } = await import("../apps/api/src/lib/config.js");
 const source =
   process.env.ZEUS_LEGACY_DATABASE_URL ||

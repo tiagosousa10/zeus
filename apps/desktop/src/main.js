@@ -14,6 +14,7 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const root = path.join(__dirname, "..", "..", "..");
 
 app.setName("Zeus");
 nativeTheme.themeSource = "dark";
@@ -203,7 +204,7 @@ if (primary)
   app.whenReady().then(async () => {
     try {
       // A packaged app uses its saved profile, never a .env from the Finder's working directory.
-      require("./scripts/local-config.cjs").ensureLocalConfig({
+      require("./local-config.cjs").ensureLocalConfig({
         loadEnv: !app.isPackaged,
       });
       if (
@@ -233,7 +234,7 @@ if (primary)
       const port = await availablePort();
       frontendURL = `http://127.0.0.1:${port}`;
       apiProcess = utilityProcess.fork(
-        path.join(__dirname, "apps/api/dist/index.mjs"),
+        path.join(root, "apps/api/dist/index.mjs"),
         [],
         {
           env: {
@@ -241,7 +242,7 @@ if (primary)
             PORT: String(port),
             ZEUS_WEB_ORIGIN: frontendURL,
             BETTER_AUTH_URL: frontendURL,
-            ZEUS_WEB_DIST: path.join(__dirname, "apps/web/dist"),
+            ZEUS_WEB_DIST: path.join(root, "apps/web/dist"),
             ZEUS_MOTOR_URL: `http://127.0.0.1:${motor.port}`,
             ZEUS_FFMPEG_PATH: resolveFfmpeg() || "",
           },
@@ -277,7 +278,7 @@ if (primary)
 
     try {
       const icon = nativeImage.createFromPath(
-        path.join(__dirname, "build", "icon.png"),
+        path.join(__dirname, "..", "build", "icon.png"),
       );
       if (!icon.isEmpty() && app.dock) app.dock.setIcon(icon);
     } catch (e) {}

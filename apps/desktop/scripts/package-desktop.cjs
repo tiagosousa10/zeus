@@ -1,4 +1,5 @@
 const { spawnSync } = require("node:child_process");
+const { join } = require("node:path");
 const args = process.argv.slice(2);
 const arch = args.includes("--x64")
   ? "x64"
@@ -35,8 +36,10 @@ const result = spawnSync(
   process.execPath,
   [
     require.resolve("electron-builder/cli.js"),
+    "--projectDir",
+    join(__dirname, "..", "..", ".."),
     "--config",
-    "electron-builder.cjs",
+    join(__dirname, "..", "electron-builder.cjs"),
     "--mac",
     "dmg",
     `--${arch}`,

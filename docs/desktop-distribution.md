@@ -39,13 +39,13 @@ npm run dist:arm     # Apple Silicon
 # ou npm run dist:intel num Mac Intel
 ```
 
-O resultado fica em `dist/Zeus-<versão>-<arquitectura>.dmg`. O frontend/API já estão compilados; Node/Electron e FFmpeg são incluídos. As dependências exclusivas do frontend e de migração são de desenvolvimento. O empacotamento recusa gerar outra arquitectura no mesmo host para evitar incluir um FFmpeg incompatível.
+O resultado fica em `apps/desktop/dist/Zeus-<versão>-<arquitectura>.dmg`. O frontend/API já estão compilados; Node/Electron e FFmpeg são incluídos. As dependências exclusivas do frontend e de migração são de desenvolvimento. O empacotamento recusa gerar outra arquitectura no mesmo host para evitar incluir um FFmpeg incompatível.
 
 Para testar o artefacto:
 
 ```sh
-ZEUS_PACKAGED_APP=dist/mac-arm64/Zeus.app npm run test:desktop
-# Intel: dist/mac/Zeus.app
+ZEUS_PACKAGED_APP=apps/desktop/dist/mac-arm64/Zeus.app npm run test:desktop
+# Intel: apps/desktop/dist/mac/Zeus.app
 ```
 
 O teste cria um perfil temporário, confirma primeiro arranque, conta persistida após reinício, catálogo automático e encerramento dos serviços. O PATH da aplicação exclui instalações externas de Node e Docker. Não toca no perfil real.
