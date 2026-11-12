@@ -39,6 +39,17 @@ type Handler = (
   clearDeadline: () => void,
 ) => void;
 
+let addressCheck = isPublicAddress;
+/** Test-only: lets tests reach a loopback server; returns a restore function. */
+export function setAddressCheck(fn: (address: string) => boolean): () => void {
+  addressCheck = fn;
+  return () => {
+    addressCheck = isPublicAddress;
+  };
+}
+
+const nullBodyStatuses = new Set([204, 205, 304]);
+
 /** Resolve every redirect, reject private networks and pin the checked IP to prevent DNS rebinding. */
 async function guardedGet(
   input: string,
@@ -61,7 +72,7 @@ async function guardedGet(
     const addresses = isIP(host)
       ? [{ address: host, family: isIP(host) }]
       : await lookup(host, { all: true });
-    if (!addresses.length || addresses.some((a) => !isPublicAddress(a.address)))
+    if (!addresses.length || addresses.some((a) => !addressCheck(a.address)))
       throw new Error("Endereço privado ou reservado não permitido.");
     const chosen = addresses[0];
     const response = await new Promise<Response>((resolve, reject) => {
@@ -146,6 +157,7 @@ export function safeFetch(
   } = {},
 ): Promise<Response> {
   return guardedGet(input, options, (res, status, resolve, reject) => {
+    if (nullBodyStatuses.has(status)) res.resume();
     const chunks: Buffer[] = [];
     let bytes = 0;
     res.on("data", (chunk: Buffer) => {
@@ -163,12 +175,18 @@ export function safeFetch(
         "content-range",
         "accept-ranges",
       ]);
-      resolve(
-        new Response(
-          status === 204 ? null : new Uint8Array(Buffer.concat(chunks)),
-          { status, headers },
-        ),
-      );
+      try {
+        resolve(
+          new Response(
+            nullBodyStatuses.has(status)
+              ? null
+              : new Uint8Array(Buffer.concat(chunks)),
+            { status, headers },
+          ),
+        );
+      } catch (e) {
+        reject(e);
+      }
     });
   });
 }
@@ -182,7 +200,7 @@ export function safeStream(
     timeout?: number;
   } = {},
 ): Promise<Response> {
-  return guardedGet(input, options, (res, status, resolve, _reject, clearDeadline) => {
+  return guardedGet(input, options, (res, status, resolve, reject, clearDeadline) => {
     clearDeadline();
     const headers = copyHeaders(res, [
       "content-type",
@@ -190,8 +208,18 @@ export function safeStream(
       "content-range",
       "accept-ranges",
     ]);
-    const body = status === 204 ? null : (Readable.toWeb(res) as ReadableStream);
-    if (!body) res.resume();
-    resolve(new Response(body, { status, headers }));
+    const nullBody = nullBodyStatuses.has(status);
+    if (nullBody) res.resume();
+    try {
+      resolve(
+        new Response(nullBody ? null : (Readable.toWeb(res) as ReadableStream), {
+          status,
+          headers,
+        }),
+      );
+    } catch (e) {
+      res.destroy();
+      reject(e);
+    }
   });
 }
