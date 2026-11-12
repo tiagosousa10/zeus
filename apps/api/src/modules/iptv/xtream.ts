@@ -37,6 +37,8 @@ const minutes = (info: Rec): number | undefined => {
   return d ? Number(d[1] ?? 0) * 60 + Number(d[2]) : undefined;
 };
 
+const NO_CATEGORY = "outros";
+
 export function xtreamUrl(
   list: { url: string; username?: string; password?: string },
   action: string,
@@ -83,7 +85,7 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     live.push({
-      id, categoryId: str(r.category_id) ?? "", name, number: num(r.num), logo: str(r.stream_icon), epgId: str(r.epg_channel_id),
+      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, number: num(r.num), logo: str(r.stream_icon), epgId: str(r.epg_channel_id),
       tags: channelTags(name), adult: isAdult(name),
     });
   }
@@ -93,7 +95,7 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     movie.push({
-      id, categoryId: str(r.category_id) ?? "", name, poster: str(r.stream_icon), year: year(r.year, r.releaseDate, r.releasedate),
+      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, poster: str(r.stream_icon), year: year(r.year, r.releaseDate, r.releasedate),
       rating: num(r.rating), added: num(r.added), container: str(r.container_extension) ?? "mp4", adult: isAdult(name),
     });
   }
@@ -103,7 +105,7 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     series.push({
-      id, categoryId: str(r.category_id) ?? "", name, poster: str(r.cover), year: year(r.year, r.releaseDate, r.releasedate),
+      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, poster: str(r.cover), year: year(r.year, r.releaseDate, r.releasedate),
       rating: num(r.rating), added: num(r.last_modified), adult: isAdult(name),
     });
   }

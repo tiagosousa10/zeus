@@ -46,3 +46,14 @@ test("player_api URL ignores the path and query of a stored get.php URL", () => 
   assert.equal(u.origin + u.pathname, "https://tv.example.test:8080/player_api.php");
   assert.deepEqual([...u.searchParams], [["username", "u"], ["password", "p"], ["action", "get_live_streams"]]);
 });
+test("items without a category go to the Outros folder", () => {
+  const c = normalizeXtreamCatalog({
+    liveCategories: [], live: [{ stream_id: 1, name: "Canal" }],
+    vodCategories: [], vod: [{ stream_id: 2, name: "Filme", category_id: "" }],
+    seriesCategories: [], series: [{ series_id: 3, name: "Série", category_id: null }],
+  }, 0);
+  for (const s of [c.live, c.movie, c.series]) {
+    assert.equal(s.items[0].categoryId, "outros");
+    assert.deepEqual(s.categories.map((x) => [x.id, x.name, x.count]), [["outros", "Outros", 1]]);
+  }
+});
