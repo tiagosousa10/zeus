@@ -4,18 +4,29 @@ import type { Section, SectionData, TVCatalog, TVCategory, TVChannel, TVMovie, T
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 
-interface Entry { section: Section; group: string; name: string; logo?: string; epgId?: string; url: string; categoryId: string }
+interface Entry { section: Section; group: string; name: string; logo?: string; epgId?: string; url: string; categoryId: string; id: string }
+
+function sectionOf(path: string, group: string): Section {
+  if (path.includes("/movie/")) return "movie";
+  if (path.includes("/series/")) return "series";
+  const words = cleanFolderName(group).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().split(/[^a-z0-9]+/);
+  if (words.some((w) => ["filmes", "filme", "movies", "movie", "vod"].includes(w))) return "movie";
+  if (words.some((w) => ["series", "serie"].includes(w))) return "series";
+  return "live";
+}
 
 function parse(text: string, base: string): Entry[] {
   const entries: Entry[] = [];
-  let pending: Omit<Entry, "section" | "url" | "categoryId"> | null = null;
+  const seen = new Set<string>();
+  let pending: Omit<Entry, "section" | "url" | "categoryId" | "id"> | null = null;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (line.startsWith("#EXTINF:")) {
       const attrs = Object.fromEntries([...line.matchAll(/([\w-]+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
-      const comma = line.indexOf(",", line.lastIndexOf('"') + 1);
+      const bare = line.replace(/[\w-]+="[^"]*"/g, (m) => " ".repeat(m.length));
+      const comma = bare.indexOf(",");
       pending = {
-        name: line.slice(comma + 1).trim() || "Canal",
+        name: (comma < 0 ? "" : line.slice(comma + 1).trim()) || "Canal",
         group: attrs["group-title"] || "Outros",
         logo: attrs["tvg-logo"] || undefined,
         epgId: attrs["tvg-id"] || undefined,
@@ -24,8 +35,13 @@ function parse(text: string, base: string): Entry[] {
       try {
         const url = new URL(line, base);
         if (url.protocol === "http:" || url.protocol === "https:") {
-          const section: Section = url.pathname.includes("/movie/") ? "movie" : url.pathname.includes("/series/") ? "series" : "live";
-          entries.push({ ...pending, section, url: url.href, categoryId: hash(section + pending.group) });
+          const section = sectionOf(url.pathname, pending.group);
+          const categoryId = hash(section + pending.group);
+          const key = `${categoryId}|${url.href}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            entries.push({ ...pending, section, url: url.href, categoryId, id: hash(key) });
+          }
         }
       } catch {}
       pending = null;
@@ -54,7 +70,7 @@ export function normalizeM3U(text: string, base: string, now: number): TVCatalog
   const of = (s: Section) => entries.filter((e) => e.section === s);
 
   const live: TVChannel[] = of("live").map((e) => ({
-    id: hash(e.url), categoryId: e.categoryId, name: e.name, logo: e.logo, epgId: e.epgId,
+    id: e.id, categoryId: e.categoryId, name: e.name, logo: e.logo, epgId: e.epgId,
     tags: channelTags(e.name), adult: isAdult(e.name), source: e.url,
   }));
 
@@ -63,7 +79,7 @@ export function normalizeM3U(text: string, base: string, now: number): TVCatalog
     const name = m ? e.name.slice(0, m.index) : e.name;
     const ext = new URL(e.url).pathname.match(/\.([a-z0-9]+)$/i)?.[1];
     return {
-      id: hash(e.url), categoryId: e.categoryId, name, poster: e.logo, year: m ? Number(m[1]) : undefined,
+      id: e.id, categoryId: e.categoryId, name, poster: e.logo, year: m ? Number(m[1]) : undefined,
       container: ext?.toLowerCase() ?? "mp4", adult: isAdult(name), source: e.url,
     };
   });

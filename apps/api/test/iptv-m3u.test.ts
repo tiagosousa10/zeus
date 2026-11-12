@@ -28,3 +28,26 @@ test("ids are stable across reloads", () => {
     normalizeM3U(text, "http://p.test/list.m3u", 2).live.items[0].id,
   );
 });
+
+test("titles with quotes and commas in the group are kept intact", () => {
+  const c = normalizeM3U(`#EXTM3U\n#EXTINF:-1 group-title="A, B",Filme "Foo" Bar\nhttp://p.test/live/u/p/3.ts`, "http://p.test/l.m3u", 1);
+  assert.equal(c.live.items[0].name, 'Filme "Foo" Bar');
+  assert.equal(c.live.categories[0].name, "A, B");
+});
+
+test("group names classify movies and series when the URL does not", () => {
+  const c = normalizeM3U(`#EXTM3U\n#EXTINF:-1 group-title="Filmes Acção",X\nhttp://p.test/abc/9.mp4\n#EXTINF:-1 group-title="Séries",Y S01E01\nhttp://p.test/abc/8.mp4`, "http://p.test/l.m3u", 1);
+  assert.equal(c.movie.items.length, 1);
+  assert.equal(c.series.items.length, 1);
+  assert.equal(c.live.items.length, 0);
+});
+
+test("same URL in two groups gives two items, an exact repeat gives one", () => {
+  const l = (g: string) => `#EXTINF:-1 group-title="${g}",A\nhttp://p.test/live/1.ts`;
+  const two = normalizeM3U(`#EXTM3U\n${l("G1")}\n${l("G2")}`, "http://p.test/l.m3u", 1);
+  assert.equal(two.live.items.length, 2);
+  assert.notEqual(two.live.items[0].id, two.live.items[1].id);
+  const same = normalizeM3U(`#EXTM3U\n${l("G1")}\n${l("G1")}`, "http://p.test/l.m3u", 1);
+  assert.equal(same.live.items.length, 1);
+  assert.equal(same.live.categories[0].count, 1);
+});
