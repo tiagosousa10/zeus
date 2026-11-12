@@ -8,6 +8,7 @@ import { configFields, validateConfig } from "../addons/config.js";
 import { streamEndpoint } from "../addons/streams.js";
 import { eq } from "drizzle-orm";
 import { tvPrefs } from "../iptv/prefs.js";
+import { listUpdate, publicState } from "./public-state.js";
 const json = z.record(z.string(), z.unknown());
 const patch = z
   .object({
@@ -15,22 +16,7 @@ const patch = z
     library: z.array(json).max(10000).optional(),
     progress: json.optional(),
     tv: tvPrefs.optional(),
-    iptv: z
-      .array(
-        z
-          .object({
-            id: z.string(),
-            name: z.string(),
-            type: z.enum(["m3u", "xtream"]),
-            url: z.url(),
-            username: z.string().optional(),
-            password: z.string().optional(),
-            epgUrl: z.union([z.url(), z.literal("")]).optional(),
-          })
-          .strict(),
-      )
-      .max(100)
-      .optional(),
+    iptv: z.array(listUpdate).max(100).optional(),
     addons: z
       .array(
         z
@@ -49,7 +35,9 @@ const patch = z
   .strict();
 export const memberRoutes = new Hono();
 memberRoutes.use("*", requireMember);
-memberRoutes.get("/", async (c) => c.json(await getState(c.get("member").id)));
+memberRoutes.get("/", async (c) =>
+  c.json(publicState(await getState(c.get("member").id))),
+);
 memberRoutes.patch("/", async (c) => {
   const body = patch.parse(await c.req.json());
   if (body.addons) {
@@ -110,5 +98,5 @@ memberRoutes.patch("/", async (c) => {
       }
     }
   }
-  return c.json(await patchState(c.get("member").id, body));
+  return c.json(publicState(await patchState(c.get("member").id, body, true)));
 });

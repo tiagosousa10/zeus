@@ -28,7 +28,13 @@ export default function Onboarding() {
     [key, setKey] = useState(""),
     [addons, setAddons] = useState<Addon[]>([]),
     [selected, setSelected] = useState<string[]>([]),
-    [list, setList] = useState({
+    [list, setList] = useState<{
+      name: string;
+      type: "m3u" | "xtream";
+      url: string;
+      username: string;
+      password: string;
+    }>({
       name: "",
       type: "xtream",
       url: "",
@@ -535,7 +541,7 @@ export default function Onboarding() {
                       role="radiogroup"
                       aria-label="Tipo de lista"
                     >
-                      {["xtream", "m3u"].map((type) => (
+                      {(["xtream", "m3u"] as const).map((type) => (
                         <label key={type}>
                           <input
                             type="radio"

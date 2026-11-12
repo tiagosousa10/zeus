@@ -8,11 +8,15 @@ export interface Member {
   twoFactorEnabled: boolean;
   twoFactorVerified: boolean;
 }
-export interface MemberState {
+import type {
+  PublicIPTVList,
+  IPTVListUpdate,
+} from "../../../api/src/modules/member/public-state";
+export interface MemberState<List = PublicIPTVList> {
   preferences: Record<string, any>;
   library: any[];
   progress: Record<string, any>;
-  iptv: any[];
+  iptv: List[];
   addons: any[];
   onboardingDone: boolean;
   [key: string]: any;
@@ -52,7 +56,7 @@ export function useMemberState() {
     retry: false,
   });
   const state = { ...empty, ...query.data };
-  async function save(patch: Partial<MemberState>) {
+  async function save(patch: Partial<MemberState<IPTVListUpdate>>) {
     const result = await api<MemberState>("/state", {
       method: "PATCH",
       body: JSON.stringify(patch),
