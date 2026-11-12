@@ -106,3 +106,157 @@ test("protected Motor rejects unauthenticated calls before mutations", async () 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("stop during asynchronous client loading cancels the pending start and destroys the late client", async () => {
+  let resolveClient!: (client: any) => void, factoryStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    factoryStarted = resolve;
+  });
+  const pending = new Promise<any>((resolve) => {
+    resolveClient = resolve;
+  });
+  const client = Object.assign(new EventEmitter(), {
+    torrents: [],
+    destroyed: false,
+    destroy() {
+      this.destroyed = true;
+    },
+    get() {
+      throw new Error("cancelled client must never be used");
+    },
+  });
+  const dir = mkdtempSync(join(tmpdir(), "zeus-motor-import-"));
+  const motor = startEngine({
+    port: 0,
+    cacheDir: dir,
+    createClient: () => {
+      factoryStarted();
+      return pending;
+    },
+  });
+  await once(motor.server, "listening");
+  const url = `http://127.0.0.1:${motor.server.address().port}`;
+  try {
+    const request = fetch(
+      url + "/start?magnet=" + encodeURIComponent("magnet:?xt=urn:btih:test"),
+    );
+    await started;
+    await fetch(url + "/stop");
+    resolveClient(client);
+    const result = await (await request).json();
+    assert.equal(result.error, "Reprodução cancelada.");
+    assert.equal(client.destroyed, true);
+  } finally {
+    motor.stop();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test(
+  "WebTorrent 3 serves a real locally seeded file through Motor with discovery disabled",
+  { timeout: 15000 },
+  async () => {
+    const moduleName = "webtorrent";
+    const { default: WebTorrent } = await import(moduleName);
+    const bytes = Buffer.from(
+      "local torrent fixture: no trackers, DHT, peers or Internet",
+    );
+    const real = new WebTorrent({
+      dht: false,
+      tracker: false,
+      lsd: false,
+      natUpnp: false,
+      natPmp: false,
+      utp: false,
+    });
+    const dir = mkdtempSync(join(tmpdir(), "zeus-motor-real-"));
+    let motor: ReturnType<typeof startEngine> | undefined;
+    try {
+      const torrent = await new Promise<any>((resolve, reject) => {
+        real.once("error", reject);
+        real.seed(
+          bytes,
+          { name: "fixture.mp4", announce: [], private: true },
+          resolve,
+        );
+      });
+      motor = startEngine({
+        port: 0,
+        token: "offline-test",
+        cacheDir: dir,
+        createClient: async () => real,
+      });
+      await once(motor.server, "listening");
+      const url = `http://127.0.0.1:${motor.server.address().port}`;
+      const headers = { "X-Zeus-Motor-Token": "offline-test" };
+      motor.setBattery(true);
+      assert.equal(
+        (
+          await fetch(
+            url + "/preload?magnet=" + encodeURIComponent(torrent.magnetURI),
+            { headers },
+          )
+        ).status,
+        200,
+      );
+      const started = await (
+        await fetch(
+          url + "/start?magnet=" + encodeURIComponent(torrent.magnetURI),
+          { headers },
+        )
+      ).json();
+      assert.equal(started.ok, true);
+      assert.equal(started.name, "fixture.mp4");
+      assert.equal(started.length, bytes.length);
+      const response = await fetch(
+        `${url}/stream/${started.infoHash}/${started.fileIdx}`,
+        { headers: { ...headers, Range: "bytes=6-12" } },
+      );
+      assert.equal(response.status, 206);
+      assert.equal(await response.text(), "torrent");
+      motor.setBattery(false);
+      await fetch(url + "/stop", { headers });
+      assert.equal(real.destroyed, true);
+      assert.equal(
+        (await (await fetch(url + "/status", { headers })).json()).active,
+        false,
+      );
+    } finally {
+      motor?.stop();
+      if (!real.destroyed)
+        await new Promise<void>((resolve) => real.destroy(() => resolve()));
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test("Motor native probes do not inherit authentication secrets", async () => {
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  const dir = mkdtempSync(join(tmpdir(), "zeus-probe-env-"));
+  const output = join(dir, "environment");
+  const executable = join(dir, "probe");
+  writeFileSync(
+    executable,
+    `#!/bin/sh\nprintf '%s' "$BETTER_AUTH_SECRET" > '${output}'\n`,
+    { mode: 0o700 },
+  );
+  const previous = process.env.BETTER_AUTH_SECRET;
+  process.env.BETTER_AUTH_SECRET = "test-secret-must-not-reach-native-code";
+  const motor = startEngine({
+    port: 0,
+    cacheDir: join(dir, "cache"),
+    ffmpegPath: executable,
+  });
+  await once(motor.server, "listening");
+  try {
+    await fetch(
+      `http://127.0.0.1:${motor.server.address().port}/tracks/test/0`,
+    );
+    assert.equal(readFileSync(output, "utf8"), "");
+  } finally {
+    motor.stop();
+    if (previous === undefined) delete process.env.BETTER_AUTH_SECRET;
+    else process.env.BETTER_AUTH_SECRET = previous;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
