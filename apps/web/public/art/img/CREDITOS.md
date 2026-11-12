@@ -2,7 +2,7 @@
 
 Todas as imagens foram redimensionadas (máx. 2400 px no lado maior), convertidas para sRGB e codificadas em WebP (qualidade 80); cada uma tem uma miniatura `<slot>-thumb.webp` com 600 px no lado maior. A licença foi confirmada na página de origem de cada ficheiro em 2026-11-11.
 
-Só `guerreiro` exige atribuição (CC BY 2.0); as restantes são domínio público ou CC0.
+Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, `medusa` e `ulisses` foram geradas por IA; as restantes são domínio público ou CC0.
 
 ## batalha
 - **Obra:** Léonidas aux Thermopyles (Leónidas nas Termópilas)
@@ -36,45 +36,28 @@ Só `guerreiro` exige atribuição (CC BY 2.0); as restantes são domínio públ
 - **Foco:** bronze escuro e esguio ao centro, cabeça a ≈55 % x, 25 % y; o fundo é um degradé cinzento claro, por isso pede máscara ou sobreposição escura numa UI escura.
 
 ## hefesto
-- **Obra:** La fragua de Vulcano (Apolo na forja de Vulcano)
-- **Artista:** Diego Velázquez
-- **Data:** 1630
-- **Instituição:** Museo Nacional del Prado, Madrid
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Vel%C3%A1zquez_-_La_Fragua_de_Vulcano_(Museo_del_Prado,_1630).jpg
-- **Licença:** domínio público (PD-Art)
-- **Dimensões finais:** 2400 × 1864
-- **Foco:** Apolo com auréola na margem esquerda (≈15 % x, 25 % y) e Vulcano no centro-esquerda (≈38 % x, 25 % y); a forja e os ferreiros estão à direita, num interior castanho escuro.
+- **Imagem:** ferreiro inspirado em Hefesto, avental de couro, martelo na bigorna, forja acesa atrás.
+- **Origem:** gerada por IA (image_gen) em 2026-11-12, com o guerreiro de referência do utilizador como estilo; sem obra de terceiros, sem atribuição.
+- **Dimensões finais:** 1536 × 1024
+- **Foco:** rosto a ≈30 % x, 18 % y; figura no terço esquerdo; metade direita quase preta para texto.
 
 ## atena
-- **Obra:** Pallas Athene
-- **Artista:** Gustav Klimt
-- **Data:** 1898
-- **Instituição:** Wien Museum, Viena
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Gustav_Klimt_045.jpg (The Yorck Project)
-- **Licença:** domínio público (PD-Art)
-- **Dimensões finais:** 2024 × 2073 (abaixo de 2400 px porque não foi ampliada)
-- **Foco:** rosto e capacete dourados no terço superior esquerdo (≈33 % x, 15 % y), armadura de escamas douradas ao centro e fundo verde-escuro; versão sem a moldura original.
+- **Imagem:** guardiã Atena em armadura de bronze com capacete coríntio e manto carmesim, templo escuro.
+- **Origem:** gerada por IA (image_gen) em 2026-11-12, com o guerreiro de referência do utilizador como estilo; sem obra de terceiros, sem atribuição.
+- **Dimensões finais:** 1536 × 1024
+- **Foco:** rosto a ≈33 % x, 33 % y; figura na metade esquerda; metade direita escura para texto.
 
 ## conselho
-- **Obra:** A gathering of the gods in the clouds (Assembleia dos deuses nas nuvens)
-- **Artista:** Cornelis van Poelenburch
-- **Data:** c. 1630
-- **Instituição:** Mauritshuis, Haia
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Meeting_Gods_In_The_Clouds_by_Cornelis_van_Poelenburch.jpg
-- **Licença:** domínio público (PD-Art, autor falecido em 1667)
-- **Dimensões finais:** 2400 × 1930
-- **Foco:** Júpiter e os deuses à mesa no centro-superior (≈45 % x, 40 % y), sobre céu e nuvens claros e com paisagem no terço inferior; é clara, por isso pede um degradé escuro; contém nudez.
-- **Nota:** substitui o Conselho dos Deuses de Rafael, que não tem reprodução livre em alta resolução.
+- **Imagem:** Zeus sentado num trono de pedra com leões, num salão de colunas com luz alta.
+- **Origem:** gerada por IA (image_gen) em 2026-11-12, com o guerreiro de referência do utilizador como estilo; sem obra de terceiros, sem atribuição.
+- **Dimensões finais:** 1774 × 887 (≈2:1)
+- **Foco:** rosto a ≈82 % x, 20 % y; figura no terço direito; esquerda é salão escuro.
 
 ## ulisses
-- **Obra:** Ulysses and the Sirens (Ulisses e as Sereias)
-- **Artista:** John William Waterhouse
-- **Data:** 1891
-- **Instituição:** National Gallery of Victoria, Melbourne
-- **Fonte:** https://commons.wikimedia.org/wiki/File:John_William_Waterhouse_-_Ulysses_and_the_Sirens_-_Google_Art_Project.jpg
-- **Licença:** domínio público (PD-Art; Google Art Project)
-- **Dimensões finais:** 2400 × 1177 (panorâmica de ≈2:1)
-- **Foco:** Ulisses amarrado ao mastro a ≈65 % x, 40 % y, com as sereias aladas no terço superior e o mar azul-escuro em baixo; `object-position: 65% 40%`.
+- **Imagem:** Ulisses de armadura e manto carmesim à proa de um navio, mar e ilhas ao entardecer.
+- **Origem:** gerada por IA (image_gen) em 2026-11-12, com o guerreiro de referência do utilizador como estilo; sem obra de terceiros, sem atribuição.
+- **Dimensões finais:** 1774 × 887 (≈2:1)
+- **Foco:** Ulisses a ≈78 % x, 25 % y; esquerda é mar escuro para texto; `object-position: 70% 35%`.
 
 ## icaro
 - **Obra:** The Lament for Icarus (O lamento por Ícaro)
@@ -87,14 +70,10 @@ Só `guerreiro` exige atribuição (CC BY 2.0); as restantes são domínio públ
 - **Foco:** o corpo de Ícaro está no centro (≈40 % x, 45 % y), entre grandes asas castanhas; há uma faixa dourada no topo e a zona inferior esquerda é escura; contém nudez.
 
 ## medusa
-- **Obra:** Medusa
-- **Artista:** Caravaggio
-- **Data:** c. 1597–1598
-- **Instituição:** Gallerie degli Uffizi, Florença
-- **Fonte:** https://commons.wikimedia.org/wiki/File:Caravaggio_-_Medusa_-_Google_Art_Project.jpg
-- **Licença:** domínio público (PD-Art; Google Art Project)
-- **Dimensões finais:** 2341 × 2400
-- **Foco:** escudo circular com o rosto ao centro (≈52 % x, 47 % y); os cantos são brancos, por isso usar `border-radius: 50%` ou `clip-path: circle(48%)`; contém sangue.
+- **Imagem:** retrato de Medusa com serpentes realistas, fundo preto puro.
+- **Origem:** gerada por IA (image_gen) em 2026-11-12, com o guerreiro de referência do utilizador como estilo; sem obra de terceiros, sem atribuição.
+- **Dimensões finais:** 1254 × 1254
+- **Foco:** rosto ao centro (≈50 % x, 45 % y); fundo preto, dispensa máscara circular dura.
 
 ## aquiles
 - **Obra:** Achille vainqueur d'Hector (Aquiles vence Heitor)
