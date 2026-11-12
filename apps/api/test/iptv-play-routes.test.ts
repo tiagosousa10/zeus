@@ -80,10 +80,18 @@ const upstream: Record<string, FakeResource> = {
   [`${ORIGIN}/101.m3u8`]: {
     url: `${EDGE}/master.m3u8`,
     headers: { "content-type": "application/vnd.apple.mpegurl" },
-    body: "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\nlow/index.m3u8\n",
+    body: "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=800000\nlow/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=200000\nv?x=1\n",
+  },
+  [`${EDGE}/v?x=1`]: {
+    headers: { "content-type": "text/plain" },
+    body: "#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/v1.ts\n",
+  },
+  [`${EDGE}/low/odd`]: {
+    headers: { "content-type": "text/plain" },
+    body: "\uFEFF \n#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/odd1.ts\n",
   },
   [`${EDGE}/low/index.m3u8`]: {
-    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n",
+    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n",
   },
   [`${EDGE}/low/seg1.ts`]: { headers: { "content-type": "video/mp2t" }, body: "SEGMENT-1", open: true },
   [`${ORIGIN}/102.m3u8`]: { status: 509, body: "max connections https://tv.example.test" },
@@ -105,15 +113,13 @@ test("playback starts through the API and HLS never reveals the provider", async
   await verify(b, password);
 
   const list = { id: "l1", name: "Casa", type: "xtream", url: "https://tv.example.test/", username: "u", password: "segredo-123" };
-  assert.equal((await a("/state", { iptv: [list] }, "PATCH")).status, 200);
+  const local = { id: "l2", name: "Local", type: "m3u", url: "http://127.0.0.1/" };
+  assert.equal((await a("/state", { iptv: [list, local] }, "PATCH")).status, 200);
   setProviderFetch(fakeFetch(xtreamRoutes));
   const fake = fakeUpstream(upstream);
   setUpstreamFetch(fake);
 
   assert.equal((await a("/iptv/lists/l1/play", { section: "series", id: "301" })).status, 400);
-  const adult = await a("/iptv/lists/l1/play", { section: "live", id: "104" });
-  assert.deepEqual([adult.status, adult.body.error], [404, "Este conteúdo não está disponível."]);
-
   const play = await a("/iptv/lists/l1/play", { section: "live", id: "101" });
   assert.equal(play.status, 200, play.text);
   assert.equal(play.body.type, "hls");
@@ -125,18 +131,35 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(master.status, 200, master.text);
   assert.equal(master.type, "application/vnd.apple.mpegurl");
   assert.ok(!leaks(master.text), master.text);
-  const [variantLink] = links(master.text);
+  const [variantLink, plainVariantLink] = links(master.text);
   assert.match(variantLink, new RegExp(`^/api/iptv/play/${play.body.token}/r/\\w+$`));
+
+  const adult = await a("/iptv/lists/l1/play", { section: "live", id: "104" });
+  assert.deepEqual([adult.status, adult.body.error], [404, "Este conteúdo não está disponível."]);
+  const still = await a(play.body.url.slice(4));
+  assert.equal(still.status, 200, still.text);
+  assert.deepEqual(links(still.text), links(master.text));
+
+  const plain = await a(plainVariantLink.slice(4));
+  assert.equal(plain.type, "application/vnd.apple.mpegurl");
+  assert.equal(links(plain.text).length, 1);
+  assert.ok(!leaks(plain.text), plain.text);
 
   const media = await a(variantLink.slice(4));
   assert.equal(media.status, 200, media.text);
   assert.equal(media.type, "application/vnd.apple.mpegurl");
   assert.ok(!leaks(media.text), media.text);
-  assert.equal(links(media.text).length, 2);
+  assert.equal(links(media.text).length, 3);
+  const sniffed = await a(links(media.text)[2].slice(4));
+  assert.equal(sniffed.type, "application/vnd.apple.mpegurl");
+  assert.equal(links(sniffed.text).length, 1);
+  assert.ok(!leaks(sniffed.text), sniffed.text);
 
   const segment = await a.raw(links(media.text)[0].slice(4), { headers: { range: "bytes=0-" } });
   assert.equal(segment.status, 200);
   assert.equal(segment.headers.get("content-type"), "video/mp2t");
+  assert.equal(segment.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(segment.headers.get("content-security-policy"), "sandbox");
   const reader = segment.body!.getReader();
   assert.equal(new TextDecoder().decode((await reader.read()).value), "SEGMENT-1");
   const segmentCall = fake.calls.find((c) => c.url === `${EDGE}/low/seg1.ts`)!;
@@ -175,9 +198,9 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(episode.body.url, `/api/iptv/play/${episode.body.token}/remux.mp4`);
   assert.ok(![mp4, mkv, episode].some((r) => leaks(r.text)));
 
-  const resource = await a("/iptv/resource?listId=l1");
+  const resource = await a("/iptv/resource?listId=l2");
   assert.deepEqual([resource.status, resource.body.error], [502, "Não foi possível carregar a lista."]);
-  assert.ok(!leaks(resource.text));
+  assert.ok(!/127\.0\.0\.1|privado/.test(resource.text), resource.text);
 });
 
 test.after(async () => {

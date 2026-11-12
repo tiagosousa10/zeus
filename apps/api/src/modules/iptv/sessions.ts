@@ -23,6 +23,7 @@ interface Entry {
   lastSeen: number;
   endedAt?: number;
   nextResource: number;
+  resourceIds: Map<string, string>;
 }
 
 const entries = new Map<string, Entry>();
@@ -74,7 +75,7 @@ export function createSession(userId: string, listId: string, upstream: Upstream
     resources: new Map(),
     onEnd: new Set(),
   };
-  entries.set(session.token, { session, controller, lastSeen: clock(), nextResource: 0 });
+  entries.set(session.token, { session, controller, lastSeen: clock(), nextResource: 0, resourceIds: new Map() });
   return session;
 }
 
@@ -92,10 +93,22 @@ export function endSession(s: PlaySession): void {
   if (e) finish(e);
 }
 
+// A known URL keeps its id and moves to the newest end, so the cap evicts what is no longer used.
 export function addResource(s: PlaySession, url: string): string {
   const e = entries.get(s.token);
+  const known = e?.resourceIds.get(url);
+  if (known !== undefined) {
+    s.resources.delete(known);
+    s.resources.set(known, url);
+    return known;
+  }
   const id = String(e ? e.nextResource++ : s.resources.size);
   s.resources.set(id, url);
-  if (s.resources.size > MAX_RESOURCES) s.resources.delete(s.resources.keys().next().value as string);
+  e?.resourceIds.set(url, id);
+  if (s.resources.size > MAX_RESOURCES) {
+    const [oldId, oldUrl] = s.resources.entries().next().value as [string, string];
+    s.resources.delete(oldId);
+    e?.resourceIds.delete(oldUrl);
+  }
   return id;
 }

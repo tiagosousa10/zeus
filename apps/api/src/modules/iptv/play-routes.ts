@@ -116,9 +116,41 @@ async function readCapped(r: Response): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+// URLs the rewriter saw as playlists (variants, renditions), so they are never relayed raw.
+const playlistUrls = new WeakMap<PlaySession, Set<string>>();
+const playlistsOf = (s: PlaySession) => playlistUrls.get(s) ?? playlistUrls.set(s, new Set()).get(s)!;
+
 async function playlist(c: Context, s: PlaySession, r: Response): Promise<Response> {
-  const text = rewritePlaylist(await readCapped(r), r.url, (u) => `/api/iptv/play/${s.token}/r/${addResource(s, u)}`);
+  const text = rewritePlaylist(await readCapped(r), r.url, (u, isPlaylist) => {
+    if (isPlaylist) playlistsOf(s).add(u);
+    return `/api/iptv/play/${s.token}/r/${addResource(s, u)}`;
+  });
   return c.body(text, 200, { "content-type": "application/vnd.apple.mpegurl", "cache-control": "no-store" });
+}
+
+// Reads the first chunk to spot a playlist served with an odd path or content-type; the body stays intact.
+async function peek(r: Response): Promise<{ playlist: boolean; response: Response }> {
+  if (!r.body) return { playlist: false, response: r };
+  const reader = r.body.getReader();
+  const first = await reader.read();
+  const head = first.done ? new Uint8Array() : first.value;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      if (head.byteLength) controller.enqueue(head);
+      if (first.done) controller.close();
+    },
+    async pull(controller) {
+      const next = await reader.read();
+      if (next.done) controller.close();
+      else controller.enqueue(next.value);
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+  const response = new Response(body, { status: r.status, headers: r.headers });
+  Object.defineProperty(response, "url", { value: r.url });
+  return { playlist: Buffer.from(head).toString("utf8").trimStart().startsWith("#EXTM3U"), response };
 }
 
 // Keeps the session alive while a long body is still flowing to the browser.
@@ -133,7 +165,7 @@ function relay(s: PlaySession, r: Response): Response {
       controller.enqueue(chunk);
     },
   });
-  const headers = new Headers();
+  const headers = new Headers({ "x-content-type-options": "nosniff", "content-security-policy": "sandbox" });
   for (const name of PASS_HEADERS) {
     const value = r.headers.get(name);
     if (value) headers.set(name, value);
@@ -155,8 +187,17 @@ playRoutes.get("/play/:token/r/:id", (c) =>
   withSession(c, async (s) => {
     const url = s.resources.get(c.req.param("id") ?? "");
     if (!url) return c.json({ error: NOT_AVAILABLE }, 404);
-    const range = isPlaylistPath(url) ? undefined : c.req.header("range");
-    const r = await open(c, s, url, range ? { range } : undefined);
-    return isPlaylistPath(url) || /mpegurl/i.test(r.headers.get("content-type") ?? "") ? playlist(c, s, r) : relay(s, r);
+    const known = isPlaylistPath(url) || playlistsOf(s).has(url);
+    const range = known ? undefined : c.req.header("range");
+    let r = await open(c, s, url, range ? { range } : undefined);
+    if (!known && !/mpegurl/i.test(r.headers.get("content-type") ?? "")) {
+      const peeked = await peek(r);
+      if (!peeked.playlist) return relay(s, peeked.response);
+      r = peeked.response;
+    }
+    playlistsOf(s).add(url);
+    // Re-adding keeps a long-lived playlist (live variant) from being evicted by the resource cap.
+    addResource(s, url);
+    return playlist(c, s, r);
   }),
 );

@@ -86,3 +86,15 @@ test("onEnd callbacks run once, survive exceptions, and endSession is idempotent
   assert.equal(s.ended, true);
   assert.equal(s.signal.aborted, true);
 });
+
+test("the same URL keeps its resource id, also after the cap evicts others", () => {
+  const s = createSession("u1", "l4", up, acc);
+  const id = addResource(s, "https://cdn.test/v.m3u8");
+  assert.equal(addResource(s, "https://cdn.test/v.m3u8"), id);
+  for (let i = 0; i < 2100; i++) addResource(s, `https://cdn.test/${i}.ts`);
+  assert.equal(s.resources.size, 2000);
+  const again = addResource(s, "https://cdn.test/0.ts");
+  assert.notEqual(again, addResource(s, "https://cdn.test/1999.ts"));
+  assert.equal(s.resources.get(again), "https://cdn.test/0.ts");
+  assert.equal(s.resources.size, 2000);
+});
