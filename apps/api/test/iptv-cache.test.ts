@@ -97,3 +97,15 @@ test("an empty catalog is an error and is not cached", async () => {
   setProviderFetch(fakeFetch(() => new Response("#EXTM3U\n")));
   await assert.rejects(getCatalog("u13", m3u), UNAVAILABLE);
 });
+test("disk files from an older cache format are ignored", async () => {
+  const { createHash } = await import("node:crypto");
+  const { mkdirSync, writeFileSync } = await import("node:fs");
+  const { encrypt } = await import("../src/lib/crypto.js");
+  const oldKey = createHash("sha256").update(["u14", list.id, list.type, list.url, list.username, list.password].join("|")).digest("hex");
+  mkdirSync(join(dataDir, "iptv-cache"), { recursive: true });
+  writeFileSync(join(dataDir, "iptv-cache", `${oldKey}.bin`), encrypt({ value: { old: true }, expires: Number.MAX_SAFE_INTEGER }));
+  setClock(() => 0); clearMemoryCache();
+  const f = fakeFetch(xtreamRoutes); setProviderFetch(f);
+  assert.equal((await getCatalog("u14", list)).live.items.length, 4);
+  assert.equal(f.calls.length, 6);
+});
