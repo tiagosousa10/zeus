@@ -80,6 +80,7 @@ function useTVState() {
   }
   useEffect(() => {
     const listener = () => {
+      setChosen(sessionStorage.getItem("zeus-tv-list") || "");
       setTarget(null);
       setView(decodeView(location.hash));
     };
@@ -107,16 +108,20 @@ function useTVState() {
     }
   }, [summaryQuery.data, view.section]);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setSearchInFolder(false);
-        setModal((m) => (m === "search" ? null : "search"));
-      }
-    };
-    addEventListener("keydown", handler);
-    return () => removeEventListener("keydown", handler);
-  }, []);
+    const params = new URLSearchParams(location.hash.slice(1));
+    const playId = params.get("play");
+    if (!playId || !summaryQuery.data || member.loading) return;
+    const categoryId = params.get("category") || undefined;
+    setTarget({
+      section: "live",
+      id: playId,
+      title: params.get("name") || undefined,
+      categoryId,
+    });
+    params.delete("play");
+    params.delete("name");
+    history.replaceState(null, "", "#" + params);
+  }, [summaryQuery.data, member.loading, view]);
   async function updatePrefs(fn: (p: TVListPrefs) => TVListPrefs) {
     const id = listId;
     setError("");

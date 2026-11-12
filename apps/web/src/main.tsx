@@ -1,3 +1,5 @@
+import { SearchHost } from "./components/UniversalSearch";
+import { ZeusLoader, ActivityIndicator } from "./components/ZeusLoader";
 import React, { Component, Suspense, lazy, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -62,7 +64,7 @@ function Guard({
   if (loading)
     return (
       <div className="page-loading" role="status">
-        <b>Ζ</b>A abrir as portas…
+        <ZeusLoader label="A abrir as portas…" />
       </div>
     );
   if (error)
@@ -94,11 +96,15 @@ const root = createRootRoute({
       <Suspense
         fallback={
           <div className="page-loading" role="status">
-            <b>Ζ</b>A abrir…
+            <ZeusLoader label="A abrir…" />
           </div>
         }
       >
-        <Outlet />
+        <>
+          <SearchHost />
+          <ActivityIndicator />
+          <Outlet />
+        </>
       </Suspense>
     </ErrorBoundary>
   ),
