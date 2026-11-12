@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { useSession, useMemberState } from "../lib/session";
+import { useMemberState } from "../lib/session";
 import gsap from "gsap";
+import { api } from "../lib/api";
 import "./portal.css";
 type PortalEffects = {
   setMood: (value: number) => void;
@@ -8,16 +9,35 @@ type PortalEffects = {
   strike: (target: Element, options?: object) => boolean;
 };
 export default function Portal() {
-  const { user } = useSession();
-  const { state, save, loading } = useMemberState();
+  const [motor, setMotor] = useState<boolean | null>(null);
+  const { state, save, loading, error: stateError } = useMemberState();
   const [hover, setHover] = useState("");
   const [leaving, setLeaving] = useState("");
+  const [pending, setPending] = useState("");
+  const [saveError, setSaveError] = useState("");
   const painting = useRef<HTMLDivElement>(null),
     bolts = useRef<HTMLCanvasElement>(null);
   const effects = useRef<PortalEffects | null>(null);
   const active = useRef("");
   active.current = hover;
   const leavingRef = useRef(false);
+  useEffect(() => {
+    let live = true;
+    const check = () =>
+      api<{ ok: boolean }>("/motor/status")
+        .then((r) => {
+          if (live) setMotor(r.ok);
+        })
+        .catch(() => {
+          if (live) setMotor(false);
+        });
+    void check();
+    const timer = setInterval(check, 15000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, []);
   useEffect(() => {
     document.title = "Zeus — O teu universo";
     let cancelled = false,
@@ -27,7 +47,7 @@ export default function Portal() {
         if (cancelled || !painting.current || !bolts.current) return;
         Object.assign(window, { THREE, gsap });
         const art = fx.livingPainting(painting.current, "/art/img/zeus-5.webp");
-        art.state.exposure = 0.9;
+        art.state.exposure = 1;
         const sky = fx.lightning(bolts.current, {
           palette: "neutral",
           every: [5500, 11000],
@@ -51,7 +71,7 @@ export default function Portal() {
         const entrance = gsap.context(() => {
           if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
             gsap.fromTo(
-              ".portal-heading, .portal-tile, .portal-settings",
+              ".wordmark, .hello, .slot, .foot",
               { opacity: 0, y: 18 },
               {
                 opacity: 1,
@@ -84,6 +104,10 @@ export default function Portal() {
     );
   }, [hover]);
   async function enter(event: MouseEvent<HTMLAnchorElement>, module: string) {
+    if (loading || stateError || leavingRef.current) {
+      event.preventDefault();
+      return;
+    }
     if (
       event.metaKey ||
       event.ctrlKey ||
@@ -93,101 +117,186 @@ export default function Portal() {
     )
       return;
     event.preventDefault();
-    if (leavingRef.current) return;
+    const target = event.currentTarget;
     leavingRef.current = true;
-    setLeaving(module);
+    setPending(module);
+    setSaveError("");
     setHover(module);
-    effects.current?.strike(event.currentTarget, {
-      palette: module === "cinema" ? "warm" : "cool",
-      pulses: 1,
-      width: 1.5,
-    });
-    const delay = matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? 0
-      : 640;
-    const preference = loading
-      ? Promise.resolve()
-      : save({
-          preferences: { ...state.preferences, lastModule: module },
-        }).catch(() => {});
-    await Promise.all([
-      new Promise((resolve) => setTimeout(resolve, delay)),
-      Promise.race([
-        preference,
-        new Promise((resolve) => setTimeout(resolve, 1800)),
-      ]),
-    ]);
-    location.assign(`/${module}`);
+    try {
+      await save({ preferences: { ...state.preferences, lastModule: module } });
+      setLeaving(module);
+      effects.current?.strike(target, {
+        palette: module === "cinema" ? "warm" : "cool",
+        pulses: 1,
+        width: 1.5,
+      });
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches)
+        await new Promise((resolve) => setTimeout(resolve, 640));
+      location.assign(`/${module}`);
+    } catch (error) {
+      setSaveError(
+        `Não foi possível guardar a tua escolha. ${error instanceof Error ? error.message : "Tenta novamente."}`,
+      );
+      setPending("");
+      setLeaving("");
+      leavingRef.current = false;
+    }
   }
+  const hour = new Date().getHours();
+  const greeting =
+    hour >= 6 && hour < 13
+      ? "Bom dia"
+      : hour >= 13 && hour < 20
+        ? "Boa tarde"
+        : "Boa noite";
   return (
-    <div className={`portal-screen ${hover} ${leaving ? "is-leaving" : ""}`}>
-      <section className="portal-stage">
-        <div className="portal-painting" ref={painting} aria-hidden="true" />
-        <div className="portal-vignette" aria-hidden="true" />
-        <canvas className="portal-bolts" ref={bolts} aria-hidden="true" />
-        <div className="portal-copy">
-          <a href="/conta" className="portal-member">
-            {user?.name}
-            <span>↗</span>
-          </a>
-          <div className="portal-heading">
-            <p className="eyebrow">O teu universo começa aqui</p>
-            <h1>ZEUS</h1>
-            <p>
-              Histórias que ficam.
-              <br />
-              Um mundo à tua escolha.
-            </p>
+    <div
+      className={`portal-screen ${matchMedia("(prefers-reduced-motion: reduce)").matches ? "rm" : ""} ${hover} ${leaving ? "is-leaving" : ""}`}
+    >
+      <div className="portal-painting" ref={painting} aria-hidden="true" />
+      <div className="scrim" aria-hidden="true" />
+      <canvas id="bolts" ref={bolts} aria-hidden="true" />
+      <main className="ui">
+        <h1 className="wordmark" aria-label="Zeus">
+          <span className="wm-text" aria-hidden="true">
+            ZEUS
+          </span>
+          <span className="wm-glow" aria-hidden="true">
+            ZEUS
+          </span>
+        </h1>
+        <div />
+        <section className="choose" aria-labelledby="hello">
+          <div className="hello">
+            <h2 id="hello">{greeting}</h2>
+            <p>Escolha por onde quer começar.</p>
           </div>
-          <div className="portal-choices">
+          <nav className="modules" aria-label="Módulos">
             {[
-              {
-                id: "cinema",
-                name: "Cinema",
-                symbol: "Ⅰ",
-                description: "Filmes. Séries. Outros mundos.",
-              },
-              {
-                id: "tv",
-                name: "TV",
-                symbol: "Ⅱ",
-                description: "O mundo, neste preciso instante.",
-              },
+              { id: "tv", name: "TV", description: "Canais em directo" },
+              { id: "cinema", name: "Cinema", description: "Filmes e séries" },
             ].map((module) => (
-              <a
-                key={module.id}
-                href={`/${module.id}`}
-                className={`portal-tile ${module.id} ${leaving === module.id ? "is-selected" : ""}`}
-                aria-busy={leaving === module.id}
-                onPointerEnter={() => setHover(module.id)}
-                onPointerLeave={() => {
-                  if (!leavingRef.current) setHover("");
-                }}
-                onFocus={() => setHover(module.id)}
-                onBlur={() => {
-                  if (!leavingRef.current) setHover("");
-                }}
-                onClick={(event) => {
-                  void enter(event, module.id);
-                }}
-              >
-                <span className="portal-num">{module.symbol}</span>
-                <span>
-                  <strong>{module.name}</strong>
-                  <small>{module.description}</small>
-                </span>
-                <span className="portal-arrow">↗</span>
-                {state.preferences.lastModule === module.id && (
-                  <em>Último usado</em>
-                )}
-              </a>
+              <div className="slot" key={module.id}>
+                <a
+                  href={
+                    loading || !!stateError || !!pending
+                      ? undefined
+                      : `/${module.id}`
+                  }
+                  role="link"
+                  tabIndex={0}
+                  aria-disabled={loading || !!stateError || !!pending}
+                  className={`card ${module.id === "tv" ? "cool" : "warm"} ${leaving === module.id ? "chosen" : ""}`}
+                  aria-busy={pending === module.id}
+                  onPointerEnter={() => setHover(module.id)}
+                  onPointerLeave={(e) => {
+                    if (!leavingRef.current) setHover("");
+                    e.currentTarget.classList.remove("tracking");
+                    e.currentTarget.style.setProperty("--rx", "0deg");
+                    e.currentTarget.style.setProperty("--ry", "0deg");
+                  }}
+                  onPointerMove={(e) => {
+                    if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+                      return;
+                    const r = e.currentTarget.getBoundingClientRect();
+                    const x = (e.clientX - r.left) / r.width,
+                      y = (e.clientY - r.top) / r.height;
+                    e.currentTarget.classList.add("tracking");
+                    e.currentTarget.style.setProperty(
+                      "--rx",
+                      `${(0.5 - y) * 8}deg`,
+                    );
+                    e.currentTarget.style.setProperty(
+                      "--ry",
+                      `${(x - 0.5) * 10}deg`,
+                    );
+                    e.currentTarget.style.setProperty("--gx", `${x * 100}%`);
+                    e.currentTarget.style.setProperty("--gy", `${y * 100}%`);
+                  }}
+                  onFocus={() => setHover(module.id)}
+                  onBlur={() => {
+                    if (!leavingRef.current) setHover("");
+                  }}
+                  onClick={(event) => {
+                    void enter(event, module.id);
+                  }}
+                >
+                  <span className="glare" />
+                  <div className="card-top">
+                    <svg
+                      className="icon"
+                      viewBox="0 0 32 32"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      {module.id === "tv" ? (
+                        <>
+                          <rect x="3" y="9" width="26" height="18" rx="4" />
+                          <path d="M11 3l5 6 5-6M12 31h8" />
+                        </>
+                      ) : (
+                        <>
+                          <rect x="4" y="5" width="24" height="22" rx="4" />
+                          <path d="M10 5v22M22 5v22M4 12h6M4 20h6M22 12h6M22 20h6" />
+                        </>
+                      )}
+                    </svg>
+                    {state.preferences.lastModule === module.id && (
+                      <span className="badge">Último usado</span>
+                    )}
+                  </div>
+                  <h3>{module.name}</h3>
+                  <p>
+                    {module.id === "tv" && (
+                      <span className="live" aria-hidden="true" />
+                    )}
+                    {module.description}
+                  </p>
+                </a>
+              </div>
             ))}
-          </div>
-          <a className="portal-settings" href="/conta">
-            Conta e definições <span>→</span>
-          </a>
-        </div>
-      </section>
+          </nav>
+          {(loading || pending) && (
+            <p className="portal-save-status" role="status">
+              {loading
+                ? "A carregar as tuas escolhas…"
+                : "A guardar a tua escolha…"}
+            </p>
+          )}
+          {(saveError || stateError) && (
+            <div className="portal-save-error" role="alert">
+              <p>
+                {saveError || "Não foi possível carregar as tuas escolhas."}
+              </p>
+              {stateError ? (
+                <button type="button" onClick={() => location.reload()}>
+                  Tentar novamente
+                </button>
+              ) : (
+                <p>Selecciona o módulo para tentar novamente.</p>
+              )}
+            </div>
+          )}
+        </section>
+        <footer className="foot">
+          <span
+            className={`chip ${motor === false ? "offline" : ""}`}
+            role="status"
+          >
+            <i aria-hidden="true" />
+            {motor === null
+              ? "A ligar ao Motor…"
+              : motor
+                ? "Motor ligado"
+                : "Motor desligado"}
+          </span>
+        </footer>
+      </main>
+      <div id="veil" className={leaving ? "on" : ""} aria-hidden="true" />
     </div>
   );
 }

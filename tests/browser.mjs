@@ -67,7 +67,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("http://127.0.0.1:5175/entrada");
-  await page.getByRole("heading", { name: "O primeiro guardião." }).waitFor();
+  await page.getByRole("heading", { name: "Criar Administrador" }).waitFor();
   await page.getByLabel("Nome", { exact: true }).fill("Guardião Teste");
   await page.getByLabel("Email", { exact: true }).fill("qa@example.test");
   await page
@@ -78,21 +78,45 @@ try {
   await page.getByText("Usar chave manual").click();
   const secret = await page.locator("details code").innerText();
   await page.getByLabel("Guardei os códigos de recuperação.").check();
-  await page
-    .getByLabel("Código de autenticação", { exact: true })
-    .fill(totp(secret));
-  await page.getByRole("button", { name: "Confirmar e entrar" }).click();
+  const code = totp(secret);
+  for (let i = 0; i < code.length; i++)
+    await page
+      .getByLabel(`Dígito ${i + 1} de 6`, { exact: true })
+      .fill(code[i]);
+  await page.getByRole("button", { name: "Verificar", exact: true }).click();
   await page.waitForURL("**/onboarding");
-  const stateResponse = await context.request.patch(
+  await page.getByRole("button", { name: "Começar", exact: true }).click();
+  await page
+    .getByRole("group", { name: "Áudio", exact: true })
+    .getByRole("button", { name: "English" })
+    .click();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Chave TMDB", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByRole("heading", { name: "Add-ons", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByRole("button", { name: "Mais tarde", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Tudo pronto", exact: true })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Entrar no Zeus", exact: true })
+    .click();
+  await page.waitForURL("**/portal");
+  const stateResponse = await context.request.get(
     "http://127.0.0.1:5175/api/state",
-    {
-      data: {
-        onboardingDone: true,
-        preferences: { audioLanguages: ["pt"], subtitleLanguages: ["pt"] },
-      },
-    },
   );
   assert.equal(stateResponse.status(), 200);
+  const savedState = await stateResponse.json();
+  assert.equal(savedState.onboardingDone, true);
+  assert.deepEqual(savedState.preferences.audioLanguages, [
+    "pt-PT",
+    "original",
+    "en",
+  ]);
+  assert.deepEqual(savedState.preferences.subtitleLanguages, ["pt-PT"]);
   mkdirSync("/tmp/zeus-implemented", { recursive: true });
   for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: 900 });
