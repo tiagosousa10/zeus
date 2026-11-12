@@ -224,8 +224,8 @@ if (primary)
         {
           env: {
             ...process.env,
-            MS_PORT: "0",
-            MS_FFMPEG: resolveFfmpeg() || "",
+            ZEUS_MOTOR_PORT: "0",
+            ZEUS_MOTOR_FFMPEG: resolveFfmpeg() || "",
           },
           serviceName: "Zeus Motor",
         },

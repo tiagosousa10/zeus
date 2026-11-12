@@ -58,7 +58,6 @@ Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperaç�
 - A TV reproduz exclusivamente através de URLs privados `/api/iptv/play/...`, com proxy HLS/ficheiro/MPEG-TS e remux quando necessário. Uma reprodução por lista. Formatos/codecs incompatíveis, DRM ou limites da subscrição podem impedir a emissão; não há promessa de compatibilidade universal.
 - Os Add-ons do catálogo são serviços de terceiros e podem deixar de responder; os que exigem chave só funcionam com o URL configurado. Os importados pela sincronização comunitária continuam a precisar de aprovação.
 - Não há DVR, multiview nem aplicação Android nesta fase.
-- Não há importação de dados do MacStream; a interface antiga e o seu perfil foram removidos. Do MacStream ficaram apenas o Motor de torrents e a sua lista de trackers públicos.
 - Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A QA isolada usa media H.264/AAC gerada localmente e API simulada; a validação separada do backend com fornecedor privado está documentada em [Plano 2, estado verificado](docs/superpowers/plans/2026-11-12-tv-iptv-2-reproducao.md), sem credenciais nos resultados. Não foram iniciados torrents externos.
 - O DMG está configurado; assinatura/notarização e publicação dependem das credenciais Apple e do lançamento da versão. Os tickets no Linear continuam por sincronizar. Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
 

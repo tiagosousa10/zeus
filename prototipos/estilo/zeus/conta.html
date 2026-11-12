@@ -78,13 +78,6 @@ legend{padding:0;margin-bottom:10px}
 .preview[data-bg="caixa"] span{background:rgba(0,0,0,.72);padding:2px 10px;border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .segs{display:flex;flex-wrap:wrap;gap:16px 24px;margin-bottom:6px}
 .segs .z-label{display:block;margin-bottom:8px}
-.drop{position:relative;display:grid;justify-items:center;gap:8px;max-width:640px;padding:36px 24px;border-radius:var(--r-lg);border:1.5px dashed rgba(var(--leaf-rgb),.4);background:rgba(var(--leaf-rgb),.04);text-align:center;cursor:pointer;transition:background .25s,border-color .25s}
-.drop:hover,.drop.is-over{background:rgba(var(--leaf-rgb),.1);border-color:var(--accent)}
-.drop:focus-within{outline:2px solid var(--accent);outline-offset:3px}
-.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.drop svg{width:34px;height:34px;color:var(--accent)}
-.found{max-width:640px;margin-top:14px}
-.found ul{margin:10px 0 14px;padding-left:20px;color:var(--text-2);font-size:15px}
 .save-note{font-size:14px;color:var(--text-3);min-height:20px;margin-top:8px}
 @media (max-width:900px){
   .layout{grid-template-columns:minmax(0,1fr);gap:8px}
@@ -118,7 +111,7 @@ legend{padding:0;margin-bottom:10px}
 
   <div class="layout">
     <nav class="side" aria-label="Definições da conta">
-      <a href="#perfil">Perfil</a><a href="#seguranca">Segurança</a><a href="#tmdb">Chave TMDB</a><a href="#leitor">Leitor</a><a href="#importar">Importar do MacStream</a>
+      <a href="#perfil">Perfil</a><a href="#seguranca">Segurança</a><a href="#tmdb">Chave TMDB</a><a href="#leitor">Leitor</a>
     </nav>
     <div>
       <section class="sec" id="perfil" aria-labelledby="h-perfil">
@@ -208,23 +201,6 @@ legend{padding:0;margin-bottom:10px}
         <p class="save-note" id="m-pref" aria-live="polite"></p>
       </section>
 
-      <section class="sec" id="importar" aria-labelledby="h-imp">
-        <h2 class="z-t2" id="h-imp">Importar dados do MacStream</h2>
-        <p class="z-callout">Pré-visualização de uma possível importação. A migração ainda está por decidir; este ecrã não lê nem importa os dados do ficheiro.</p>
-        <label class="drop" id="drop">
-          <input type="file" id="file" accept=".json,.zip,application/json,application/zip" aria-describedby="drop-h">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-          <b>Larga aqui a exportação do MacStream</b>
-          <span class="z-foot" id="drop-h">Ou carrega para escolher o ficheiro. Aceita .json ou .zip, até 20 MB.</span>
-        </label>
-        <div class="found" id="found" hidden>
-          <div class="row"><div><b id="f-name"></b><p id="f-size"></p></div><button class="z-btn z-btn--ghost z-btn--sm" type="button" id="f-clear">Escolher outro</button></div>
-          <ul><li>132 títulos na tua lista</li><li>48 filmes e episódios com progresso</li><li>6 Add-ons, dos quais 4 aprovados; os outros ficam de fora até o Administrador os aprovar</li></ul>
-          <span class="z-progress" id="f-prog" hidden><i style="--p:0"></i></span>
-          <div class="actions" style="margin-top:14px"><button class="z-btn z-btn--primary z-btn--sm" type="button" id="f-go">Importar</button></div>
-        </div>
-        <p class="z-msg" id="m-imp" aria-live="polite"></p>
-      </section>
     </div>
   </div>
 <p class="z-foot z-muted" style="padding:0 var(--gutter) 28px">Protótipo interactivo · Dados de demonstração. As alterações duram até recarregares esta página; nenhum email é enviado.</p>
@@ -403,33 +379,6 @@ $$('[data-sub] input').forEach(r => r.addEventListener('change', () => {
   if (k === 'bg') pv.dataset.bg = r.value;
   note('Guardado.');
 }));
-
-/* Importar */
-const drop = $('#drop'), file = $('#file');
-const kb = n => n > 1048576 ? `${(n / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
-function take(f) {
-  const m = $('#m-imp');
-  if (!f) return;
-  if (!/\.(json|zip)$/i.test(f.name)) { m.textContent = `«${f.name}» não é uma exportação do MacStream. Escolhe um ficheiro .json ou .zip.`; return; }
-  if (f.size > 20 * 1048576) { m.textContent = 'O ficheiro tem mais de 20 MB. Exporta só a lista e o progresso.'; return; }
-  m.textContent = 'Ficheiro seleccionado. Os números abaixo são exemplos da demonstração.';
-  $('#f-name').textContent = f.name; $('#f-size').textContent = kb(f.size);
-  drop.hidden = true; $('#found').hidden = false; $('#f-prog').hidden = true; $('#f-go').disabled = false; $('#f-go').focus();
-}
-file.addEventListener('change', () => take(file.files[0]));
-['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('is-over'); }));
-['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('is-over')));
-drop.addEventListener('drop', e => { e.preventDefault(); take(e.dataTransfer.files[0]); });
-$('#f-clear').addEventListener('click', () => { file.value = ''; $('#found').hidden = true; drop.hidden = false; $('#m-imp').textContent = ''; file.focus(); });
-$('#f-go').addEventListener('click', e => {
-  const btn = e.currentTarget, bar = $('#f-prog'), i = $('i', bar);
-  btn.disabled = true; bar.hidden = false; $('#m-imp').textContent = 'A importar…';
-  let p = 0;
-  const t = setInterval(() => {
-    p = Math.min(1, p + .08 + Math.random() * .1); i.style.setProperty('--p', p.toFixed(2));
-    if (p >= 1) { clearInterval(t); $('#m-imp').textContent = 'Demonstração concluída. Nenhum dado foi importado.'; toast('Pré-visualização da importação concluída.'); }
-  }, RM ? 60 : 180);
-});
 
 /* Índice lateral acompanha a secção visível */
 const links = $$('.side a');

@@ -4,8 +4,8 @@
 const { startEngine } = require("./engine");
 const engine = startEngine({
   token: process.env.ZEUS_LEGACY === "1" ? null : process.env.ZEUS_MOTOR_TOKEN,
-  port: parseInt(process.env.MS_PORT || "11471", 10),
-  ffmpegPath: process.env.MS_FFMPEG || null,
+  port: parseInt(process.env.ZEUS_MOTOR_PORT || "11471", 10),
+  ffmpegPath: process.env.ZEUS_MOTOR_FFMPEG || null,
 });
 engine.server.once("listening", () =>
   process.parentPort.postMessage({

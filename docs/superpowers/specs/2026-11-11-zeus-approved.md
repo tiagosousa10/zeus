@@ -14,7 +14,7 @@ Aplicação privada, contas por convite, sem perfis. Administrador e Membro. Lis
 
 ## Stack aprovada
 
-React + Vite, TanStack Router/Query, Tailwind, GSAP e Three.js; Electron no desktop. Hono com módulos MVC, Drizzle e PostgreSQL. Implementar ecrãs reais e persistência, com estados vazios/erro honestos. Não simular sucesso em serviços não configurados. Manter o MacStream e os protótipos de referência. Migração de dados antigos ainda sem decisão: não importar nem apagar automaticamente.
+React + Vite, TanStack Router/Query, Tailwind, GSAP e Three.js; Electron no desktop. Hono com módulos MVC, Drizzle e PostgreSQL. Implementar ecrãs reais e persistência, com estados vazios/erro honestos. Não simular sucesso em serviços não configurados. Manter os protótipos de referência.
 
 ## Implementação
 

@@ -7,7 +7,7 @@
 
 ## Global Constraints
 
-PT-PT; utilizadores são Membros; nenhuma importação automática dos dados MacStream; nenhum envio externo real durante testes; respeitar movimento reduzido; guardar segredos só no servidor.
+PT-PT; utilizadores são Membros; nenhum envio externo real durante testes; respeitar movimento reduzido; guardar segredos só no servidor.
 
 ## Review Focus
 
