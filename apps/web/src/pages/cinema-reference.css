@@ -318,8 +318,8 @@ html.z-rm .rh__rule {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 38%;
-  transform-origin: 65% 40%;
+  object-position: 70% 22%;
+  transform-origin: 78% 30%;
   animation: drift 64s ease-in-out infinite alternate;
 }
 .sea__art::after {
@@ -377,17 +377,6 @@ html.z-rm .rh__rule {
 }
 .sea__head .z-lede {
   max-width: 44ch;
-}
-.sea__credit {
-  position: absolute;
-  right: var(--gutter);
-  top: calc(var(--nav-h) + 12px);
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-3);
-}
-.sea__credit i {
-  font-style: italic;
 }
 
 .voyage {
@@ -580,13 +569,10 @@ html.z-rm .rh__rule {
     padding-top: calc(var(--nav-h) + 30vw);
   }
   .sea__art img {
-    object-position: 66% 30%;
+    object-position: 80% 25%;
   }
   .sea.is-sailing {
     padding-top: calc(var(--nav-h) + 16px);
-  }
-  .sea__credit {
-    display: none;
   }
   .voyage .z-search {
     height: 54px;

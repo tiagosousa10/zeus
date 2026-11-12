@@ -1035,7 +1035,7 @@ function Medusa() {
   useEffect(() => {
     const el = ref.current!;
     el.innerHTML =
-      '<img src="/art/img/medusa.webp" alt="" width="2341" height="2400">';
+      '<img src="/art/img/medusa.webp" alt="" width="1254" height="1254">';
     const light = cursorLight(el, {
       size: 0.5,
       rest: [0.5, 0.45],

@@ -354,8 +354,8 @@ export default function Addons() {
                 ref={forge}
                 src="/art/img/hefesto.webp"
                 alt=""
-                width="2400"
-                height="1864"
+                width="1536"
+                height="1024"
                 decoding="async"
               />
             </div>

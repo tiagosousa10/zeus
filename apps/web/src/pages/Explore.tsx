@@ -194,9 +194,6 @@ export default function Explore() {
           />
         </div>
         <canvas className="sea__wake" ref={wakeCanvas} aria-hidden="true" />
-        <p className="sea__credit" aria-hidden="true">
-          Waterhouse, <i>Ulisses e as Sereias</i>, 1891
-        </p>
         <div className="sea__deck">
           <div className="sea__head">
             <h1 className="z-t1" id="ex-title">

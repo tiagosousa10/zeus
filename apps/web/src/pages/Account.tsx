@@ -102,13 +102,13 @@ export default function Account() {
           paintingRef.current,
           "/art/img/atena.webp",
           {
-            focus: { x: 0.33, y: 0.17 },
+            focus: { x: 0.33, y: 0.3 },
             anchor: { x: 0.3, y: 0.4 },
             anchorNarrow: { x: 0.5, y: 0.27 },
             figure: [
-              [0.33, 0.2, 0.14, 0.18],
-              [0.4, 0.64, 0.36, 0.4],
-              [0.92, 0.5, 0.06, 0.5],
+              [0.33, 0.3, 0.12, 0.2],
+              [0.3, 0.78, 0.3, 0.25],
+              [0.15, 0.22, 0.08, 0.2],
             ],
             size: (w: number, h: number) =>
               w < 700

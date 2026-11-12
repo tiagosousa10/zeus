@@ -37,8 +37,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 167%;
-  translate: 0 -15%;
+  width: 118%;
+  translate: 0 -2%;
 }
 .addons-fidelity .fg-art img {
   width: 100%;
@@ -380,8 +380,8 @@
     mask-image: linear-gradient(0deg, transparent 30%, #000 62%);
   }
   .addons-fidelity .fg-pan {
-    width: 190%;
-    translate: -4% -10%;
+    width: 170%;
+    translate: -4% 0;
   }
   .addons-fidelity .fg-copy {
     justify-self: start;

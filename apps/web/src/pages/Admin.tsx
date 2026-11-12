@@ -44,13 +44,13 @@ export default function Admin() {
           paintingRef.current,
           "/art/img/conselho.webp",
           {
-            focus: { x: 0.58, y: 0.38 },
+            focus: { x: 0.83, y: 0.2 },
             anchor: { x: 0.67, y: 0.44 },
             anchorNarrow: { x: 0.5, y: 0.27 },
             figure: [
-              [0.55, 0.4, 0.4, 0.35],
-              [0.25, 0.6, 0.2, 0.2],
-              [0.8, 0.5, 0.2, 0.3],
+              [0.78, 0.62, 0.2, 0.38],
+              [0.83, 0.2, 0.08, 0.13],
+              [0.95, 0.65, 0.06, 0.3],
             ],
             size: (w: number, h: number) => Math.max(w * 1.04, h * 1.6),
             kenBurns: 0.025,
