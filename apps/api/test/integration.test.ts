@@ -133,6 +133,59 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
     "PATCH",
   );
   assert.equal(saved.status, 200, JSON.stringify(saved.body));
+  const { seedAddons } = await import("../src/db/seed-addons.js");
+  assert.ok((await seedAddons(sql)) > 300, "Seeds the swept add-on catalogue");
+  assert.equal(await seedAddons(sql), 0, "Seeding twice adds nothing");
+  assert.ok(
+    (await a("/addons")).body.addons.some(
+      (x: any) =>
+        Array.isArray(x.resources) && x.resources.includes("subtitles"),
+    ),
+  );
+  await sql`insert into addon (id, name, manifest_url, status, configuration_required, configurable, resources)
+    values ('test.keyed', 'Keyed', 'https://keyed.example.com/manifest.json', 'approved', true, true, '["stream","subtitles"]')`;
+  assert.equal(
+    (await a("/state", { addons: [{ id: "test.keyed" }] }, "PATCH")).status,
+    400,
+    "A keyed add-on needs its configured URL",
+  );
+  assert.equal(
+    (
+      await a(
+        "/state",
+        {
+          addons: [
+            {
+              id: "test.keyed",
+              manifestUrl: "https://other.example.net/k/manifest.json",
+            },
+          ],
+        },
+        "PATCH",
+      )
+    ).status,
+    400,
+    "The configured URL must stay on the approved host",
+  );
+  const keyed = await a(
+    "/state",
+    {
+      addons: [
+        {
+          id: "test.keyed",
+          manifestUrl: "https://keyed.example.com/secret-key-123/manifest.json",
+        },
+      ],
+    },
+    "PATCH",
+  );
+  assert.equal(keyed.status, 200, JSON.stringify(keyed.body));
+  assert.ok(
+    (await sql`select ciphertext from member_state`).every(
+      (r) => !r.ciphertext.includes("secret-key-123"),
+    ),
+  );
+  assert.equal((await a("/state", { addons: [] }, "PATCH")).status, 200);
   const invitation = await a("/admin/invites", {
     email: "member@example.test",
   });

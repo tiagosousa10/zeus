@@ -14,6 +14,7 @@ export function streamEndpoint(
   type: string,
   id: string,
   fields: ConfigField[] = [],
+  resource: "stream" | "subtitles" = "stream",
 ) {
   const base = new URL(manifestUrl);
   base.search = "";
@@ -89,8 +90,45 @@ export function streamEndpoint(
     }
     if (parts.length) directory += "/" + parts.join("|");
   }
-  base.pathname = `${directory}/stream/${encodeURIComponent(type)}/${encodeURIComponent(id)}.json`;
+  base.pathname = `${directory}/${resource}/${encodeURIComponent(type)}/${encodeURIComponent(id)}.json`;
   return base.toString();
+}
+/** O URL configurado pelo Membro já leva as chaves; substitui o manifesto e a configuração. */
+export function installedEndpoint(
+  a: typeof addon.$inferSelect,
+  entry: { manifestUrl?: string; config?: Record<string, unknown> },
+  resource: "stream" | "subtitles",
+  type: string,
+  id: string,
+) {
+  return entry.manifestUrl
+    ? streamEndpoint(entry.manifestUrl, {}, type, id, [], resource)
+    : streamEndpoint(
+        a.manifestUrl,
+        entry.config || {},
+        type,
+        id,
+        configFields(a.configFields),
+        resource,
+      );
+}
+export async function installedAddons(
+  memberId: string,
+  resource: "stream" | "subtitles",
+) {
+  const state = await getState(memberId);
+  const approved = await db
+    .select()
+    .from(addon)
+    .where(eq(addon.status, "approved"));
+  return state.addons
+    .filter((a: any) => a.enabled !== false)
+    .slice(0, 20)
+    .map((entry: any) => ({
+      entry,
+      addon: approved.find((a) => a.id === entry.id),
+    }))
+    .filter(({ addon }: any) => !addon || addon.resources.includes(resource));
 }
 export const streamRoutes = new Hono();
 streamRoutes.use("*", requireMember);
@@ -105,30 +143,16 @@ streamRoutes.get("/", async (c) => {
         .regex(/^[a-zA-Z0-9:_-]+$/),
     })
     .parse(c.req.query());
-  const state = await getState(c.get("member").id);
-  const approved = await db
-    .select()
-    .from(addon)
-    .where(eq(addon.status, "approved"));
-  const installed = state.addons
-    .filter((a: any) => a.enabled !== false)
-    .slice(0, 20);
+  const installed = await installedAddons(c.get("member").id, "stream");
   const results = await Promise.all(
-    installed.map(async (entry: any) => {
-      const a = approved.find((a) => a.id === entry.id);
+    installed.map(async ({ entry, addon: a }: any) => {
       if (!a)
         return {
           streams: [],
           error: "Um Add-on instalado deixou de estar aprovado.",
         };
       try {
-        const endpoint = streamEndpoint(
-          a.manifestUrl,
-          entry.config || {},
-          type,
-          id,
-          configFields(a.configFields),
-        );
+        const endpoint = installedEndpoint(a, entry, "stream", type, id);
         const response = await safeFetch(endpoint, {
           timeout: 12000,
           maxBytes: 2 * 1024 * 1024,

@@ -36,6 +36,7 @@ const patch = z
             id: z.string(),
             enabled: z.boolean().optional(),
             config: json.optional(),
+            manifestUrl: z.url().max(4000).optional(),
           })
           .strict(),
       )
@@ -58,6 +59,23 @@ memberRoutes.patch("/", async (c) => {
       const a = approved.find((a) => a.id === entry.id);
       if (!a)
         return c.json({ error: "Só podes instalar Add-ons aprovados." }, 400);
+      if (entry.manifestUrl) {
+        const configured = new URL(entry.manifestUrl);
+        if (
+          configured.protocol !== "https:" ||
+          configured.hostname !== new URL(a.manifestUrl).hostname ||
+          !configured.pathname.endsWith("/manifest.json")
+        )
+          return c.json(
+            {
+              error:
+                "Cola o URL do manifesto gerado na página de configuração deste Add-on.",
+            },
+            400,
+          );
+        delete entry.config;
+        continue;
+      }
       if (entry.enabled === false) continue;
       const fields = configFields(a.configFields);
       if (
@@ -66,7 +84,10 @@ memberRoutes.patch("/", async (c) => {
         new URL(a.manifestUrl).hostname !== "torrentio.strem.fun"
       )
         return c.json(
-          { error: "Este Add-on exige uma configuração ainda não suportada." },
+          {
+            error:
+              "Este Add-on precisa do URL gerado na sua página de configuração.",
+          },
           400,
         );
       try {
