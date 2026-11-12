@@ -6,6 +6,10 @@ const DROPPED_TAG = /^#EXT-X-(CONTENT-STEERING|SESSION-DATA|DEFINE)\b/i;
 const LINE_BREAK = /\r\n|[\r\n\u2028\u2029]/;
 // Rewritten links never hold "//", a backslash, a "scheme:/" or a value starting with "/"; browsers read "\" as "/".
 const POINTS_SOMEWHERE = /[/\\]{2}|\\|=\s*"?\s*[/\\]|[a-z][a-z0-9+.-]*:[/\\]/i;
+// Browsers resolve "http:host/x" (no slashes) to http://host/x; rewritten links never hold a scheme.
+const SCHEME = /(?<![a-z0-9+.-])[a-z][a-z0-9+.-]*:/i;
+// hls.js reads whatever follows the duration as the segment URI when no comma comes right after it.
+const EXTINF = /^#EXTINF:\s*(\d+(?:\.\d*)?|\.\d+)/i;
 
 const resolve = (uri: string, base: string): string | undefined => {
   try {
@@ -17,13 +21,17 @@ const resolve = (uri: string, base: string): string | undefined => {
 
 function rewriteTag(value: string, base: string, link: (absoluteUrl: string, playlist: boolean) => string): string | undefined {
   if (DROPPED_TAG.test(value) || (/^#EXT-X-DATERANGE:/i.test(value) && /X-ASSET-/i.test(value))) return undefined;
-  const tag = value.replace(/^(#EXTINF:[^,]*),.*$/i, "$1,");
-  if (POINTS_SOMEWHERE.test(tag.replace(URI_ATTR, 'URI=""'))) return undefined;
-  const uris = [...tag.matchAll(URI_ATTR)].map((m) => resolve(m[1] ?? m[2] ?? "", base));
+  if (/^#EXTINF:/i.test(value)) {
+    const duration = EXTINF.exec(value)?.[1];
+    return duration === undefined ? undefined : `#EXTINF:${duration},`;
+  }
+  const blanked = value.replace(URI_ATTR, 'URI=""');
+  if (POINTS_SOMEWHERE.test(blanked) || SCHEME.test(blanked.replace(/^#EXT[a-z0-9-]*:?/i, ""))) return undefined;
+  const uris = [...value.matchAll(URI_ATTR)].map((m) => resolve(m[1] ?? m[2] ?? "", base));
   if (uris.some((u) => u === undefined)) return undefined;
-  const playlist = PLAYLIST_TAG.test(tag);
+  const playlist = PLAYLIST_TAG.test(value);
   let i = 0;
-  return tag.replace(URI_ATTR, () => `URI="${link(uris[i++]!, playlist)}"`);
+  return value.replace(URI_ATTR, () => `URI="${link(uris[i++]!, playlist)}"`);
 }
 
 // Fails closed: comments and any tag that could still carry an upstream location are dropped.

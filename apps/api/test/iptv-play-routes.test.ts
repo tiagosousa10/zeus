@@ -7,6 +7,7 @@ import { createHmac, randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { fakeFetch, xtreamRoutes } from "./fixtures/xtream.js";
 import { fakeUpstream, type FakeResource } from "./fixtures/upstream.js";
+import { normalizeM3U } from "../src/modules/iptv/m3u.js";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
@@ -76,6 +77,11 @@ async function verify(c: ReturnType<typeof client>, password: string) {
 
 const ORIGIN = "https://tv.example.test/live/u/segredo-123";
 const EDGE = "https://edge.cdn.test/hls/u/segredo-123/101";
+const M3U_URL = "https://m3u.example.test/get.php?username=fulano-m3u&password=chave-m3u-99&token=tok3n-m3u-1&type=m3u_plus";
+const M3U_TEXT = '#EXTM3U\n#EXTINF:-1 group-title="Notícias",Canal M3U\nhttps://stream.m3u.test/hls/chan.m3u8\n';
+const KEY = new Uint8Array([0x9a, 0x01, 0xff, 0x10, 0x22, 0x7e, 0x00, 0x41, 0xc3, 0x28, 0x80, 0x0f, 0x5c, 0x2f, 0x2f, 0x68]);
+const TS = new Uint8Array([0x47, 0x40, 0x11, 0x10, 0x00, 0x42, 0xf0, 0x25, 0x00, 0x01, 0xc1, 0x00, 0x00, 0xff, 0x01, 0xff]);
+const NO_CONTROL = new Uint8Array([0xc3, 0x28, 0xa0, 0xa1, 0xe2, 0x28, 0xa1, 0x41, 0xf0, 0x90, 0x28, 0xbc, 0xfe, 0xfe, 0xff, 0xff]);
 const upstream: Record<string, FakeResource> = {
   [`${ORIGIN}/101.m3u8`]: {
     url: `${EDGE}/master.m3u8`,
@@ -107,8 +113,11 @@ const upstream: Record<string, FakeResource> = {
     body: "\uFEFF \n#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/odd1.ts\n",
   },
   [`${EDGE}/low/index.m3u8`]: {
-    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n#EXTINF:6.0,\njson\n#EXTINF:6.0,\nhtml\n#EXTINF:6.0,\nspaces\n#EXTINF:6.0,\nsub.vtt\n",
+    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n#EXTINF:6.0,\njson\n#EXTINF:6.0,\nhtml\n#EXTINF:6.0,\nspaces\n#EXTINF:6.0,\nsub.vtt\n#EXTINF:6.0,\nkey\n#EXTINF:6.0,\nts\n#EXTINF:6.0,\nraw\n",
   },
+  [`${EDGE}/low/key`]: { headers: { "content-type": "text/html" }, body: KEY },
+  [`${EDGE}/low/ts`]: { headers: { "content-type": "text/plain" }, body: TS },
+  [`${EDGE}/low/raw`]: { headers: { "content-type": "application/json" }, body: NO_CONTROL },
   [`${EDGE}/low/seg1.ts`]: { headers: { "content-type": "video/mp2t" }, body: "SEGMENT-1", open: true },
   ...Object.fromEntries(
     ["avc1x", "vc1.64"].map((p) => [
@@ -116,6 +125,10 @@ const upstream: Record<string, FakeResource> = {
       { body: '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS="avc1.64001f,mp4a.40.2"\nv.m3u8\n' },
     ]),
   ),
+  "https://tv.example.test/live/654321/123456/101.m3u8": {
+    body: "#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:123456\n#EXT-X-DISCONTINUITY-SEQUENCE:654321\n#EXTINF:6,\ns.ts\n",
+  },
+  "https://stream.m3u.test/hls/chan.m3u8": { body: "#EXTM3U\n" },
   [`${ORIGIN}/102.m3u8`]: { status: 509, body: "max connections https://tv.example.test" },
 };
 const links = (text: string) => text.split("\n").filter((l) => l.startsWith("/api/iptv/play/"));
@@ -138,8 +151,10 @@ test("playback starts through the API and HLS never reveals the provider", async
   const local = { id: "l2", name: "Local", type: "m3u", url: "http://127.0.0.1/" };
   const short = { id: "l3", name: "Curta", type: "xtream", url: "https://tv.example.test/", username: "u", password: "avc1x" };
   const inner = { ...short, id: "l4", password: "vc1.64" };
-  assert.equal((await a("/state", { iptv: [list, local, short, inner] }, "PATCH")).status, 200);
-  setProviderFetch(fakeFetch(xtreamRoutes));
+  const digits = { ...short, id: "l5", username: "654321", password: "123456" };
+  const m3u = { id: "l6", name: "M3U", type: "m3u", url: M3U_URL };
+  assert.equal((await a("/state", { iptv: [list, local, short, inner, digits, m3u] }, "PATCH")).status, 200);
+  setProviderFetch(fakeFetch((u) => (u.hostname === "m3u.example.test" ? new Response(M3U_TEXT) : xtreamRoutes(u))));
   const fake = fakeUpstream(upstream);
   setUpstreamFetch(fake);
 
@@ -173,7 +188,7 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(media.status, 200, media.text);
   assert.equal(media.type, "application/vnd.apple.mpegurl");
   assert.ok(!leaks(media.text), media.text);
-  assert.equal(links(media.text).length, 10);
+  assert.equal(links(media.text).length, 13);
   for (const i of [2, 3, 4]) {
     const sniffed = await a(links(media.text)[i].slice(4));
     assert.equal(sniffed.type, "application/vnd.apple.mpegurl", `link ${i}: ${sniffed.text}`);
@@ -191,6 +206,12 @@ test("playback starts through the API and HLS never reveals the provider", async
   }
   const vtt = await a(links(media.text)[9].slice(4));
   assert.deepEqual([vtt.status, vtt.type, vtt.text], [200, "text/vtt", "WEBVTT\n\n00:00.000 --> 00:01.000\nOlá\n"]);
+  // Binary keys and segments mislabelled as text still play.
+  for (const [i, bytes] of [[10, KEY], [11, TS], [12, NO_CONTROL]] as const) {
+    const binary = await a.raw(links(media.text)[i].slice(4));
+    assert.equal(binary.status, 200, `link ${i}`);
+    assert.deepEqual(new Uint8Array(await binary.arrayBuffer()), bytes);
+  }
 
   const segment = await a.raw(links(media.text)[0].slice(4), { headers: { range: "bytes=0-" } });
   assert.equal(segment.status, 200);
@@ -236,6 +257,14 @@ test("playback starts through the API and HLS never reveals the provider", async
   const titled = await a(second.body.url.slice(4));
   assert.equal(titled.status, 200, titled.text);
   assert.ok(!leaks(titled.text), titled.text);
+  // The host reached after redirects is a secret too.
+  Object.assign(upstream[`${ORIGIN}/102.m3u8`], {
+    url: "https://edge2.relay.test/x/102.m3u8",
+    body: '#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="Edge2.Relay.Test",URI="a.m3u8"\n',
+  });
+  const redirected = await a(second.body.url.slice(4));
+  assert.deepEqual([redirected.status, redirected.body?.error], [502, "O fornecedor não respondeu. Tenta de novo."]);
+  assert.ok(!/relay/i.test(redirected.text));
 
   const mp4 = await a("/iptv/lists/l1/play", { section: "movie", id: "201" });
   assert.deepEqual([mp4.body.type, mp4.body.remux, mp4.body.url], ["mp4", false, `/api/iptv/play/${mp4.body.token}/file`]);
@@ -252,6 +281,23 @@ test("playback starts through the API and HLS never reveals the provider", async
     const codecs = await a(started.body.url.slice(4));
     assert.equal(codecs.status, 200, `${id}: ${codecs.text}`);
     assert.match(codecs.text, /CODECS="avc1\.64001f,mp4a\.40\.2"/);
+  }
+
+  // All-digit credentials collide with numeric attributes, so only the hosts guard them.
+  const numeric = await a("/iptv/lists/l5/play", { section: "live", id: "101" });
+  const sequence = await a(numeric.body.url.slice(4));
+  assert.equal(sequence.status, 200, sequence.text);
+  assert.match(sequence.text, /#EXT-X-MEDIA-SEQUENCE:123456\n#EXT-X-DISCONTINUITY-SEQUENCE:654321/);
+
+  // M3U lists carry credentials in their URL query.
+  const channel = normalizeM3U(M3U_TEXT, M3U_URL, 0).live.items[0].id;
+  const fromM3U = await a("/iptv/lists/l6/play", { section: "live", id: channel });
+  assert.equal(fromM3U.status, 200, fromM3U.text);
+  assert.equal((await a(fromM3U.body.url.slice(4))).status, 200);
+  for (const value of ["fulano-m3u", "chave-m3u-99", "tok3n-m3u-1"]) {
+    upstream["https://stream.m3u.test/hls/chan.m3u8"].body = `#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="x ${value}",URI="a.m3u8"\n`;
+    const secret = await a(fromM3U.body.url.slice(4));
+    assert.deepEqual([secret.status, secret.body?.error], [502, "O fornecedor não respondeu. Tenta de novo."], value);
   }
 
   const resource = await a("/iptv/resource?listId=l2");

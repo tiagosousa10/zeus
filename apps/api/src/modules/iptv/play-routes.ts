@@ -17,6 +17,7 @@ const TOUCH_MS = 60_000;
 const DIRECT = new Set(["mp4", "m4v", "mov", "webm"]);
 const PASS_HEADERS = ["content-type", "content-length", "content-range", "accept-ranges"];
 const MAX_LEADING_SPACE = 64 * 1024;
+const SNIFF_BYTES = 512;
 
 let upstreamFetch = safeStream;
 export function setUpstreamFetch(f: typeof safeStream): void {
@@ -63,9 +64,13 @@ playRoutes.post("/lists/:listId/play", async (c) => {
 
 const forms = (values: string[]) => [...new Set(values.flatMap((v) => [v, encodeURIComponent(v)]).map((v) => v.toLowerCase()))];
 
+// All-digit values would collide with BANDWIDTH or MEDIA-SEQUENCE; the hosts still guard those lists.
+const isCredential = (v: string | null | undefined): v is string => !!v && v.length >= 6 && !/^\d+$/.test(v);
+
 function secretsFor(list: IPTVList, upstream: Upstream): PlaySession["secrets"] {
+  const query = [...new URL(list.url).searchParams].filter(([k]) => ["username", "password", "token"].includes(k.toLowerCase()));
   return {
-    credentials: forms([list.username, list.password].filter((v): v is string => !!v && v.length >= 6)),
+    credentials: forms([list.username, list.password, ...query.map(([, v]) => v)].filter(isCredential)),
     hosts: forms([new URL(list.url).hostname, new URL(upstream.url).hostname]),
   };
 }
@@ -140,6 +145,7 @@ async function readCapped(r: Response): Promise<string> {
 }
 
 async function playlist(c: Context, s: PlaySession, r: Response): Promise<Response> {
+  for (const host of forms([new URL(r.url).hostname])) if (!s.secrets.hosts.includes(host)) s.secrets.hosts.push(host);
   const text = rewritePlaylist(
     await readCapped(r),
     r.url,
@@ -149,17 +155,30 @@ async function playlist(c: Context, s: PlaySession, r: Response): Promise<Respon
   return c.body(text, 200, { "content-type": "application/vnd.apple.mpegurl", "cache-control": "no-store" });
 }
 
+// A TS sync byte, a control byte or invalid UTF-8 means a binary key or segment, whatever its content-type says.
+function looksBinary(head: Uint8Array[]): boolean {
+  const bytes = Buffer.concat(head).subarray(0, SNIFF_BYTES);
+  if (bytes[0] === 0x47 || bytes.some((b) => b < 0x09 || (b >= 0x0e && b <= 0x1f))) return true;
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes, { stream: true });
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 // Reads until "#EXTM3U" could show (BOM and whitespace skipped) to spot a playlist with an odd path or
-// content-type; the body stays intact for relaying. Endless leading whitespace counts as "not a playlist".
-async function peek(r: Response): Promise<{ playlist: boolean; response: Response }> {
-  if (!r.body) return { playlist: false, response: r };
+// content-type, and at least `sniff` bytes; the body stays intact for relaying. Endless leading whitespace
+// counts as "not a playlist".
+async function peek(r: Response, sniff: number): Promise<{ playlist: boolean; binary: boolean; response: Response }> {
+  if (!r.body) return { playlist: false, binary: false, response: r };
   const reader = r.body.getReader();
   const decoder = new TextDecoder();
   const head: Uint8Array[] = [];
   let bytes = 0;
   let done = false;
   let start = "";
-  while (start.length < 7 && bytes <= MAX_LEADING_SPACE) {
+  while ((start.length < 7 || bytes < sniff) && bytes <= MAX_LEADING_SPACE) {
     const next = await reader.read();
     if (next.done) {
       done = true;
@@ -185,7 +204,7 @@ async function peek(r: Response): Promise<{ playlist: boolean; response: Respons
   });
   const response = new Response(body, { status: r.status, headers: r.headers });
   Object.defineProperty(response, "url", { value: r.url });
-  return { playlist: start.startsWith("#EXTM3U"), response };
+  return { playlist: start.startsWith("#EXTM3U"), binary: looksBinary(head), response };
 }
 
 // Keeps the session alive while a long body is still flowing to the browser.
@@ -232,10 +251,11 @@ playRoutes.get("/play/:token/r/:id", (c) =>
       throw new Error("partial playlist");
     }
     if (!known && !/mpegurl/i.test(type)) {
-      const peeked = await peek(r);
+      // Keys and segments are binary (WebVTT subtitles aside); other text may hold upstream locations.
+      const textual = /^text\/(?!vtt\b)|^application\/json/i.test(type);
+      const peeked = await peek(r, textual ? SNIFF_BYTES : 0);
       if (!peeked.playlist) {
-        // Keys and segments are binary (WebVTT subtitles aside); other text may hold upstream locations.
-        if (/^text\/(?!vtt\b)|^application\/json/i.test(type)) {
+        if (textual && !peeked.binary) {
           await peeked.response.body?.cancel().catch(() => {});
           throw new Error("unexpected text");
         }

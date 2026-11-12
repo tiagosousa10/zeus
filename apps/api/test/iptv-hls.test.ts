@@ -125,3 +125,51 @@ test("tags with backslash, scheme or root-relative values are dropped", () => {
   const out = rewritePlaylist(text, "https://e.test/", () => "/r/0");
   assert.equal(out, "#EXTM3U\n#EXTINF:6,\n/r/0");
 });
+
+test("EXTINF keeps only its duration, so hls.js never reads the rest of the line as a segment URI", () => {
+  const text = [
+    "#EXTM3U",
+    "#EXTINF:6 http:cdn.test/live/u/pass/1.ts",
+    "a.ts",
+    "#EXTINF:6\thttp:cdn.test/live/u/pass/2.ts,title",
+    "b.ts",
+    "#EXTINF: 6.5x https:cdn.test/u/pass/3.ts",
+    "c.ts",
+    "#EXTINF:http:cdn.test/u/pass/4.ts",
+    "d.ts",
+    "#extinf:.5,",
+    "e.ts",
+  ].join("\n");
+  const seen: string[] = [];
+  const out = rewritePlaylist(text, "https://e.test/", (u) => (seen.push(u.slice(15)), `/r/${seen.length}`));
+  assert.deepEqual(seen, ["a.ts", "b.ts", "c.ts", "d.ts", "e.ts"]);
+  assert.equal(out, "#EXTM3U\n#EXTINF:6,\n/r/1\n#EXTINF:6,\n/r/2\n#EXTINF:6.5,\n/r/3\n/r/4\n#EXTINF:.5,\n/r/5");
+});
+
+test("tags with scheme-like text are dropped and ordinary tags are kept as they are", () => {
+  const kept = [
+    "#EXTM3U",
+    "#EXT-X-VERSION:3",
+    "#EXT-X-TARGETDURATION:6",
+    "#EXT-X-MEDIA-SEQUENCE:123",
+    "#EXT-X-PROGRAM-DATE-TIME:2026-11-12T20:00:00.000+00:00",
+    '#EXT-X-STREAM-INF:BANDWIDTH=800000,CODECS="avc1.64001f,mp4a.40.2",RESOLUTION=1280x720',
+    "/r/0",
+    '#EXT-X-KEY:METHOD=AES-128,URI="/r/0",IV=0x0123456789abcdef0123456789abcdef',
+    "#EXT-X-BYTERANGE:1000@0",
+    "#EXTINF:6,",
+    "/r/0",
+    "#EXT-X-ENDLIST",
+  ];
+  const dropped = [
+    "#EXT-X-PROGRAM-DATE-TIME:2026-11-12T20:00:00Z http:1.2.3.4/u/pass/1.ts",
+    "#EXT-X-PROGRAM-DATE-TIME:http:cdn.test/u/pass/1.ts",
+    "#EXT-X-ENDLIST http:cdn.test/u/pass/1.ts",
+    '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="http:cdn.test",URI="a.m3u8"',
+    "#EXT-X-KEY:METHOD=AES-128,URI=k,X-F=http:cdn.test/u/pass",
+    "#EXT-X-BYTERANGE:1000@0,https:cdn.test",
+  ];
+  const text = [...kept.slice(0, 9), ...dropped, ...kept.slice(9)].join("\n");
+  const out = rewritePlaylist(text, "https://e.test/", () => "/r/0");
+  assert.equal(out, kept.join("\n"));
+});
