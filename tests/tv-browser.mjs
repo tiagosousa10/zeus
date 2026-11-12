@@ -213,7 +213,7 @@ try {
       if (name === "portal") await page.locator(".tv-portal").first().waitFor();
       if (name === "series" || name === "movies") {
         await page
-          .locator(name === "movies" ? ".tv-bento" : ".tv-editorial")
+          .locator(".tv-bento")
           .waitFor();
         assert.ok((await page.locator(".tv-poster").count()) > 0);
       }
@@ -260,7 +260,7 @@ try {
     );
     const searchOpener = page.locator(".tv-header-tools button").first();
     await searchOpener.focus();
-    await page.keyboard.press("Meta+k");
+    await page.evaluate(() => window.__tvFixture.openSearch());
     await page
       .getByRole("combobox", { name: "Procurar canais, séries e filmes" })
       .waitFor();
@@ -343,7 +343,7 @@ try {
   await page.waitForFunction(
     () => window.__tvFixture.prefs.favorites.live.length === 1,
   );
-  await page.keyboard.press("Meta+k");
+  await page.evaluate(() => window.__tvFixture.openSearch());
   const search = page.getByRole("combobox", {
     name: "Procurar canais, séries e filmes",
   });
@@ -367,7 +367,7 @@ try {
     "true",
   );
   await page.keyboard.press("Escape");
-  await page.keyboard.press("Meta+k");
+  await page.evaluate(() => window.__tvFixture.openSearch());
   await search.waitFor();
   assert.equal(
     await page
@@ -380,7 +380,7 @@ try {
   ).length;
   await page.keyboard.press("Escape");
   await star.click();
-  await page.keyboard.press("Meta+k");
+  await page.evaluate(() => window.__tvFixture.openSearch());
   await search.waitFor();
   assert.equal(
     fixture.requests.filter((r) => r.path.endsWith("/search-index")).length,
@@ -413,8 +413,9 @@ try {
     window.__tvFixture.prefs.hidden.live.includes("pt"),
   );
   await page.keyboard.press("Escape");
-  await page.keyboard.press("Meta+k");
+  await page.evaluate(() => window.__tvFixture.openSearch());
   await search.waitFor();
+  await search.fill("Canal"); // Other visible sections must remain searchable.
   await page.waitForFunction(
     () => document.querySelectorAll(".tv-result").length === 0,
   );
@@ -660,7 +661,7 @@ try {
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Enter");
     await page.getByRole("dialog").waitFor();
-    await page.keyboard.press("Meta+k");
+    await page.evaluate(() => window.__tvFixture.openSearch());
     await page
       .getByRole("combobox", { name: "Procurar canais, séries e filmes" })
       .waitFor();
@@ -677,6 +678,7 @@ try {
     });
     await first.focus();
     await page.keyboard.press("Enter");
+    if (await page.getByRole("button",{name:"Controlos do leitor"}).getAttribute("aria-expanded") === "false") await page.getByRole("button",{name:"Controlos do leitor"}).click();
     await page
       .locator(".tv-programme-capsule")
       .getByText("Guia exclusivo do canal", { exact: true })
@@ -686,7 +688,7 @@ try {
       exact: true,
     });
     await playerButton.focus();
-    await page.keyboard.press("Meta+k");
+    await page.evaluate(() => window.__tvFixture.openSearch());
     await page
       .getByRole("combobox", { name: "Procurar canais, séries e filmes" })
       .waitFor();

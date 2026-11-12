@@ -1,3 +1,4 @@
+import { ZeusLoader } from "../../components/ZeusLoader";
 import {
   useEffect,
   useId,
@@ -18,11 +19,13 @@ export function Modal({
   children,
   onClose,
   className = "",
+  fullViewport = false,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   className?: string;
+  fullViewport?: boolean;
 }) {
   const previousFocus = useRef(document.activeElement as HTMLElement | null);
   const closeRef = useRef(onClose);
@@ -52,9 +55,14 @@ export function Modal({
       if (e.key === "Tab") {
         const items = Array.from(
           root.current?.querySelectorAll<HTMLElement>(
-            'button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]',
+            'a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]',
           ) || [],
-        ).filter((el) => el.offsetParent !== null);
+        ).filter(
+          (el) =>
+            el.offsetParent !== null &&
+            !el.closest("[inert]") &&
+            getComputedStyle(el).visibility !== "hidden",
+        );
         const first = items[0],
           last = items.at(-1);
         if (e.shiftKey && document.activeElement === first) {
@@ -79,7 +87,7 @@ export function Modal({
   }, []);
   return createPortal(
     <div
-      className="tv-modal"
+      className={`tv-modal${fullViewport ? " tv-modal-full-viewport" : ""}`}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -219,11 +227,5 @@ export function ChannelCard({
   );
 }
 export function Skeleton() {
-  return (
-    <div className="tv-grid" aria-label="A carregar" aria-busy="true">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div className="tv-skeleton" key={i} />
-      ))}
-    </div>
-  );
+  return <ZeusLoader />;
 }

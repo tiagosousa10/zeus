@@ -62,6 +62,13 @@ function CatalogView({ section }: { section: "movie" | "series" }) {
   const index = useQuery({
     queryKey: tvKeys.search(tv.listId, tv.visibility),
     queryFn: ({ signal }) => tvAPI.search(tv.listId, signal),
+    enabled: Object.entries(tv.prefs.progress).some(
+      ([key, p]) =>
+        key.startsWith(`${section}:`) &&
+        p.duration > 0 &&
+        p.position > 0 &&
+        p.position / p.duration < 0.95,
+    ),
     staleTime: Infinity,
     retry: false,
   });
@@ -148,24 +155,6 @@ function CatalogView({ section }: { section: "movie" | "series" }) {
         />
       ) : !hero ? (
         <EmptyState title="Esta pasta está vazia" />
-      ) : section === "series" ? (
-        <div
-          className="tv-editorial"
-          style={
-            hero.poster
-              ? {
-                  backgroundImage: `linear-gradient(90deg,#04070af5 5%,#04070a55 65%),linear-gradient(0deg,#04070a,transparent 70%),url(${JSON.stringify(hero.poster)})`,
-                }
-              : undefined
-          }
-        >
-          <span className="tv-eyebrow">NA TUA LISTA · {category.name}</span>
-          <h1>{hero.name}</h1>
-          <Metadata item={hero} />
-          <button className="tv-primary" onClick={() => open(hero)}>
-            Episódios ↗
-          </button>
-        </div>
       ) : (
         <div className="tv-bento">
           <div
@@ -186,15 +175,17 @@ function CatalogView({ section }: { section: "movie" | "series" }) {
                 <button
                   className="tv-primary"
                   onClick={() =>
-                    tv.play({
-                      section,
-                      id: hero.id,
-                      title: hero.name,
-                      categoryId: hero.categoryId,
-                    })
+                    section === "series"
+                      ? open(hero)
+                      : tv.play({
+                          section,
+                          id: hero.id,
+                          title: hero.name,
+                          categoryId: hero.categoryId,
+                        })
                   }
                 >
-                  ▶ Reproduzir
+                  {section === "series" ? "Episódios ↗" : "▶ Reproduzir"}
                 </button>
                 <button onClick={() => open(hero)}>Detalhes</button>
               </div>

@@ -50,20 +50,38 @@ export default function Search() {
   const category = tv.summary?.sections[tv.section]?.categories.find(
     (c) => c.id === tv.categoryId,
   );
-  const results = searchVisible(
-    query.data || [],
-    term,
-    allowed,
-    scope && category
-      ? {
-          k: tv.section === "live" ? "l" : tv.section === "movie" ? "m" : "s",
-          name: category.name,
-        }
-      : undefined,
+  const results = useMemo(
+    () =>
+      searchVisible(
+        query.data || [],
+        term,
+        allowed,
+        scope && category
+          ? {
+              k:
+                tv.section === "live"
+                  ? "l"
+                  : tv.section === "movie"
+                    ? "m"
+                    : "s",
+              name: category.name,
+            }
+          : undefined,
+      ),
+    [query.data, term, allowed, scope, category?.name, tv.section],
   );
-  const ordered = (["l", "s", "m"] as const).flatMap((k) =>
-    results.filter((r) => r.k === k),
+  const ordered = useMemo(
+    () =>
+      (["l", "s", "m"] as const).flatMap((k) =>
+        results.filter((r) => r.k === k),
+      ),
+    [results],
   );
+  const counts = useMemo(() => {
+    const counts = { l: 0, m: 0, s: 0 };
+    for (const result of results) counts[result.k]++;
+    return counts;
+  }, [results]);
   const visible = ordered.slice(page * 90, (page + 1) * 90);
   const grouped = (["l", "s", "m"] as const).flatMap((k) =>
     visible.filter((r) => r.k === k),
@@ -165,8 +183,7 @@ export default function Search() {
             return entries.length ? (
               <section key={k}>
                 <h3 className="tv-eyebrow">
-                  {sectionNames[kinds[k] as Section]} ·{" "}
-                  {results.filter((r) => r.k === k).length}
+                  {sectionNames[kinds[k] as Section]} · {counts[k]}
                 </h3>
                 {entries.map((item) => (
                   <button
