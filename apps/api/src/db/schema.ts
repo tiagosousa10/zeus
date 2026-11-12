@@ -95,4 +95,6 @@ export const addon = pgTable("addon", {
   configurationRequired: boolean("configuration_required")
     .notNull()
     .default(false),
+  configurable: boolean("configurable").notNull().default(false),
+  resources: jsonb("resources").$type<string[]>().notNull().default(["stream"]),
 });

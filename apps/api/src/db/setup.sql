@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS verified_session (session_id text PRIMARY KEY REFEREN
 
 ALTER TABLE addon ADD COLUMN IF NOT EXISTS config_fields jsonb NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE addon ADD COLUMN IF NOT EXISTS configuration_required boolean NOT NULL DEFAULT false;
+ALTER TABLE addon ADD COLUMN IF NOT EXISTS configurable boolean NOT NULL DEFAULT false;
+ALTER TABLE addon ADD COLUMN IF NOT EXISTS resources jsonb NOT NULL DEFAULT '["stream"]'::jsonb;

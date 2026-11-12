@@ -105,6 +105,15 @@ addonAdminRoutes.post("/sync", async (c) => {
         configFields: configFields(value.manifest?.config),
         configurationRequired:
           value.manifest?.behaviorHints?.configurationRequired === true,
+        configurable:
+          value.manifest?.behaviorHints?.configurable === true ||
+          value.manifest?.behaviorHints?.configurationRequired === true,
+        resources: (Array.isArray(value.manifest?.resources)
+          ? value.manifest.resources
+          : []
+        )
+          .map((r: any) => (typeof r === "string" ? r : r?.name))
+          .filter((r: any) => r === "stream" || r === "subtitles"),
       })
       .onConflictDoNothing();
     count++;
