@@ -1,3 +1,4 @@
+import { Nav } from "../components/ModuleNav";
 import type { ReactNode } from "react";
 import { TVProvider, useTV } from "./tv/state";
 import Live from "./tv/Live";
@@ -24,42 +25,33 @@ export function TVApp({ modules = {} }: { modules?: TVModules }) {
   );
   return (
     <div className="tv-app">
-      <header className="tv-header">
-        <a className="tv-brand" href="/">
-          ZEUS
-        </a>
-        <nav className="tv-capsule" aria-label="Módulos">
-          <a href="/cinema">Cinema</a>
-          <a aria-current="page" href="/tv">
-            TV
-          </a>
-        </nav>
-        <nav className="tv-capsule tv-sections" aria-label="Secções da TV">
-          {sections.map((s) => (
-            <button
-              key={s}
-              aria-current={tv.section === s ? "page" : undefined}
-              onClick={() => tv.setSection(s)}
-            >
-              {sectionNames[s]}
-            </button>
-          ))}
-        </nav>
-        <div className="tv-header-tools">
-          <button onClick={() => tv.openSearch()} disabled={!tv.listId}>
-            ⌕ <span>Procurar</span> <kbd>⌘K</kbd>
-          </button>
-          <a className="tv-account" href="/conta" aria-label="Conta">
-            ◎
-          </a>
-        </div>
-      </header>
+      <Nav
+        module="tv"
+        className="tv-header"
+        sections={
+          <nav
+            className="tv-capsule tv-sections app-header-sections"
+            aria-label="Secções da TV"
+          >
+            {sections.map((s) => (
+              <button
+                key={s}
+                aria-current={tv.section === s ? "page" : undefined}
+                onClick={() => tv.setSection(s)}
+              >
+                {sectionNames[s]}
+              </button>
+            ))}
+          </nav>
+        }
+      />
       <main className="tv-main">
         <div className="tv-listbar">
           {tv.lists.length > 0 && (
             <label>
-              <span className="tv-sr">Lista IPTV</span>
+              <span className="tv-list-label">Lista IPTV</span>
               <select
+                aria-label="Lista IPTV"
                 value={tv.listId}
                 onChange={(e) => tv.setListId(e.target.value)}
               >
