@@ -1,1 +1,12 @@
-{"name":"@zeus/desktop","private":true,"scripts":{"start":"electron ../..","motor":"node scripts/motor.cjs","dist":"node scripts/package-desktop.cjs","test":"tsx --test test/*.test.ts"}}
+{
+  "name": "@zeus/desktop",
+  "private": true,
+  "scripts": {
+    "start": "electron ../..",
+    "motor": "node scripts/motor.cjs",
+    "dist": "node scripts/package-desktop.cjs",
+    "test": "tsx --test test/*.test.ts",
+    "lint": "eslint src scripts test --max-warnings=0",
+    "lint:fix": "eslint src scripts test --fix"
+  }
+}

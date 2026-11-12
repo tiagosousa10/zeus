@@ -1,0 +1,19 @@
+node_modules
+**/dist
+**/build
+coverage
+test-results
+playwright-report
+.history
+.claude/worktrees
+.superpowers
+.superdesign
+.git
+package-lock.json
+# Historical design/reference artifacts, generated data and audit evidence.
+prototipos
+apps/web/public/art
+docs/superpowers
+docs/performance
+security
+apps/api/src/db/addons-seed.json

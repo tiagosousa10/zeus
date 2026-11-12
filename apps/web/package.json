@@ -1,1 +1,11 @@
-{"name":"@zeus/web","private":true,"type":"module","scripts":{"dev":"vite","build":"vite build"}}
+{
+  "name": "@zeus/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint src vite.config.ts --max-warnings=0",
+    "lint:fix": "eslint src vite.config.ts --fix"
+  }
+}
