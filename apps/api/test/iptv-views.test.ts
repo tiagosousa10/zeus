@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { normalizeXtreamCatalog } from "../src/modules/iptv/xtream.js";
 import { defaultPrefs } from "../src/modules/iptv/prefs.js";
-import { sectionsView, categoryPage, searchIndex, visibleItem, publicItem } from "../src/modules/iptv/views.js";
+import { sectionsView, categoryPage, searchIndex, visibleItem, publicItem, publicSeriesDetail } from "../src/modules/iptv/views.js";
 import { xtreamFixture } from "./fixtures/xtream.js";
 
 const c = normalizeXtreamCatalog(xtreamFixture.catalog, 0);
@@ -69,4 +69,10 @@ test("a hidden normal folder leaves pages, search and totals", () => {
   assert.equal(live.total, 0);
   const folder = live.categories.find((x) => x.id === "1")!;
   assert.deepEqual([folder.hidden, folder.count], [true, 0]);
+});
+
+test("series detail sent to the browser has no sources", () => {
+  const d = publicSeriesDetail({ id: "s", categoryId: "c", name: "T", adult: false, cast: [], episodes: [], seasons: [{ number: 1, name: "Temporada 1", episodes: [{ id: "e", season: 1, number: 1, title: "x", container: "mp4", source: "http://p.test/u/p/1.mp4" }] }] });
+  assert.equal(JSON.stringify(d).includes("p.test"), false);
+  assert.equal("episodes" in d, false);
 });

@@ -6,8 +6,8 @@ import { safeFetch } from "../../lib/safe-fetch.js";
 import { getCatalog, getMovie, getSeries } from "./cache.js";
 import { ProviderError } from "./provider.js";
 import { prefsFor } from "./prefs.js";
-import { categoryPage, publicItem, searchIndex, sectionsView, visibleItem } from "./views.js";
-import type { IPTVList } from "./types.js";
+import { categoryPage, publicItem, publicSeriesDetail, searchIndex, sectionsView, visibleItem } from "./views.js";
+import type { IPTVList, TVSeriesDetail } from "./types.js";
 export const iptvRoutes = new Hono();
 iptvRoutes.use("*", requireMember);
 iptvRoutes.get("/resource", async (c) => {
@@ -126,7 +126,7 @@ for (const section of ["movie", "series"] as const) {
       const catalog = await getCatalog(userId, found.list);
       if (!visibleItem(catalog, found.prefs, section, id)) return c.json({ error: NOT_AVAILABLE }, 404);
       const detail = section === "movie" ? await getMovie(userId, found.list, id) : await getSeries(userId, found.list, id);
-      return detail ? c.json(publicItem(detail)) : c.json({ error: NOT_AVAILABLE }, 404);
+      return detail ? c.json(section === "movie" ? publicItem(detail) : publicSeriesDetail(detail as TVSeriesDetail)) : c.json({ error: NOT_AVAILABLE }, 404);
     } catch (e) {
       return fail(c, e);
     }

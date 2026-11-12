@@ -1,4 +1,4 @@
-import type { Section, TVCatalog, TVChannel, TVMovie, TVSeries } from "./types.js";
+import type { Section, TVCatalog, TVChannel, TVEpisode, TVMovie, TVSeries, TVSeriesDetail } from "./types.js";
 import { adultItemsVisible, isCategoryHidden, orderCategories, type TVListPrefs } from "./prefs.js";
 
 type Item = TVChannel | TVMovie | TVSeries;
@@ -8,9 +8,14 @@ export interface SectionView { categories: CategoryView[]; total: number; hidden
 const SECTIONS: Section[] = ["live", "movie", "series"];
 const KIND = { live: "l", movie: "m", series: "s" } as const;
 
-export function publicItem<T extends object>(item: T): Omit<T, "source"> {
-  const { source: _source, ...rest } = item as T & { source?: string };
+export function publicItem<T extends object>(item: T): Omit<T, "source" | "episodes"> {
+  const { source: _source, episodes: _episodes, ...rest } = item as T & { source?: string; episodes?: unknown };
   return rest;
+}
+
+export function publicSeriesDetail(d: TVSeriesDetail): TVSeriesDetail {
+  const { episodes: _episodes, ...rest } = d;
+  return { ...rest, seasons: d.seasons.map((s) => ({ ...s, episodes: s.episodes.map((e) => publicItem(e) as TVEpisode) })) };
 }
 
 function visibleItems(c: TVCatalog, p: TVListPrefs, section: Section): Item[] {

@@ -72,6 +72,15 @@ test("M3U details come from the catalog without extra requests", async () => {
   assert.deepEqual(await getMovie("u8", m3u, base.id), { ...base, cast: [] });
   assert.equal(f.calls.length, 1);
 });
+test("M3U series seasons come sorted from the catalog without extra requests", async () => {
+  const m3u = { id: "l4", name: "M3U", type: "m3u" as const, url: "https://tv.example.test/list.m3u" };
+  const text = '#EXTM3U\n#EXTINF:-1 group-title="Séries",Tróia S01 E04\nhttps://tv.example.test/series/u/p/4.mp4\n#EXTINF:-1 group-title="Séries",Tróia S01E02\nhttps://tv.example.test/series/u/p/2.mp4\n';
+  const f = fakeFetch(() => new Response(text)); setProviderFetch(f);
+  const catalog = await getCatalog("u9", m3u);
+  const detail = await getSeries("u9", m3u, catalog.series.items[0].id);
+  assert.deepEqual(detail!.seasons.map((s) => [s.number, s.name, s.episodes.map((e) => e.number)]), [[1, "Temporada 1", [2, 4]]]);
+  assert.equal(f.calls.length, 1);
+});
 const REFUSED = /recusou o utilizador ou a palavra-passe/;
 const UNAVAILABLE = /O fornecedor da lista não respondeu/;
 test("auth \"0\" and HTTP 401 are credential errors", async () => {

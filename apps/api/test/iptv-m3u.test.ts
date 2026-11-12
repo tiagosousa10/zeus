@@ -51,3 +51,29 @@ test("same URL in two groups gives two items, an exact repeat gives one", () => 
   assert.equal(same.live.items.length, 1);
   assert.equal(same.live.categories[0].count, 1);
 });
+
+test("M3U series keep their episodes for playback", () => {
+  const c = normalizeM3U(`#EXTM3U
+#EXTINF:-1 group-title="Séries",Tróia S01 E04
+http://p.test/series/u/p/77.mp4
+#EXTINF:-1 group-title="Séries",Tróia S01E02
+http://p.test/series/u/p/75.mkv`, "http://p.test/l.m3u", 0);
+  const s = c.series.items[0];
+  assert.deepEqual(s.episodes!.map((e) => [e.season, e.number, e.container]), [[1, 4, "mp4"], [1, 2, "mkv"]]);
+  assert.equal(s.episodes![0].source, "http://p.test/series/u/p/77.mp4");
+});
+test("episodes without SxxExx get season 1 and their position", () => {
+  const c = normalizeM3U(`#EXTM3U
+#EXTINF:-1 group-title="Séries",Tróia
+http://p.test/series/u/p/1.mp4
+#EXTINF:-1 group-title="Séries",Tróia
+http://p.test/series/u/p/2.mp4`, "http://p.test/l.m3u", 0);
+  assert.deepEqual(c.series.items[0].episodes!.map((e) => [e.season, e.number]), [[1, 1], [1, 2]]);
+});
+test("live URLs win over movie-like group names", () => {
+  const c = normalizeM3U(`#EXTM3U
+#EXTINF:-1 group-title="24/7 Movies",Cinema 24h
+http://p.test/live/u/p/9.m3u8`, "http://p.test/l.m3u", 0);
+  assert.equal(c.live.items.length, 1);
+  assert.equal(c.movie.items.length, 0);
+});

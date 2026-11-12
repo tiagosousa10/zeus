@@ -1,7 +1,7 @@
 import { safeFetch } from "../../lib/safe-fetch.js";
 import { normalizeM3U } from "./m3u.js";
 import { normalizeSeriesInfo, normalizeVodInfo, normalizeXtreamCatalog, xtreamUrl } from "./xtream.js";
-import type { IPTVList, TVCatalog, TVMovie, TVMovieDetail, TVSeries, TVSeriesDetail } from "./types.js";
+import type { IPTVList, TVCatalog, TVEpisode, TVMovie, TVMovieDetail, TVSeries, TVSeriesDetail } from "./types.js";
 
 const REFUSED = "A lista recusou o utilizador ou a palavra-passe.";
 const UNAVAILABLE = "O fornecedor da lista não respondeu. Tenta de novo.";
@@ -72,7 +72,14 @@ export async function fetchMovie(list: IPTVList, base: TVMovie): Promise<TVMovie
   return guard(async () => normalizeVodInfo(await xtream(list, "get_vod_info", { vod_id: base.id }), base));
 }
 
+function m3uSeasons(episodes: TVEpisode[]): TVSeriesDetail["seasons"] {
+  const sorted = [...episodes].sort((a, b) => a.season - b.season || a.number - b.number);
+  const seasons = new Map<number, TVEpisode[]>();
+  for (const e of sorted) seasons.set(e.season, [...(seasons.get(e.season) ?? []), e]);
+  return [...seasons].map(([number, eps]) => ({ number, name: `Temporada ${number}`, episodes: eps }));
+}
+
 export async function fetchSeries(list: IPTVList, base: TVSeries): Promise<TVSeriesDetail> {
-  if (list.type === "m3u") return { ...base, cast: [], seasons: [] };
+  if (list.type === "m3u") return { ...base, cast: [], seasons: m3uSeasons(base.episodes ?? []) };
   return guard(async () => normalizeSeriesInfo(await xtream(list, "get_series_info", { series_id: base.id }), base));
 }

@@ -9,7 +9,7 @@ import type { IPTVList, TVCatalog, TVMovieDetail, TVSeriesDetail } from "./types
 const CATALOG_TTL = 6 * 3600_000;
 const DETAIL_TTL = 12 * 3600_000;
 // Bump when the cached shape changes so old disk files stop matching.
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const dir = join(config.dataDir, "iptv-cache");
 
 type Entry = { value: unknown; expires: number };
