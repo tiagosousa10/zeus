@@ -19,7 +19,7 @@ Para abrir no Electron:
 npm start
 ```
 
-O comando prepara a base de dados e os builds antes de abrir a aplicação. `iniciar.command` continua a permitir duplo clique no Mac. O perfil MacStream existente é conservado; não há importação nem apagamento dos dados antigos. Para abrir a interface anterior: `npm run start:legacy` (fechar primeiro o Zeus para evitar disputa pelo Motor).
+O comando prepara a base de dados e os builds antes de abrir a aplicação. `iniciar.command` continua a permitir duplo clique no Mac.
 
 ## O que está implementado
 
@@ -28,7 +28,9 @@ O comando prepara a base de dados e os builds antes de abrir a aplicação. `ini
 - Portal Cinema/TV com pintura viva e raios, com último módulo persistido.
 - Cinema, pesquisa, detalhe/episódios, Fontes e leitor HTTP/HLS/torrents; lista e progresso por Membro. Fontes reais de Add-ons aprovados; sem vídeo de demonstração.
 - TV com listas M3U/Xtream privadas, grupos, pesquisa, favoritos, reprodução e guia XMLTV quando fornecido.
-- Add-ons com ordem, activação e configuração; formulário do SDK quando declarado e adaptador Torrentio.
+- Add-ons com ordem, activação e configuração: formulário do SDK quando declarado, adaptador Torrentio, ou URL do manifesto configurado na página do Add-on (guardado cifrado por Membro).
+- Catálogo de 358 Add-ons de filmes, séries e legendas, aprovado à partida e carregado por `npm run db:setup` a partir de `apps/api/src/db/addons-seed.json` (varredura dos registos públicos do Stremio a 2026-11-12).
+- Legendas dos Add-ons instalados no leitor, convertidas de SRT para WebVTT pela API.
 - Conta: dados, password, sessões, TOTP e preferências.
 - Administração: Membros, Convites e aprovação de Add-ons importados.
 - Estados do Motor e guia da direção visual. Movimento reduzido, teclado e layouts a 375/1440 px.
@@ -47,9 +49,9 @@ Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperaç�
 
 - O Motor legado suporta uma reprodução torrent de cada vez; uma segunda conta recebe um aviso de ocupado. O Motor funciona apenas neste Mac.
 - A TV reproduz os endereços do fornecedor no leitor. Fornecedores que bloqueiem CORS, formatos incompatíveis, DRM ou limites da subscrição podem impedir a emissão; não há promessa de compatibilidade com todos os fornecedores.
-- O catálogo comunitário importado inclui serviços que podem estar indisponíveis. Nenhum é instalado ou aprovado automaticamente. Configurações que não seguem o SDK nem o adaptador Torrentio precisam de um adaptador específico.
-- Legendas externas dependem de serem fornecidas pela Fonte; não há pesquisa autónoma OpenSubtitles, DVR, multiview ou aplicação Android nesta fase.
-- A política de migração dos dados antigos continua por decidir. Os protótipos e a app antiga foram conservados.
+- Os Add-ons do catálogo são serviços de terceiros e podem deixar de responder; os que exigem chave só funcionam com o URL configurado. Os importados pela sincronização comunitária continuam a precisar de aprovação.
+- Não há DVR, multiview nem aplicação Android nesta fase.
+- Não há importação de dados do MacStream; a interface antiga e o seu perfil foram removidos. Do MacStream ficaram apenas o Motor de torrents e a sua lista de trackers públicos.
 - Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A validação de reprodução usou um vídeo local de teste, sem iniciar torrents externos nem consumir listas IPTV privadas.
 - Não foi criado instalador assinado nem publicada uma versão num servidor. Os tickets no Linear continuam por sincronizar. Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
 
@@ -60,14 +62,18 @@ npm run typecheck
 npm test
 npm run build
 npm run test:browser
+npm run test:visual
 ```
 
-Os testes API e browser criam schemas PostgreSQL temporários e removem-nos ao terminar. Não usam contas da base principal. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `node tests/desktop.mjs` verifica o Electron com o build local e pressupõe uma base principal ainda sem Membros; não usar esse teste após configurar a tua conta.
+Os testes API e browser criam schemas PostgreSQL temporários e removem-nos ao terminar. Não usam contas da base principal. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `node tests/desktop.mjs` verifica a Entrada no Electron (primeiro arranque ou login), sem criar contas; usa o servidor de desenvolvimento se já estiver activo, ou o build local.
+
+`test:visual` inicia servidores isolados nas portas 5181/5182, usa fixtures apenas no browser e compara medidas com os HTML aprovados. Verifica navegação, TV/guia por teclado, favoritos por toque, persistência das listas e estados. Capturas e medidas ficam em `/tmp/zeus-fidelity`. Requer Google Chrome instalado; não altera a base de dados.
 
 ## Referências guardadas
 
 - Escolhas definitivas: `docs/superpowers/specs/2026-11-11-zeus-approved.md`.
 - Plano e validação: `docs/superpowers/plans/2026-11-11-zeus-screens.md`.
 - Protótipos aprovados: `prototipos/estilo/zeus/`.
+- Revisão de fidelidade: `docs/2026-11-12-zeus-fidelity.md`.
 - Créditos: `apps/web/public/art/img/CREDITOS.md`.
 - API: `apps/api/README.md`.

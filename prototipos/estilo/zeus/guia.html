@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, guia do sistema</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/zeus-5.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* Só para o guia: moldura das demonstrações e grelhas. */
+.g-hero{position:relative;height:100vh;height:100svh;min-height:620px;overflow:hidden;isolation:isolate}
+.g-hero::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to top,#000 0%,rgba(0,0,0,.74) 26%,rgba(0,0,0,.18) 52%,transparent 64%)}
+.g-hero .z-bolts{z-index:2}
+.g-hero__ui{position:relative;z-index:3;height:100%;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;padding:calc(var(--nav-h) + 8px) var(--gutter) max(28px,env(safe-area-inset-bottom))}
+.g-hero__copy{align-self:end;text-align:center;margin-bottom:clamp(18px,3vh,30px)}
+.g-hero__copy p{margin:8px auto 0}
+.g-modules{display:grid;grid-template-columns:repeat(2,minmax(0,300px));gap:24px;width:100%;justify-content:center}
+.g-module{display:grid;grid-template-rows:auto 1fr auto auto;height:176px;padding:20px 22px}
+.g-module svg{width:32px;height:32px}
+.g-module h3{grid-row:3;font-size:28px;font-weight:700;letter-spacing:-.022em;line-height:1.05}
+.g-module p{grid-row:4;margin-top:4px;font-size:15px;color:var(--text-2);display:flex;align-items:center;gap:8px}
+.g-module .z-badge{position:absolute;top:18px;right:18px}
+.g-dot{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px rgba(255,69,58,.18)}
+.g-wrap{width:min(1180px,100%);margin:0 auto;padding:0 var(--gutter)}
+.g-toc{margin:48px auto 0;width:max-content;max-width:calc(100% - 2 * var(--gutter))}
+.g-sec{padding:clamp(56px,9vh,96px) 0 0;scroll-margin-top:var(--nav-h)}
+.g-sec>.z-lede{margin:10px 0 28px}
+.g-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.g-box{display:grid;gap:16px;align-content:start;padding:24px}
+.g-box h3{font-size:17px;font-weight:600}
+.g-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.g-use{margin-top:4px}
+.g-sw{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center}
+.g-sw i{grid-row:1/3;width:44px;height:44px;border-radius:var(--r-md);background:var(--c);box-shadow:inset 0 0 0 1px var(--hair)}
+.g-sw b{font:600 13px/1.3 var(--mono);letter-spacing:0}
+.g-sw span{font-size:13px;color:var(--text-3)}
+.g-type>*{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--hair)}
+.g-type code{flex:none}
+.g-radii{display:flex;gap:12px}
+.g-radii>div{flex:1;height:72px;display:grid;place-items:center;background:var(--elev-2);font:12px var(--mono);color:var(--text-2)}
+.g-frame{position:relative;overflow:hidden;isolation:isolate;border-radius:var(--r-xl);background:#000;box-shadow:inset 0 0 0 1px var(--hair);min-height:440px;aspect-ratio:16/9}
+#g-art{--pos:70% 18%}
+.g-frame__copy{position:relative;z-index:4;display:grid;gap:14px;align-content:center;justify-items:start;height:100%;padding:clamp(24px,5vw,64px);max-width:520px}
+.g-frame__copy p{color:var(--text-2);max-width:40ch}
+.g-ctrl{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+.g-light{display:grid;grid-template-columns:1fr minmax(0,380px);align-items:center;gap:24px;padding:clamp(20px,4vw,48px)}
+.g-light .z-light{width:min(560px,100%)}
+.g-light__mask{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent 30%,rgba(0,0,0,.72) 55%,#000 75%),linear-gradient(0deg,#000 0,transparent 28%)}
+.g-light .z-glass{position:relative;z-index:2;padding:28px}
+.g-sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -10%,#0d1424 0%,#05070c 55%,#000 100%)}
+.g-olympus{position:absolute;left:50%;top:0;width:min(720px,110%);aspect-ratio:1;translate:-50% 0;will-change:transform}
+.g-olympus img{width:100%;height:100%}
+.g-clouds{position:absolute;inset:0;width:100%;height:100%}
+.g-sky-fade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0,transparent 18%),linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 70%,#000 92%)}
+.g-alt{position:absolute;left:24px;bottom:22px;z-index:4;display:grid;gap:8px;width:min(320px,calc(100% - 48px))}
+.g-alt b{font-size:28px;font-weight:600;letter-spacing:-.01em}
+.g-alt input{accent-color:var(--accent)}
+.g-storm{aspect-ratio:21/9;min-height:300px;background:radial-gradient(80% 90% at 50% 0%,#0b1220,#000 70%)}
+.g-storm .g-ctrl{position:absolute;left:24px;bottom:20px;z-index:4;margin:0}
+.g-rules{display:grid;gap:12px;padding:0;margin:0;list-style:none;max-width:72ch}
+.g-rules li{padding:16px 20px}
+.g-rules b{display:block;margin-bottom:2px}
+.g-foot{padding:96px var(--gutter) 64px;text-align:center}
+.g-rows{margin-inline:calc(50% - 50vw);--row-inset:max(var(--gutter),calc(50vw - 590px + var(--gutter)))}
+@media (max-width:760px){
+  .g-modules{grid-template-columns:minmax(0,1fr);gap:12px}
+  .g-module{height:auto;min-height:96px;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:16px;align-items:center;padding:16px 18px}
+  .g-module svg{grid-row:1/3;width:28px;height:28px}
+  .g-module h3{grid-row:1;grid-column:2;font-size:24px}
+  .g-module p{grid-row:2;grid-column:2}
+  .g-frame{aspect-ratio:auto;min-height:520px}
+  #g-art{--pos:50% 0}
+  .g-frame__copy{align-content:end;min-height:520px}
+  .g-light{grid-template-columns:1fr;gap:0;padding:0 16px 16px}
+  .g-light .z-light{width:120%;margin:-6% -10% -30%}
+  .g-light__mask{background:linear-gradient(180deg,rgba(0,0,0,.2) 0,rgba(0,0,0,.5) 34%,#000 66%)}
+  .g-storm{aspect-ratio:auto;min-height:360px}
+  .g-toc{width:auto}
+}
+</style>
+</head>
+<body>
+<main id="top">
+  <section class="g-hero" aria-labelledby="g-title">
+    <div id="painting" aria-hidden="true"></div>
+    <canvas class="z-bolts" id="bolts" aria-hidden="true"></canvas>
+    <div class="g-hero__ui">
+      <p class="z-wordmark z-wordmark--hero" id="wm" aria-hidden="true"><span class="z-wordmark__text">ZEUS</span><span class="z-wordmark__glow">ZEUS</span></p>
+      <div class="g-hero__copy">
+        <h1 class="z-t1" id="g-title">Guia do sistema</h1>
+        <p class="z-lede">Componentes, efeitos e regras para construir os ecrãs do Zeus com a mesma luz.</p>
+      </div>
+      <nav class="g-modules" aria-label="Módulos de exemplo">
+        <a class="g-module z-tilt is-cool" href="tv.html" data-mood="-1" aria-label="TV, canais em directo">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="26" height="18" rx="4"/><path d="M11 3l5 6 5-6"/></svg>
+          <h3>TV</h3><p><span class="g-dot" aria-hidden="true"></span>Canais em directo</p>
+        </a>
+        <a class="g-module z-tilt is-warm" href="cinema.html" data-mood="1" aria-label="Cinema, filmes e séries. Último usado">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="24" height="22" rx="4"/><path d="M10 5v22M22 5v22M4 12h6M4 20h6M22 12h6M22 20h6"/></svg>
+          <span class="z-badge">Último usado</span>
+          <h3>Cinema</h3><p>Filmes e séries</p>
+        </a>
+      </nav>
+    </div>
+  </section>
+
+  <nav class="z-tabs g-toc" aria-label="Secções do guia">
+    <a href="#fundamentos">Fundamentos</a><a href="#controlos">Controlos</a><a href="#filas">Filas</a><a href="#arte">Arte</a><a href="#luz">Luz</a><a href="#nuvens">Nuvens</a><a href="#raios">Raios</a><a href="#regras">Regras</a>
+  </nav>
+
+  <div class="g-wrap">
+    <section class="g-sec" id="fundamentos" aria-labelledby="h-fund">
+      <h2 class="z-t2" id="h-fund">Fundamentos</h2>
+      <p class="z-lede">Preto absoluto, texto quase branco, um ciano frio para a interface e o ouro só para a luz quente dos raios.</p>
+      <div class="g-grid">
+        <div class="z-surface g-box">
+          <h3>Cores</h3>
+          <div class="g-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+            <div class="g-sw" style="--c:var(--bg)"><i></i><b>--bg</b><span>#000</span></div>
+            <div class="g-sw" style="--c:var(--elev)"><i></i><b>--elev</b><span>#1c1c1e</span></div>
+            <div class="g-sw" style="--c:var(--elev-2)"><i></i><b>--elev-2</b><span>#2c2c2e</span></div>
+            <div class="g-sw" style="--c:var(--text)"><i></i><b>--text</b><span>#f5f5f7</span></div>
+            <div class="g-sw" style="--c:var(--text-2)"><i></i><b>--text-2</b><span>62%</span></div>
+            <div class="g-sw" style="--c:var(--text-3)"><i></i><b>--text-3</b><span>36%</span></div>
+            <div class="g-sw" style="--c:var(--accent)"><i></i><b>--accent</b><span>#7de3f0</span></div>
+            <div class="g-sw" style="--c:var(--gold)"><i></i><b>--gold</b><span>#ffb03c</span></div>
+            <div class="g-sw" style="--c:rgb(var(--warm))"><i></i><b>--warm</b><span>rgb, carmesim</span></div>
+            <div class="g-sw" style="--c:var(--bronze)"><i></i><b>--bronze</b><span>#d2a77c</span></div>
+            <div class="g-sw" style="--c:var(--live)"><i></i><b>--live</b><span>#ff453a</span></div>
+            <div class="g-sw" style="--c:var(--ok)"><i></i><b>--ok</b><span>#30d158</span></div>
+          </div>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Tipografia SF Pro</h3>
+          <div class="g-type">
+            <div><span class="z-display">Olimpo</span><code class="z-code">.z-display</code></div>
+            <div><span class="z-t1">Sessão expirada</span><code class="z-code">.z-t1</code></div>
+            <div><span class="z-t2">Continuar a ver</span><code class="z-code">.z-t2</code></div>
+            <div><span class="z-t3">Fontes</span><code class="z-code">.z-t3</code></div>
+            <div><span>Texto corrido, 17 px</span><code class="z-code">body</code></div>
+            <div><span class="z-callout">Legenda de apoio, 15 px</span><code class="z-code">.z-callout</code></div>
+            <div><span class="z-foot">Nota de rodapé, 13 px</span><code class="z-code">.z-foot</code></div>
+          </div>
+          <h3>Raios de canto</h3>
+          <div class="g-radii"><div style="border-radius:var(--r-xl)">--r-xl 24</div><div style="border-radius:var(--r-lg)">--r-lg 18</div><div style="border-radius:var(--r-md)">--r-md 12</div></div>
+          <p class="z-foot">Curvas: <code class="z-code">--spring</code> para elevar e carregar, <code class="z-code">--out</code> para entradas e fades.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="g-sec" id="controlos" aria-labelledby="h-ctrl">
+      <h2 class="z-t2" id="h-ctrl">Controlos</h2>
+      <p class="z-lede">A interface fica calma: pílulas, vidro, um só botão branco por zona.</p>
+      <div class="g-grid">
+        <div class="z-surface g-box">
+          <h3>Botões</h3>
+          <div class="g-row">
+            <button class="z-btn z-btn--primary" type="button" data-toast="A preparar «The Dark Knight»…"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z"/></svg>Reproduzir</button>
+            <button class="z-btn z-btn--secondary" type="button">Mais informações</button>
+          </div>
+          <div class="g-row">
+            <button class="z-btn z-btn--ghost z-btn--sm" type="button">Mais tarde</button>
+            <button class="z-btn z-btn--sm" type="button">Voltar</button>
+            <button class="z-btn z-btn--danger z-btn--sm" type="button">Remover lista</button>
+            <button class="z-btn z-btn--primary z-btn--sm" type="button" id="busy">Entrar</button>
+            <button class="z-icon-btn" type="button" aria-label="Pesquisar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button>
+          </div>
+          <code class="z-code g-use">.z-btn--primary | --secondary | --ghost | --danger | --sm, .z-icon-btn, aria-busy</code>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Campos</h3>
+          <div class="z-field" style="margin:0"><label class="z-label" for="g-email">Email</label><input class="z-input" id="g-email" type="email" autocomplete="off" placeholder="nome@dominio.pt"></div>
+          <div class="z-field" style="margin:0"><label class="z-label" for="g-tmdb">Chave da API TMDB</label>
+            <input class="z-input z-input--mono" id="g-tmdb" value="3f9a-chave-curta" aria-invalid="true" aria-describedby="g-tmdb-h" spellcheck="false">
+            <p class="z-help is-error" id="g-tmdb-h">A chave tem 32 letras e números (0 a 9, a a f).</p></div>
+          <form class="z-search" role="search" onsubmit="return false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><input type="search" placeholder="Filmes e séries" aria-label="Pesquisar filmes e séries"></form>
+          <code class="z-code g-use">.z-field > .z-label + .z-input(--mono) + .z-help(.is-error|.is-ok), .z-search</code>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Escolhas e dados</h3>
+          <div class="z-chips" id="g-langs" role="group" aria-label="Idiomas de áudio">
+            <button class="z-chip" type="button" aria-pressed="true"><span class="z-chip__n">1</span>Português</button>
+            <button class="z-chip" type="button" aria-pressed="false">English</button>
+            <button class="z-chip" type="button" aria-pressed="true"><span class="z-chip__n">2</span>Original</button>
+          </div>
+          <div class="z-tags"><span class="z-tag z-tag--strong">Dolby Vision</span><span class="z-tag">HEVC</span><span class="z-tag z-tag--mono">18.4 GB</span><span class="z-tag z-tag--mono">412 seeders</span><span class="z-tag z-tag--cache">em cache</span></div>
+          <code class="z-code g-use">.z-chip[aria-pressed] + .z-chip__n, .z-tag(--mono|--strong|--cache|--gold)</code>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Interruptor, segmentos e separadores</h3>
+          <button class="z-switch" type="button" role="switch" aria-checked="true" data-switch>Só em cache</button>
+          <div class="z-seg" role="radiogroup" aria-label="Tipo de lista">
+            <label><input type="radio" name="g-kind" checked>Xtream</label><label><input type="radio" name="g-kind">M3U</label>
+          </div>
+          <div class="z-tabs" role="tablist" aria-label="Exemplo de separadores" style="width:max-content">
+            <button role="tab" aria-selected="true" type="button">Em directo</button><button role="tab" aria-selected="false" type="button">Guia</button>
+          </div>
+          <code class="z-code g-use">.z-switch[role=switch], .z-seg (rádios ou links), .z-tabs</code>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Insígnias e estado</h3>
+          <div class="g-row"><span class="z-badge z-badge--live">EM DIRECTO</span><span class="z-badge z-badge--cache">em cache</span><span class="z-badge z-badge--last">Último usado</span></div>
+          <div class="g-row"><span class="z-status">Motor ligado</span><span class="z-status" data-state="busy">Motor a arrancar</span><span class="z-status" data-state="off">Motor desligado</span></div>
+          <span class="z-progress" style="--p:.62"><i></i></span>
+          <code class="z-code g-use">.z-badge--live | --cache | --last, .z-status[data-state], .z-progress (--p)</code>
+        </div>
+        <div class="z-surface g-box">
+          <h3>Esqueletos e avisos</h3>
+          <span class="z-sk z-sk--title"></span><span class="z-sk z-sk--line"></span><span class="z-sk z-sk--line" style="width:60%"></span>
+          <div class="g-row"><button class="z-btn z-btn--sm" type="button" data-toast="Adicionado à tua lista.">Mostrar aviso</button></div>
+          <code class="z-code g-use">.z-sk(--title|--line), toast('…') em fx.js</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="g-sec" id="filas" aria-labelledby="h-rows">
+      <h2 class="z-t2" id="h-rows">Filas e folha de detalhe</h2>
+      <p class="z-lede">Passa o rato meio segundo sobre um cartão para o expandir. Setas e teclado paginam. Clicar abre a folha com as Fontes.</p>
+      <div class="g-rows z-rows" id="rows" aria-busy="true">
+        <section class="z-row" aria-hidden="true"><span class="z-sk z-sk--title" style="margin:0 var(--row-inset)"></span>
+          <div class="z-track"></div></section>
+      </div>
+      <code class="z-code g-use">.z-row > .z-row__title + .z-track > .z-card(--poster|--wide) > .z-card__art; rows(root); modal(el).open(origem)</code>
+    </section>
+
+    <section class="g-sec" id="arte" aria-labelledby="h-art">
+      <h2 class="z-t2" id="h-art">Arte que se dissolve em preto</h2>
+      <p class="z-lede">Uma figura por ecrã, sempre a fundir-se no preto pelo lado do texto. A dessaturação e o grão contam estados do sistema.</p>
+      <div class="g-frame">
+        <div class="z-art z-art--left" id="g-art"><img src="img/zeus-4.webp" alt="" loading="lazy"></div>
+        <div class="z-vignette"></div>
+        <div class="g-frame__copy">
+          <h3 class="z-t1">A sessão expirou</h3>
+          <p>Por segurança, a sessão termina ao fim de 30 dias sem atividade. Entra outra vez para continuares onde ficaste.</p>
+          <a class="z-btn z-btn--primary" href="entrada.html">Entrar outra vez</a>
+        </div>
+      </div>
+      <div class="g-ctrl">
+        <div class="z-seg" role="radiogroup" aria-label="Direção da fusão" id="g-scrim">
+          <label><input type="radio" name="g-scrim" value="z-art--left" checked>Esquerda</label><label><input type="radio" name="g-scrim" value="z-art--right">Direita</label><label><input type="radio" name="g-scrim" value="">Base</label><label><input type="radio" name="g-scrim" value="z-art--center">Centro</label>
+        </div>
+        <button class="z-switch" type="button" role="switch" aria-checked="false" id="g-mute">Dessaturar</button>
+        <button class="z-switch" type="button" role="switch" aria-checked="false" id="g-grain">Grão</button>
+      </div>
+      <code class="z-code g-use">.z-art(--left|--right|--billboard|--center|.is-muted|.is-dim) > img, --pos, .z-vignette, .z-grain, .z-mask-x|y|radial|b, grain(el)</code>
+    </section>
+
+    <section class="g-sec" id="luz" aria-labelledby="h-light">
+      <h2 class="z-t2" id="h-light">Luz do cursor sobre o mármore</h2>
+      <p class="z-lede">O busto fica na penumbra e só a zona sob o cursor acende. Sem rato, a luz orbita devagar. O painel de vidro é o mesmo da entrada.</p>
+      <div class="g-frame g-light">
+        <div id="g-bust"><img src="img/zeus-6.webp" alt="" width="794" height="794" loading="lazy"></div>
+        <div class="g-light__mask"></div>
+        <form class="z-glass" onsubmit="return false" aria-labelledby="g-login">
+          <h3 class="z-t2" id="g-login">Entrar</h3>
+          <div class="z-divider" style="margin:12px 0 18px;background:none"></div>
+          <div class="z-field"><label class="z-label" for="g-l-email">Email</label><input class="z-input" id="g-l-email" type="email" autocomplete="off"></div>
+          <div class="z-field"><label class="z-label" for="g-l-pw">Palavra-passe</label><div class="z-input-wrap"><input class="z-input" id="g-l-pw" type="password" autocomplete="off"><button type="button" data-reveal="g-l-pw" aria-pressed="false">Mostrar</button></div></div>
+          <button class="z-btn z-btn--primary z-btn--block" type="submit">Continuar</button>
+        </form>
+      </div>
+      <code class="z-code g-use">cursorLight(elComImg, { rest, orbit, tint }) ; .z-glass .z-panel</code>
+    </section>
+
+    <section class="g-sec" id="nuvens" aria-labelledby="h-clouds">
+      <h2 class="z-t2" id="h-clouds">Subida pelas nuvens</h2>
+      <p class="z-lede">Camadas de nuvens em paralaxe. O progresso de um fluxo sobe a câmara até ao cume.</p>
+      <div class="g-frame" id="g-sky">
+        <div class="g-sky"></div>
+        <div class="g-olympus z-mask-radial" id="g-olympus"><img src="img/zeus-2.webp" alt="" loading="lazy"></div>
+        <canvas class="g-clouds" id="g-clouds" aria-hidden="true"></canvas>
+        <div class="g-sky-fade"></div>
+        <label class="g-alt"><span class="z-foot">Altitude</span><b class="z-num" id="g-alt-v">0 m</b><input type="range" id="g-alt" min="0" max="100" value="0"></label>
+      </div>
+      <code class="z-code g-use">const c = clouds(canvas); c.set(passo / total)</code>
+    </section>
+
+    <section class="g-sec" id="raios" aria-labelledby="h-bolts">
+      <h2 class="z-t2" id="h-bolts">Raios</h2>
+      <p class="z-lede">Raios procedimentais com ramificações. Frio para a TV, quente para o Cinema, neutro no resto. Nunca mais de três clarões por segundo.</p>
+      <div class="g-frame g-storm">
+        <canvas class="z-bolts" id="g-bolts" aria-hidden="true"></canvas>
+        <div class="g-ctrl">
+          <button class="z-btn z-btn--sm z-btn--secondary" type="button" data-strike="cool">Raio frio</button>
+          <button class="z-btn z-btn--sm z-btn--secondary" type="button" data-strike="warm">Raio quente</button>
+          <button class="z-btn z-btn--sm z-btn--secondary" type="button" data-strike="neutral">Raio neutro</button>
+        </div>
+      </div>
+      <code class="z-code g-use">lightning(canvas, { palette, ambient, onStrike: p => painting.flash(p, p.color) }).strike(alvo)</code>
+    </section>
+
+    <section class="g-sec" id="regras" aria-labelledby="h-rules">
+      <h2 class="z-t2" id="h-rules">Regras</h2>
+      <ul class="g-rules">
+        <li class="z-surface"><b>Uma figura por ecrã.</b>Uma estátua, um enquadramento, nunca uma galeria de deuses.</li>
+        <li class="z-surface"><b>A imagem acaba sempre em preto.</b>Nada de arestas: máscara ou gradiente até #000 do lado do texto.</li>
+        <li class="z-surface"><b>O drama vem da luz.</b>Raios, clarões e a luz do cursor; a interface por cima fica calma e legível.</li>
+        <li class="z-surface"><b>Fotossensibilidade.</b>No máximo três clarões por segundo e nenhum com movimento reduzido.</li>
+        <li class="z-surface"><b>Movimento reduzido.</b>Sem ciclos, inclinações nem Ken Burns; imagens estáticas e fades curtos.</li>
+      </ul>
+    </section>
+  </div>
+  <p class="g-foot z-foot"><a class="z-wordmark" href="portal.html">ZEUS</a></p>
+</main>
+
+<div class="z-modal" id="detail" hidden>
+  <div class="z-scrim" data-close></div>
+  <div class="z-sheet" role="dialog" aria-modal="true" aria-labelledby="d-title" tabindex="-1">
+    <button class="z-icon-btn z-sheet__close" type="button" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <div class="z-sheet__hero" id="d-hero"></div>
+    <div class="z-sheet__body">
+      <h2 class="z-t1" id="d-title"></h2>
+      <div class="z-meta" id="d-meta"></div>
+      <p class="z-muted" id="d-syn"></p>
+      <div class="g-row"><button class="z-btn z-btn--primary" type="button" id="d-play">Reproduzir</button><button class="z-btn z-btn--secondary" type="button" id="d-list" aria-pressed="false">A minha lista</button></div>
+      <section style="margin-top:18px;padding-top:22px;border-top:1px solid var(--hair)" aria-labelledby="d-src-h">
+        <div class="g-row"><h3 class="z-t3" id="d-src-h">Fontes</h3><span class="z-faint z-num" id="d-count"></span><button class="z-switch" type="button" role="switch" aria-checked="false" id="d-cache" style="margin-left:auto">Só em cache</button></div>
+        <ul class="z-src-list" id="d-src"></ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { lightning, livingPainting, cursorLight, tilt, clouds, grain, reveal, rows, modal, toast, prefersReducedMotion, PALETTES, ICON } from './shared/fx.js';
+import { loadData, poster, backdrop, SOURCES } from '../data.js';
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+mountNav({ active: 'cinema', page: 'inicio' });
+
+/* Herói: pintura viva + raios + cartões tvOS que mudam o tom */
+const painting = livingPainting($('#painting'), 'img/zeus-5.webp');
+const wm = $('#wm'), wmGlow = $('.z-wordmark__glow', wm);
+const sky = lightning($('#bolts'), {
+  onStrike: p => { painting.flash(p, p.color, p.pulses); wmGlow.style.setProperty('--gc', PALETTES[p.palette].gc); },
+  onFrame: I => { wmGlow.style.opacity = (I * .9).toFixed(3); },
+});
+let hovering = 0;
+$$('.g-module').forEach(card => {
+  tilt(card);
+  const mood = +card.dataset.mood, key = mood > 0 ? 'warm' : 'cool';
+  const on = () => { hovering++; painting.setMood(mood); sky.setPalette(key); sky.setAmbient(true); };
+  const off = () => { hovering = Math.max(0, hovering - 1); setTimeout(() => { if (!hovering) { painting.setMood(0); sky.setPalette('neutral'); } }, 60); };
+  card.addEventListener('pointerenter', on); card.addEventListener('focus', on);
+  card.addEventListener('pointerleave', off); card.addEventListener('blur', off);
+  card.addEventListener('click', e => {
+    e.preventDefault();
+    card.classList.add('is-struck'); setTimeout(() => card.classList.remove('is-struck'), 700);
+    sky.strike(card, { palette: key, pulses: 1, width: 1.5 });
+    toast(`No Portal, este clique abre ${mood > 0 ? 'o Cinema' : 'a TV'}.`);
+  });
+});
+if (!RM && window.gsap) {
+  painting.state.exposure = 0; painting.state.zoom = 1.14;
+  gsap.set(wm, { opacity: 0, '--ls': '1.3em', filter: 'blur(10px)' });
+  gsap.timeline()
+    .to(painting.state, { exposure: 1, duration: 2.6, ease: 'power2.out' }, .1)
+    .to(painting.state, { zoom: 1, duration: 3.4, ease: 'power3.out' }, .1)
+    .to(wm, { opacity: 1, '--ls': '0.64em', filter: 'blur(0px)', duration: 1.8, ease: 'expo.out' }, .7)
+    .call(() => { sky.strike({ x: innerWidth * .2, y: innerHeight * .28 }); wm.classList.add('is-lit'); }, null, 1.15);
+  reveal(['.g-hero__copy', '.g-module'], { delay: 1.5 });
+}
+
+/* Controlos */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-toast]'); if (t) toast(t.dataset.toast);
+  const s = e.target.closest('[data-switch]'); if (s) s.setAttribute('aria-checked', s.getAttribute('aria-checked') !== 'true');
+  const r = e.target.closest('[data-reveal]');
+  if (r) { const f = document.getElementById(r.dataset.reveal), show = f.type === 'password'; f.type = show ? 'text' : 'password'; r.textContent = show ? 'Ocultar' : 'Mostrar'; r.setAttribute('aria-pressed', show); }
+});
+$('#busy').addEventListener('click', e => {
+  const b = e.currentTarget; b.setAttribute('aria-busy', 'true'); b.textContent = 'A entrar…';
+  setTimeout(() => { b.removeAttribute('aria-busy'); b.textContent = 'Entrar'; }, 1600);
+});
+$('#g-langs').addEventListener('click', e => {
+  const b = e.target.closest('.z-chip'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  if (!on && $$('[aria-pressed="true"]', b.parentElement).length === 1) return;
+  b.setAttribute('aria-pressed', on);
+  $('.z-chip__n', b)?.remove();
+  $$('[aria-pressed="true"]', b.parentElement).forEach((c, i) => { ($('.z-chip__n', c) || c.insertAdjacentElement('afterbegin', Object.assign(document.createElement('span'), { className: 'z-chip__n' }))).textContent = i + 1; });
+});
+$$('.z-tabs[role="tablist"] [role="tab"]').forEach(t => t.addEventListener('click', () => $$('[role="tab"]', t.parentElement).forEach(x => x.setAttribute('aria-selected', x === t))));
+
+/* Arte */
+const art = $('#g-art');
+$$('#g-scrim input').forEach(r => r.addEventListener('change', () => { art.classList.remove('z-art--left', 'z-art--right', 'z-art--center'); if (r.value) art.classList.add(r.value); }));
+let film = null;
+$('#g-mute').addEventListener('click', e => { const on = e.currentTarget.getAttribute('aria-checked') !== 'true'; e.currentTarget.setAttribute('aria-checked', on); art.classList.toggle('is-muted', on); });
+$('#g-grain').addEventListener('click', e => {
+  const on = e.currentTarget.getAttribute('aria-checked') !== 'true'; e.currentTarget.setAttribute('aria-checked', on);
+  if (on) film = grain(art.parentElement, { opacity: .16 }); else { film?.destroy(); film = null; }
+});
+
+/* Luz */
+cursorLight($('#g-bust'));
+
+/* Nuvens */
+const cl = clouds($('#g-clouds')), oly = $('#g-olympus');
+const alt = p => {
+  cl.set(p);
+  oly.style.transform = `translate3d(0,${(-38 + 36 * p).toFixed(1)}%,0)`;
+  $('#g-alt-v').textContent = Math.round(p * 2918).toLocaleString('pt-PT') + ' m';
+};
+$('#g-alt').addEventListener('input', e => alt(e.target.value / 100)); alt(0);
+
+/* Raios manuais */
+const storm = lightning($('#g-bolts'), { ambient: false });
+$$('[data-strike]').forEach(b => b.addEventListener('click', () => { if (!storm.strike(null, { palette: b.dataset.strike }) && RM) toast('Os raios estão desligados com movimento reduzido.'); }));
+
+/* Filas com o catálogo partilhado */
+const GEN = { Action: 'Acção', Adventure: 'Aventura', Animation: 'Animação', Comedy: 'Comédia', Crime: 'Crime', Drama: 'Drama', Fantasy: 'Fantasia', 'Sci-Fi': 'Ficção científica', Thriller: 'Thriller', Mystery: 'Mistério', Family: 'Família' };
+const meta = it => [it.imdbRating && `IMDb ${it.imdbRating}`, it.releaseInfo, it.type === 'series' ? 'Série' : 'Filme', it.genres?.[0] && (GEN[it.genres[0]] || it.genres[0])].filter(Boolean);
+const rowsEl = $('#rows');
+$('.z-track', rowsEl).innerHTML = Array.from({ length: 10 }, () => '<div class="z-card z-card--poster"><span class="z-card__art z-sk"></span></div>').join('');
+const byId = new Map();
+const card = (it, wide) => `<button class="z-card ${wide ? 'z-card--wide' : 'z-card--poster'}" type="button" data-id="${esc(it.id)}" data-title="${esc(it.name)}" data-meta="${esc(meta(it).join('|'))}" data-backdrop="${backdrop(it.id)}"${it.progress ? ` data-progress="${it.progress}"` : ''} aria-label="${esc(it.name)}">
+  <span class="z-card__art"><img src="${wide ? backdrop(it.id) : poster(it.id)}" alt="" loading="lazy" decoding="async"><span class="z-card__fallback">${esc(it.name)}</span>${it.progress ? `<span class="z-progress"><i style="--p:${it.progress}"></i></span>` : ''}</span>
+  ${wide ? `<span class="z-card__cap">${esc(it.name)}<small>${it.episode ? `<b>${esc(it.episode)}</b>` : ''}<span>Faltam ${Math.max(1, Math.round((1 - it.progress) * 120))} min</span></small></span>` : ''}</button>`;
+const data = await loadData();
+const pick = data.rows.slice(0, 2);
+pick.forEach(r => r.items.forEach(it => byId.set(it.id, it)));
+rowsEl.innerHTML = pick.map((r, i) => `<section class="z-row" aria-labelledby="row-${i}"><h3 class="z-row__title" id="row-${i}">${esc(r.title)}</h3><div class="z-track">${r.items.map(it => card(it, r.kind === 'progress')).join('')}</div></section>`).join('');
+rowsEl.removeAttribute('aria-busy');
+rows(rowsEl);
+rowsEl.addEventListener('z:action', e => {
+  const it = byId.get(e.detail.card.dataset.id);
+  if (e.detail.action === 'play') toast(`A preparar «${it.name}»…`);
+  if (e.detail.action === 'list') toast(e.detail.card.dataset.inList === 'true' ? 'Adicionado à tua lista.' : 'Removido da tua lista.');
+});
+
+/* Folha de detalhe */
+const sheet = modal($('#detail'));
+let cacheOnly = false, current = null;
+function sources() {
+  const list = SOURCES.filter(s => !cacheOnly || s.cached);
+  $('#d-count').textContent = cacheOnly ? `${list.length} de ${SOURCES.length}` : `${list.length}`;
+  $('#d-src').innerHTML = list.map(s => `<li class="z-src"><div class="z-src__q">${esc(s.quality)}<small>${esc(s.addon)}</small></div>
+    <div class="z-tags">${s.hdr ? `<span class="z-tag z-tag--strong">${s.hdr === 'DV' ? 'Dolby Vision' : esc(s.hdr)}</span>` : ''}<span class="z-tag">${esc(s.codec)}</span><span class="z-tag z-tag--mono">${esc(s.size)}</span><span class="z-tag z-tag--mono">${s.seeders} seeders</span>${s.cached ? '<span class="z-tag z-tag--cache">em cache</span>' : ''}</div>
+    <button class="z-icon-btn" type="button" style="background:var(--text);color:#000" aria-label="Reproduzir ${esc(s.quality)} ${esc(s.codec)} ${esc(s.size)}">${ICON.play}</button></li>`).join('');
+}
+rowsEl.addEventListener('click', e => {
+  const c = e.target.closest('.z-card[data-id]'); if (!c) return;
+  current = byId.get(c.dataset.id);
+  $('#d-hero').innerHTML = `<img src="${backdrop(current.id)}" alt="" onerror="this.onerror=null;this.src='${poster(current.id)}'">`;
+  $('#d-title').textContent = current.name;
+  $('#d-meta').innerHTML = meta(current).map((m, i) => i === 0 && m.startsWith('IMDb') ? `<span class="z-pill">${esc(m)}</span>` : `<span>${esc(m)}</span>`).join('');
+  $('#d-syn').textContent = current.description || 'Sem sinopse disponível.';
+  sources();
+  sheet.open(c);
+});
+$('#d-cache').addEventListener('click', e => { cacheOnly = !cacheOnly; e.currentTarget.setAttribute('aria-checked', cacheOnly); sources(); });
+$('#d-play').addEventListener('click', () => toast(`A preparar «${current.name}»…`));
+$('#d-list').addEventListener('click', e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); e.currentTarget.textContent = on ? 'Na minha lista' : 'A minha lista'; });
+$('#d-src').addEventListener('click', e => { if (e.target.closest('button')) toast(`A abrir «${current.name}»…`); });
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+/* A forja: brasa em vez de ciano; o ferro dos símbolos é Palatino, como letras cunhadas. */
+.addons-fidelity {
+  --accent: #ffb46e;
+  --cool: 255, 180, 110;
+  --ember: 255, 122, 42;
+  --serif:
+    "Iowan Old Style", Palatino, "Palatino Linotype", "Book Antiqua", Georgia,
+    serif;
+}
+.addons-fidelity .z-switch[aria-checked="true"]::before {
+  background: #d9692a;
+}
+.addons-fidelity .fg-hero {
+  position: relative;
+  min-height: min(70vh, 660px);
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  isolation: isolate;
+  padding: calc(var(--nav-h) + 24px) var(--gutter) clamp(36px, 6vh, 64px);
+}
+.addons-fidelity .fg-art {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(68vw, 1100px);
+  overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(90deg, #000 48%, transparent 97%),
+    linear-gradient(0deg, transparent 0, #000 34%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, #000 48%, transparent 97%),
+    linear-gradient(0deg, transparent 0, #000 34%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+.addons-fidelity .fg-pan {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 118%;
+  translate: 0 -2%;
+}
+.addons-fidelity .fg-art img {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  transform-origin: 32% 38%;
+  filter: brightness(0.82) contrast(1.06) saturate(1.05);
+}
+.addons-fidelity .fg-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.addons-fidelity .fg-copy {
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  width: min(470px, 100%);
+}
+.addons-fidelity .fg-copy .z-lede {
+  margin-top: 14px;
+}
+.addons-fidelity .fg-meta {
+  display: flex;
+  gap: 18px;
+  margin-top: 22px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+.addons-fidelity .fg-meta b {
+  color: var(--text);
+  font-weight: 600;
+}
+.addons-fidelity #sparks {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.addons-fidelity .z-flash {
+  background: radial-gradient(
+    circle at var(--fx, 50%) var(--fy, 50%),
+    rgba(255, 214, 150, 0.95),
+    rgba(255, 120, 40, 0.55) 30%,
+    rgba(120, 30, 0, 0) 70%
+  );
+}
+.addons-fidelity .toc {
+  margin: 8px auto 0;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--gutter));
+}
+.addons-fidelity .wrap {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 96px;
+}
+.addons-fidelity .sec {
+  padding-top: clamp(44px, 7vh, 80px);
+  scroll-margin-top: var(--nav-h);
+}
+.addons-fidelity .sec > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+.addons-fidelity .sec > header p {
+  margin-top: 6px;
+}
+.addons-fidelity .tok {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font: 600 22px/1 var(--serif);
+  color: #ffd9b0;
+  background: radial-gradient(120% 120% at 30% 18%, #54402f, #1b1411 72%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.addons-fidelity .hot .tok,
+.addons-fidelity .tok.hot {
+  animation: temper 2.6s var(--out);
+}
+@keyframes temper {
+  0% {
+    background: #fff3d2;
+    color: #8a3000;
+    box-shadow:
+      0 0 0 1px #fff inset,
+      0 0 46px 8px rgba(255, 196, 110, 0.95);
+  }
+  22% {
+    background: #ff9a3a;
+    color: #3a1200;
+    box-shadow: 0 0 34px 5px rgba(255, 110, 30, 0.75);
+  }
+  60% {
+    background: #6e200c;
+    color: #ffb27a;
+    box-shadow: 0 0 18px 0 rgba(200, 40, 10, 0.4);
+  }
+}
+.addons-fidelity .hot {
+  animation: glow 2.6s var(--out);
+}
+@keyframes glow {
+  0% {
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 220, 160, 0.9),
+      0 0 60px -10px rgba(255, 140, 50, 0.8);
+  }
+}
+.addons-fidelity .inst {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.addons-fidelity .inst li {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px 12px 6px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition:
+    background 0.3s,
+    opacity 0.3s;
+}
+.addons-fidelity .inst li.is-drag {
+  z-index: 2;
+  background: rgba(var(--ember), 0.09);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--ember), 0.5),
+    0 24px 50px -20px #000;
+}
+.addons-fidelity .inst li.is-off .tok,
+.addons-fidelity .inst li.is-off .nm {
+  opacity: 0.42;
+}
+.addons-fidelity .grip {
+  width: 34px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-3);
+  cursor: grab;
+  touch-action: none;
+}
+.addons-fidelity .grip:hover {
+  color: var(--text);
+}
+.addons-fidelity .grip svg {
+  width: 18px;
+  height: 18px;
+}
+.addons-fidelity .is-drag .grip {
+  cursor: grabbing;
+}
+.addons-fidelity .nm b {
+  font-weight: 600;
+}
+.addons-fidelity .nm small {
+  display: block;
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addons-fidelity .pos {
+  font: 600 13px/1 var(--mono);
+  color: var(--text-3);
+  min-width: 1.4em;
+  text-align: right;
+}
+.addons-fidelity .tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 20px;
+}
+.addons-fidelity .tools .z-search {
+  flex: 1 1 260px;
+  max-width: 380px;
+}
+.addons-fidelity .cat {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+.addons-fidelity .card {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.025)
+  );
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.addons-fidelity .card__top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.addons-fidelity .card__top b {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+}
+.addons-fidelity .card p {
+  font-size: 15px;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+.addons-fidelity .card > p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  align-self: start;
+}
+.addons-fidelity .more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  margin-top: 22px;
+}
+.addons-fidelity .nm .z-tag {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+.addons-fidelity .cfg-link {
+  justify-self: start;
+}
+.addons-fidelity .card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+.addons-fidelity .done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--accent);
+}
+.addons-fidelity .empty {
+  grid-column: 1/-1;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-2);
+}
+.addons-fidelity .note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 22px;
+  max-width: 70ch;
+  color: var(--text-3);
+  font-size: 14px;
+}
+.addons-fidelity .note svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+.addons-fidelity .sheet {
+  width: min(640px, 100%);
+}
+.addons-fidelity .sh-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding-right: 48px;
+}
+.addons-fidelity .sh-head p {
+  margin-top: 4px;
+}
+.addons-fidelity fieldset {
+  border: 0;
+  margin: 0 0 18px;
+  padding: 0;
+  min-width: 0;
+}
+.addons-fidelity legend {
+  padding: 0;
+  margin-bottom: 10px;
+}
+.addons-fidelity .q .z-chip[aria-pressed="true"] {
+  text-decoration: line-through;
+  text-decoration-color: rgba(var(--cool), 0.8);
+}
+.addons-fidelity .sh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.addons-fidelity .chk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.addons-fidelity .chk input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #e07b33;
+}
+.addons-fidelity .src {
+  font: 12px/1.4 var(--mono);
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .addons-fidelity .fg-hero {
+    min-height: 620px;
+    align-items: end;
+  }
+  .addons-fidelity .fg-art {
+    width: 100%;
+    inset: 0;
+    -webkit-mask-image: linear-gradient(0deg, transparent 30%, #000 62%);
+    mask-image: linear-gradient(0deg, transparent 30%, #000 62%);
+  }
+  .addons-fidelity .fg-pan {
+    width: 170%;
+    translate: -4% 0;
+  }
+  .addons-fidelity .fg-copy {
+    justify-self: start;
+  }
+  .addons-fidelity .inst li {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    padding-right: 12px;
+    row-gap: 8px;
+  }
+  .addons-fidelity .inst .pos {
+    display: none;
+  }
+  .addons-fidelity .inst .acts {
+    grid-column: 3/-1;
+    justify-content: flex-start;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .addons-fidelity .inst .z-switch {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
+.addons-fidelity .acts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 216px;
+}
+html.z-rm .addons-fidelity .fg-embers,
+html.z-rm .addons-fidelity #sparks {
+  display: none;
+}
+.addons-fidelity .addon-dialog {
+  color: var(--text);
+  border: 0;
+  padding: 0;
+  margin: auto;
+  position: fixed;
+}
+.addons-fidelity .addon-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+}
+.addons-fidelity .addon-dialog:not([open]) {
+  display: none;
+}
+.addons-fidelity .inst .nm {
+  min-width: 0;
+}
+.addons-fidelity .z-msg {
+  margin-bottom: 16px;
+}
+@media (max-width: 760px) {
+  .addons-fidelity .addon-dialog {
+    width: calc(100% - 20px);
+  }
+}
+.addons-fidelity .z-field > .z-label {
+  margin-bottom: 0;
+}

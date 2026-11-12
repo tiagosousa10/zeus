@@ -1,0 +1,532 @@
+/* Atena: ouro de Klimt em vez de ciano; o que é gravado (placa, égide) usa Palatino. */
+.account-fidelity {
+  --accent: #e9c46e;
+  --cool: 233, 196, 110;
+  --leaf: #d4a845;
+  --leaf-rgb: 212, 168, 69;
+  --serif:
+    "Iowan Old Style", Palatino, "Palatino Linotype", "Book Antiqua", Georgia,
+    serif;
+}
+.account-fidelity .z-switch[aria-checked="true"]::before {
+  background: #b98d2c;
+}
+.account-fidelity .at-hero {
+  position: relative;
+  min-height: min(66vh, 620px);
+  display: grid;
+  align-items: end;
+  overflow: hidden;
+  isolation: isolate;
+  padding: calc(var(--nav-h) + 24px) var(--gutter) clamp(36px, 6vh, 60px);
+}
+.account-fidelity .at-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(270deg, #000 0, rgba(0, 0, 0, 0.8) 30%, transparent 58%),
+    linear-gradient(0deg, #000 0, transparent 30%);
+}
+.account-fidelity .at-copy {
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  width: min(440px, 100%);
+}
+.account-fidelity .at-copy .z-lede {
+  margin-top: 12px;
+}
+.account-fidelity .at-sum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+.account-fidelity .at-sum i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--leaf);
+  box-shadow: 0 0 0 4px rgba(var(--leaf-rgb), 0.18);
+}
+.account-fidelity .layout {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 24px var(--gutter) 96px;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.account-fidelity .side {
+  position: sticky;
+  top: calc(var(--nav-h) + 24px);
+  display: grid;
+  gap: 2px;
+}
+.account-fidelity .side a {
+  padding: 9px 14px;
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 15px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.account-fidelity .side a:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+.account-fidelity .side a[aria-current="true"] {
+  color: var(--accent);
+  background: rgba(var(--leaf-rgb), 0.1);
+}
+.account-fidelity .sec {
+  scroll-margin-top: calc(var(--nav-h) + 20px);
+  padding: 28px 0 36px;
+  border-bottom: 1px solid var(--hair);
+}
+.account-fidelity .sec:last-child {
+  border-bottom: 0;
+}
+.account-fidelity .sec > h2 {
+  margin-bottom: 6px;
+}
+.account-fidelity .sec > .z-callout {
+  color: var(--text-2);
+  max-width: 60ch;
+  margin-bottom: 22px;
+}
+.account-fidelity .grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+  max-width: 640px;
+}
+.account-fidelity .form {
+  max-width: 640px;
+}
+.account-fidelity .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.account-fidelity .sub {
+  margin: 30px 0 14px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.account-fidelity .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.account-fidelity .row p {
+  color: var(--text-2);
+  font-size: 15px;
+}
+/* Égide: escamas douradas que se fecham quando a segurança fica guardada */
+.account-fidelity .sec-head {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+.account-fidelity .aegis {
+  position: relative;
+  flex: none;
+  width: 112px;
+  height: 112px;
+}
+.account-fidelity .aegis svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.account-fidelity .aegis .sc {
+  fill: #3a2f18;
+  stroke: #6b5321;
+  stroke-width: 0.8;
+  opacity: 0.55;
+  translate: 0 -6px;
+  transition:
+    translate 0.6s var(--spring),
+    fill 0.5s,
+    opacity 0.5s,
+    stroke 0.5s;
+  transition-delay: calc(var(--i) * 22ms);
+}
+.account-fidelity .aegis.is-locked .sc {
+  fill: url(#gold);
+  stroke: #7a5a1a;
+  opacity: 1;
+  translate: 0 0;
+}
+.account-fidelity .aegis .core {
+  fill: #14110a;
+  stroke: rgba(var(--leaf-rgb), 0.35);
+  stroke-width: 1;
+}
+.account-fidelity .aegis .lock {
+  fill: none;
+  stroke: var(--text-3);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.4s;
+}
+.account-fidelity .aegis.is-locked .lock {
+  stroke: var(--accent);
+}
+.account-fidelity .aegis .shackle {
+  transition: translate 0.4s var(--spring) 0.45s;
+  translate: 0 -4px;
+}
+.account-fidelity .aegis.is-locked .shackle {
+  translate: 0 0;
+}
+.account-fidelity .aegis__gleam {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 300deg,
+    rgba(255, 240, 200, 0) 310deg,
+    rgba(255, 246, 220, 0.95) 340deg,
+    transparent 360deg
+  );
+  -webkit-mask: radial-gradient(
+    closest-side,
+    transparent 64%,
+    #000 70%,
+    #000 98%,
+    transparent 100%
+  );
+  mask: radial-gradient(
+    closest-side,
+    transparent 64%,
+    #000 70%,
+    #000 98%,
+    transparent 100%
+  );
+}
+.account-fidelity .aegis.is-locked {
+  filter: drop-shadow(0 0 18px rgba(var(--leaf-rgb), 0.25));
+}
+.account-fidelity .sec-head b {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+}
+.account-fidelity .sec-head span {
+  color: var(--text-2);
+  font-size: 15px;
+}
+/* Placa gravada dos códigos de recuperação */
+.account-fidelity .plaque {
+  position: relative;
+  margin-top: 16px;
+  max-width: 560px;
+  padding: 26px 30px 24px;
+  border-radius: 14px;
+  color: #3a2806;
+  background: linear-gradient(
+    128deg,
+    #7d5b1b 0,
+    #e6c46a 22%,
+    #a97f2c 46%,
+    #f2da92 70%,
+    #8c6621 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 225, 0.6),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(60, 40, 5, 0.4),
+    0 28px 60px -28px #000;
+}
+.account-fidelity .plaque::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(60, 40, 5, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(255, 245, 210, 0.45);
+}
+.account-fidelity .plaque h3 {
+  position: relative;
+  font: 600 19px/1.2 var(--serif);
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.6);
+}
+.account-fidelity .plaque p {
+  position: relative;
+  margin-top: 2px;
+  font: italic 14px/1.4 var(--serif);
+  color: rgba(58, 40, 6, 0.8);
+}
+.account-fidelity .plaque ol {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 28px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: c;
+}
+.account-fidelity .plaque li {
+  counter-increment: c;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font: 600 17px/1.3 var(--mono);
+  letter-spacing: 0.04em;
+  color: #3b2905;
+  text-shadow:
+    0 1px 0 rgba(255, 244, 205, 0.7),
+    0 -1px 0 rgba(40, 25, 0, 0.45);
+}
+.account-fidelity .plaque li::before {
+  content: counter(c);
+  min-width: 1.4em;
+  font: 500 12px var(--serif);
+  color: rgba(58, 40, 6, 0.6);
+  text-shadow: none;
+}
+.account-fidelity .rivet {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #8a6420 60%, #4a3108);
+}
+.account-fidelity .rivet:nth-of-type(1) {
+  top: 6px;
+  left: 6px;
+}
+.account-fidelity .rivet:nth-of-type(2) {
+  top: 6px;
+  right: 6px;
+}
+.account-fidelity .rivet:nth-of-type(3) {
+  bottom: 6px;
+  left: 6px;
+}
+.account-fidelity .rivet:nth-of-type(4) {
+  bottom: 6px;
+  right: 6px;
+}
+.account-fidelity .sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.account-fidelity .sessions li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.account-fidelity .sessions svg {
+  width: 26px;
+  height: 26px;
+  color: var(--text-2);
+}
+.account-fidelity .sessions b {
+  font-weight: 600;
+}
+.account-fidelity .sessions small {
+  display: block;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.account-fidelity .confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: rgba(var(--leaf-rgb), 0.08);
+  box-shadow: inset 0 0 0 1px rgba(var(--leaf-rgb), 0.3);
+  font-size: 15px;
+}
+.account-fidelity .confirm p {
+  flex: 1 1 260px;
+}
+.account-fidelity fieldset {
+  border: 0;
+  margin: 0 0 20px;
+  padding: 0;
+  min-width: 0;
+}
+.account-fidelity legend {
+  padding: 0;
+  margin-bottom: 10px;
+}
+.account-fidelity .toggles {
+  display: grid;
+  gap: 14px;
+  margin: 4px 0 24px;
+}
+.account-fidelity .preview {
+  position: relative;
+  aspect-ratio: 16/7;
+  max-width: 640px;
+  margin-top: 6px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  padding: 0 24px 7%;
+  background:
+    radial-gradient(
+      70% 90% at 30% 20%,
+      rgba(212, 168, 69, 0.28),
+      transparent 60%
+    ),
+    radial-gradient(
+      60% 80% at 80% 70%,
+      rgba(40, 70, 52, 0.55),
+      transparent 70%
+    ),
+    linear-gradient(160deg, #1d1a10, #0a0d0a);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.account-fidelity .preview span {
+  max-width: 90%;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--sub-c, #fff);
+  font-size: var(--sub-s, 22px);
+  transition:
+    font-size 0.25s var(--out),
+    color 0.25s;
+}
+.account-fidelity .preview[data-bg="sombra"] span {
+  text-shadow:
+    0 2px 3px #000,
+    0 0 8px rgba(0, 0, 0, 0.9);
+}
+.account-fidelity .preview[data-bg="caixa"] span {
+  background: rgba(0, 0, 0, 0.72);
+  padding: 2px 10px;
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.account-fidelity .segs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 6px;
+}
+.account-fidelity .segs .z-label {
+  display: block;
+  margin-bottom: 8px;
+}
+.account-fidelity .found {
+  max-width: 640px;
+  margin-top: 14px;
+}
+.account-fidelity .found ul {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+.account-fidelity .save-note {
+  font-size: 14px;
+  color: var(--text-3);
+  min-height: 20px;
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .account-fidelity .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .account-fidelity .side {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 0 var(--gutter);
+  }
+  .account-fidelity .side a {
+    white-space: nowrap;
+  }
+}
+@media (max-width: 760px) {
+  .account-fidelity .at-hero {
+    min-height: 640px;
+  }
+  .account-fidelity .at-hero::after {
+    background: linear-gradient(
+      0deg,
+      #000 0,
+      #000 34%,
+      rgba(0, 0, 0, 0.5) 56%,
+      transparent 76%
+    );
+  }
+  .account-fidelity .at-copy {
+    justify-self: start;
+  }
+  .account-fidelity .grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-fidelity .plaque {
+    padding: 22px 20px;
+  }
+  .account-fidelity .plaque ol {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .account-fidelity .sessions li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .account-fidelity .sessions li .z-btn,
+  .account-fidelity .sessions li .z-tag {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .account-fidelity .sec-head {
+    align-items: flex-start;
+  }
+  .account-fidelity .aegis {
+    width: 84px;
+    height: 84px;
+  }
+}
+.account-fidelity .z-field > .z-label {
+  margin-bottom: 0;
+}

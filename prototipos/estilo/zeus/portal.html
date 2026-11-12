@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Portal</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/zeus-5.webp">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#000; --elev:#1c1c1e; --elev-2:#2c2c2e;
+  --text:#f5f5f7; --text-2:rgba(235,235,245,.62); --text-3:rgba(235,235,245,.36);
+  --hair:rgba(255,255,255,.09); --accent:#7de3f0; --live:#ff453a; --ok:#30d158;
+  --glass:rgba(44,44,48,.52); --blur:blur(28px) saturate(180%);
+  --r-xl:24px; --r-lg:18px; --r-md:12px;
+  --spring:cubic-bezier(.2,1.25,.4,1); --out:cubic-bezier(.22,1,.36,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  --gutter:clamp(16px,4vw,56px);
+  --warm:255,92,64; --cool:125,227,240;
+}
+html{background:var(--bg);color-scheme:dark}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.47;letter-spacing:-.011em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+#still,#gl,#bolts,.scrim,#veil{position:fixed;pointer-events:none}
+#still{z-index:0;opacity:0;transition:opacity 1.2s var(--out);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20%,#000 80%,transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 20%,#000 80%,transparent 100%)}
+#still img{display:block;width:100%;height:100%;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 66%,transparent 90%);
+          mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 66%,transparent 90%)}
+#still.on{opacity:.88}
+#gl{inset:0;width:100%;height:100%;z-index:0;opacity:0;transition:opacity 1s linear}
+#gl.on{opacity:1}
+.scrim{inset:0;z-index:1;background:
+  linear-gradient(to top,rgba(0,0,0,.94) 0%,rgba(0,0,0,.74) 26%,rgba(0,0,0,.18) 52%,rgba(0,0,0,0) 64%)}
+#bolts{inset:0;width:100%;height:100%;z-index:2;mix-blend-mode:screen}
+#veil{inset:0;z-index:9;background:#000;opacity:0}
+
+.ui{position:relative;z-index:3;min-height:100vh;min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;
+  padding:max(32px,env(safe-area-inset-top)) var(--gutter) max(20px,env(safe-area-inset-bottom))}
+
+.wordmark{justify-self:center;margin:clamp(8px,3vh,32px) 0 0;position:relative;
+  font-size:clamp(22px,2.6vw,36px);font-weight:600;line-height:1;
+  --ls:.64em;letter-spacing:var(--ls);padding-left:var(--ls)}
+.wm-text{display:block;color:transparent;
+  background:linear-gradient(105deg,var(--text) 0 40%,#fff 45%,#d9fbff 47.5%,var(--accent) 50%,#fff 52.5%,var(--text) 58% 100%);
+  background-size:340% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text}
+.wordmark.lit .wm-text{animation:sweep 1.8s var(--out) both}
+@keyframes sweep{from{background-position:100% 0}to{background-position:0 0}}
+.wm-glow{position:absolute;inset:0;padding-left:inherit;color:transparent;opacity:0;
+  --gc:var(--cool);text-shadow:0 0 14px rgba(var(--gc),.95),0 0 2px #fff,0 0 34px rgba(var(--gc),.55)}
+
+.choose{align-self:end;display:grid;justify-items:center;gap:clamp(18px,3vh,30px)}
+.hello{text-align:center}
+.hello h2{margin:0;font-size:clamp(28px,3.2vw,40px);font-weight:700;letter-spacing:-.022em;line-height:1.1}
+.hello p{margin:6px 0 0;color:var(--text-2)}
+
+.modules{display:grid;grid-template-columns:repeat(2,minmax(0,340px));gap:24px;width:100%;justify-content:center;perspective:1000px}
+.slot{min-width:0}
+.card{--rx:0deg;--ry:0deg;--lift:0px;--s:1;--gx:50%;--gy:0%;--tint:var(--cool);
+  position:relative;display:grid;grid-template-rows:auto 1fr auto auto;height:206px;padding:22px 24px;
+  border-radius:var(--r-xl);color:var(--text);text-decoration:none;overflow:hidden;isolation:isolate;
+  background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--hair);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 18px 40px -24px rgba(0,0,0,.9);
+  transform:perspective(900px) translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry)) scale(var(--s));
+  transition:transform .55s var(--spring),box-shadow .5s var(--out),border-color .5s var(--out),opacity .5s var(--out);
+  will-change:transform;outline:none}
+.card.warm{--tint:var(--warm)}
+.card::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.5;transition:opacity .5s var(--out);
+  background:radial-gradient(120% 90% at var(--ox,100%) 120%,rgba(var(--tint),.28),transparent 60%)}
+.card.cool{--ox:0%}
+.glare{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .4s var(--out);
+  background:radial-gradient(80% 70% at var(--gx) var(--gy),rgba(255,255,255,.12),rgba(255,255,255,0) 62%)}
+.card:hover,.card:focus-visible,.card.chosen{--lift:-10px;--s:1.045;border-color:rgba(var(--tint),.38);
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 36px 70px -28px rgba(0,0,0,.95),0 0 60px -18px rgba(var(--tint),.5)}
+.card:hover::before,.card:focus-visible::before,.card.chosen::before{opacity:1}
+.card:hover .glare,.card:focus-visible .glare{opacity:1}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:5px}
+.card.tracking{transition:transform .12s linear,box-shadow .5s var(--out),border-color .5s var(--out)}
+.card.dim{opacity:.25}
+.card.struck{animation:struck .65s var(--out)}
+@keyframes struck{0%{box-shadow:0 0 0 1px rgba(255,255,255,.9) inset,0 0 90px 10px rgba(var(--tint),.75)}100%{}}
+
+.card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.icon{width:34px;height:34px;color:var(--text)}
+.badge{font-size:12px;font-weight:600;letter-spacing:0;padding:5px 10px;border-radius:999px;
+  background:rgba(255,255,255,.12);color:var(--text);border:1px solid var(--hair)}
+.card h3{grid-row:3;margin:0;font-size:30px;font-weight:700;letter-spacing:-.022em;line-height:1.05}
+.card p{grid-row:4;margin:4px 0 0;font-size:15px;color:var(--text-2);display:flex;align-items:center;gap:8px}
+.live{width:8px;height:8px;border-radius:50%;background:var(--live);box-shadow:0 0 0 3px rgba(255,69,58,.18)}
+
+.foot{display:flex;justify-content:center;margin-top:clamp(18px,3vh,30px)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border-radius:999px;
+  font:12px/1 var(--mono);letter-spacing:0;color:var(--text-2);background:rgba(28,28,30,.6);border:1px solid var(--hair);
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(48,209,88,.5);animation:breathe 2.8s ease-in-out infinite}
+@keyframes breathe{50%{box-shadow:0 0 0 5px rgba(48,209,88,0)}}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:640px){
+  .modules{grid-template-columns:minmax(0,1fr);gap:12px}
+  .card{height:auto;min-height:104px;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;column-gap:16px;padding:18px 18px;align-items:center}
+  .card-top{display:contents}
+  .icon{grid-row:1 / 3;grid-column:1;width:30px;height:30px}
+  .badge{grid-column:3;grid-row:1 / 3;font-size:11px}
+  .card h3{grid-row:1;grid-column:2;font-size:24px;align-self:end}
+  .card p{grid-row:2;grid-column:2;margin:2px 0 0;align-self:start}
+  .card:hover,.card:focus-visible,.card.chosen{--lift:-4px;--s:1.02}
+}
+
+html.rm .card,html.rm .card.tracking{transform:none;transition:opacity .4s linear,border-color .3s linear,box-shadow .3s linear}
+html.rm .glare{display:none}
+html.rm .chip i{animation:none}
+html.rm .wm-text{background-position:50% 0;color:var(--text);background:none}
+html.rm .reveal{animation:fade .8s linear both}
+html.rm #still.on{opacity:.8}
+@keyframes fade{from{opacity:0}}
+html.nojs .reveal{opacity:1}
+</style>
+</head>
+<body>
+<div id="still" aria-hidden="true"><img src="img/zeus-5.webp" alt="" decoding="async"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="scrim" aria-hidden="true"></div>
+<canvas id="bolts" aria-hidden="true"></canvas>
+
+<main class="ui">
+  <h1 class="wordmark reveal" id="wordmark" aria-label="Zeus"><span class="wm-text" aria-hidden="true">ZEUS</span><span class="wm-glow" aria-hidden="true">ZEUS</span></h1>
+  <div></div>
+  <section class="choose" aria-labelledby="hello">
+    <div class="hello reveal">
+      <h2 id="hello">Boa noite</h2>
+      <p>Escolha por onde quer começar.</p>
+    </div>
+    <nav class="modules" aria-label="Módulos">
+      <div class="slot reveal">
+        <a class="card cool" href="tv.html" data-mood="-1" aria-label="TV, canais em directo">
+          <span class="glare"></span>
+          <div class="card-top">
+            <svg class="icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="26" height="18" rx="4"/><path d="M11 3l5 6 5-6"/><path d="M12 31h8"/></svg>
+          </div>
+          <h3>TV</h3>
+          <p><span class="live" aria-hidden="true"></span>Canais em directo</p>
+        </a>
+      </div>
+      <div class="slot reveal">
+        <a class="card warm" href="cinema.html" data-mood="1" aria-label="Cinema, filmes e séries. Último usado">
+          <span class="glare"></span>
+          <div class="card-top">
+            <svg class="icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="24" height="22" rx="4"/><path d="M10 5v22M22 5v22M4 12h6M4 20h6M22 12h6M22 20h6"/></svg>
+            <span class="badge">Último usado</span>
+          </div>
+          <h3>Cinema</h3>
+          <p>Filmes e séries</p>
+        </a>
+      </div>
+    </nav>
+  </section>
+  <footer class="foot reveal">
+    <span class="chip" role="status"><i aria-hidden="true"></i>Motor ligado</span>
+  </footer>
+</main>
+<div id="veil" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+<script>
+(() => {
+'use strict';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const G = window.gsap || null;
+const root = document.documentElement;
+if (reduce) root.classList.add('rm');
+
+const $ = s => document.querySelector(s);
+const still = $('#still'), glCanvas = $('#gl'), boltCanvas = $('#bolts'), veil = $('#veil');
+const wordmark = $('#wordmark'), wmGlow = wordmark.querySelector('.wm-glow');
+const cards = [...document.querySelectorAll('.card')];
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+const h = new Date().getHours();
+$('#hello').textContent = h >= 6 && h < 13 ? 'Bom dia' : h >= 13 && h < 20 ? 'Boa tarde' : 'Boa noite';
+
+// Face of the statue in image UV, used as focal point and zoom centre.
+const FACE = { x: 0.5, y: 0.13 };
+const state = { zoom: 1, exposure: 1, mood: 0 };
+const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+let W = 0, H = 0, S = 0, T = { x: 0, y: 0 }, dpr = 1;
+
+function layout() {
+  W = innerWidth; H = innerHeight;
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  const narrow = W < 700;
+  S = narrow ? Math.max(H, W * 1.5) : Math.max(H * 1.28, Math.min(W * 0.82, H * 1.5));
+  const faceY = narrow ? H * 0.2 : H * 0.31;
+  T = { x: W / 2 - S * FACE.x, y: faceY - S * FACE.y };
+  Object.assign(still.style, { left: T.x + 'px', top: T.y + 'px', width: S + 'px', height: S + 'px' });
+  boltCanvas.width = Math.round(W * dpr); boltCanvas.height = Math.round(H * dpr);
+  bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (gl) {
+    gl.renderer.setPixelRatio(dpr);
+    gl.renderer.setSize(W, H, false);
+    const v = gl.renderer.getDrawingBufferSize(new THREE.Vector2());
+    gl.u.uRes.value.copy(v);
+    gl.u.uDpr.value = dpr;
+    gl.u.uRect.value.set(T.x, T.y, S);
+  }
+}
+
+const bctx = boltCanvas.getContext('2d');
+let gl = null;
+
+const FRAG = `
+precision highp float;
+uniform sampler2D uTex;
+uniform vec2 uRes, uPan, uFlashPos;
+uniform vec3 uRect, uFlashCol;
+uniform float uDpr, uTime, uZoom, uExposure, uFlash, uMood;
+const vec2 FACE = vec2(.5, .13);
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3. - 2.*f);
+  return mix(mix(hash(i), hash(i + vec2(1,0)), u.x), mix(hash(i + vec2(0,1)), hash(i + vec2(1,1)), u.x), u.y); }
+float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 4; i++){ v += a*noise(p); p *= 2.03; a *= .5; } return v; }
+float ell(vec2 p, vec2 c, vec2 r){ vec2 d = (p - c)/r; return dot(d, d); }
+void main(){
+  vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;
+  vec2 uv = (px - uRect.xy - uPan) / uRect.z;
+  uv = FACE + (uv - FACE) / uZoom;
+  float t = uTime;
+  // rough statue silhouette so the sky moves and the marble stays still
+  float body = min(min(ell(uv, vec2(.52,.62), vec2(.42,.46)), ell(uv, vec2(.5,.17), vec2(.11,.16))), ell(uv, vec2(.6,.36), vec2(.28,.16)));
+  float sky = smoothstep(1., 1.7, body);
+  vec2 q = uv*3.;
+  vec2 warp = vec2(fbm(q + vec2(t*.035, t*.01)), fbm(q + vec2(5.2, 1.3) - vec2(t*.02, t*.03))) - .5;
+  float heat = (noise(vec2(uv.x*38., uv.y*12. - t*.7)) - .5) * smoothstep(.62, .95, uv.x);
+  vec2 suv = uv + sky*(warp*.02 + vec2(heat*.005, 0.));
+  float fade = smoothstep(0., .2, suv.x)*smoothstep(1., .74, suv.x)*smoothstep(0., .1, suv.y)*smoothstep(.9, .66, suv.y);
+  float focus = smoothstep(.12, .7, distance(suv*vec2(1., 1.15), FACE*vec2(1., 1.15)));
+  float r = (1. - fade + focus*.5) * .004;
+  vec3 c = texture2D(uTex, suv).rgb*.36
+    + texture2D(uTex, suv + vec2( r,  r)).rgb*.16 + texture2D(uTex, suv + vec2(-r,  r)).rgb*.16
+    + texture2D(uTex, suv + vec2( r, -r)).rgb*.16 + texture2D(uTex, suv + vec2(-r, -r)).rgb*.16;
+  float drift = fbm(uv*2.2 + vec2(t*.025, -t*.012));
+  c *= 1. + sky*(drift - .5)*.45;
+  float warm = max(uMood, 0.), cool = max(-uMood, 0.);
+  float right = sky*smoothstep(.55, .95, uv.x), left = sky*smoothstep(.5, .05, uv.x);
+  c += vec3(.34, .04, .02) * right * warm * (.15 + drift*.7);
+  c = mix(c, c*vec3(1.1, .95, .86), warm*.45);
+  c += vec3(.0, .26, .32) * left * cool * (.2 + drift*.7);
+  float l = dot(c, vec3(.299, .587, .114));
+  c = mix(c, vec3(l)*vec3(.86, 1.02, 1.1), cool*.4);
+  float d = distance(uv, uFlashPos);
+  float lit = uFlash*(.28 + .95*exp(-d*3.2));
+  c = mix(c, (c - .5)*(1. + .35*uFlash) + .5, uFlash*.6);
+  c += c*lit*uFlashCol*1.3 + uFlashCol*lit*.05*sky;
+  c *= fade * uExposure;
+  vec2 sq = gl_FragCoord.xy/uRes - .5;
+  c *= 1. - smoothstep(.3, .85, length(sq*vec2(1., 1.2)))*.5;
+  c += (hash(gl_FragCoord.xy + fract(t*7.)*91.) - .5) * .05 * (.35 + fade);
+  gl_FragColor = vec4(max(c, 0.), 1.);
+}`;
+
+function initGL() {
+  if (reduce || !window.THREE) return null;
+  try {
+    const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+    const u = {
+      uTex: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uDpr: { value: 1 },
+      uRect: { value: new THREE.Vector3() }, uPan: { value: new THREE.Vector2() },
+      uTime: { value: 0 }, uZoom: { value: 1 }, uExposure: { value: 1 }, uMood: { value: 0 },
+      uFlash: { value: 0 }, uFlashPos: { value: new THREE.Vector2(.3, .3) }, uFlashCol: { value: new THREE.Vector3(1, 1, 1) }
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms: u, depthTest: false, depthWrite: false,
+      vertexShader: 'void main(){ gl_Position = vec4(position.xy, 0., 1.); }',
+      fragmentShader: FRAG
+    });
+    const scene = new THREE.Scene();
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+    return { renderer, scene, cam: new THREE.Camera(), u, ready: false };
+  } catch (e) { return null; }
+}
+
+gl = initGL();
+layout();
+
+const stillImg = still.querySelector('img');
+const showStill = () => still.classList.add('on');
+if (stillImg.complete) showStill(); else stillImg.addEventListener('load', showStill, { once: true });
+
+if (gl) {
+  new THREE.TextureLoader().load('img/zeus-5.webp', tex => {
+    tex.flipY = false; tex.minFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+    gl.u.uTex.value = tex; gl.ready = true;
+    glCanvas.classList.add('on');
+  }, undefined, () => { gl = null; });
+}
+
+// Lightning
+const PALETTE = {
+  neutral: { core: '255,250,240', glow: '176,204,255', flash: [1, .98, .94], gc: '200,220,255' },
+  warm: { core: '255,244,214', glow: '255,176,60', flash: [1.15, .82, .5], gc: '255,186,90' },
+  cool: { core: '236,254,255', glow: '125,227,240', flash: [.6, 1, 1.15], gc: '125,227,240' }
+};
+const moodKey = () => state.mood > .3 ? 'warm' : state.mood < -.3 ? 'cool' : 'neutral';
+const bolts = [];
+let lastStrike = -1e9, boltsDirty = false, flashBolt = null;
+
+function path(x1, y1, x2, y2, disp, detail) {
+  let pts = [[x1, y1], [x2, y2]], d = disp;
+  for (let g = 0; g < detail; g++) {
+    const np = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1, off = rand(-1, 1) * d;
+      np.push([(ax + bx) / 2 - dy / len * off, (ay + by) / 2 + dx / len * off], pts[i + 1]);
+    }
+    pts = np; d *= 0.56;
+  }
+  return pts;
+}
+
+function branchOut(pts, out, w, depth) {
+  const n = pts.length;
+  for (let i = 4; i < n - 3; i++) {
+    if (Math.random() > (depth ? 0.035 : 0.07)) continue;
+    const [ax, ay] = pts[i], [bx, by] = pts[Math.min(n - 1, i + 3)];
+    const dir = Math.atan2(by - ay, bx - ax) + rand(.35, .9) * (Math.random() < .5 ? -1 : 1);
+    const len = rand(40, 150) * (depth ? .6 : 1);
+    const p = path(ax, ay, ax + Math.cos(dir) * len, ay + Math.sin(dir) * len, len * .22, 5);
+    out.push({ pts: p, w: w * .5 });
+    if (depth < 1) branchOut(p, out, w * .5, depth + 1);
+  }
+}
+
+function strike(end, opts = {}) {
+  const now = performance.now();
+  lastStrike = now;
+  const start = opts.from || { x: end.x + rand(-.22, .22) * Math.min(W, S) * .6, y: rand(-40, H * .03) };
+  const len = Math.hypot(end.x - start.x, end.y - start.y);
+  const main = path(start.x, start.y, end.x, end.y, len * .16, 7);
+  const paths = [{ pts: main, w: opts.w || 1 }];
+  branchOut(main, paths, opts.w || 1, 0);
+  const pal = PALETTE[opts.mood || moodKey()];
+  bolts.push({ paths, born: now, pulses: opts.pulses || 2, pal, end });
+  wmGlow.style.setProperty('--gc', pal.gc);
+  if (opts.card) opts.card.classList.add('struck');
+}
+
+// At most two pulses per strike and >=1.2s between ambient strikes keeps it under 3 flashes per second.
+function flick(age, pulses) {
+  if (age < 0) return 0;
+  if (age < 60) return 1;
+  if (pulses > 1) {
+    if (age < 115) return .22;
+    if (age < 175) return .85;
+    return Math.max(0, .85 * (1 - (age - 175) / 380));
+  }
+  return Math.max(0, 1 - (age - 60) / 420);
+}
+
+function drawBolts(now) {
+  if (!bolts.length) {
+    if (boltsDirty) { bctx.clearRect(0, 0, W, H); boltsDirty = false; }
+    return 0;
+  }
+  bctx.clearRect(0, 0, W, H);
+  boltsDirty = true;
+  bctx.globalCompositeOperation = 'lighter';
+  bctx.lineCap = 'round'; bctx.lineJoin = 'round';
+  let maxI = 0;
+  for (let i = bolts.length - 1; i >= 0; i--) {
+    const b = bolts[i], age = now - b.born;
+    if (age > 720) { bolts.splice(i, 1); continue; }
+    const I = flick(age, b.pulses);
+    if (I <= .002) continue;
+    if (I > maxI) { maxI = I; flashBolt = b; }
+    for (const p of b.paths) {
+      const passes = [[16, .045, b.pal.glow], [7, .13, b.pal.glow], [2.6, .5, b.pal.glow], [1.15, .95, b.pal.core]];
+      bctx.beginPath();
+      bctx.moveTo(p.pts[0][0], p.pts[0][1]);
+      for (let k = 1; k < p.pts.length; k++) bctx.lineTo(p.pts[k][0], p.pts[k][1]);
+      for (const [lw, a, col] of passes) {
+        bctx.lineWidth = lw * p.w;
+        bctx.strokeStyle = `rgba(${col},${a * I * (p.w < 1 ? .8 : 1)})`;
+        bctx.stroke();
+      }
+    }
+  }
+  return maxI;
+}
+
+function toUV(x, y) {
+  const u = (x - T.x - pointerPan.x) / S, v = (y - T.y - pointerPan.y) / S;
+  const z = gl ? gl.u.uZoom.value : 1;
+  return [FACE.x + (u - FACE.x) / z, FACE.y + (v - FACE.y) / z];
+}
+
+function skyPoint(side) {
+  const uvx = side === 'left' ? rand(.04, .3) : rand(.74, .97);
+  const uvy = side === 'left' ? rand(.08, .45) : rand(.24, .6);
+  let x = T.x + uvx * S, y = T.y + uvy * S;
+  const band = side === 'left' ? [W * .04, W * .32] : [W * .68, W * .96];
+  if (x < band[0] || x > band[1]) x = rand(band[0], band[1]);
+  y = clamp(y, H * .1, H * .48);
+  return { x, y };
+}
+
+let timer = 0, running = false, leaving = false;
+function schedule(ms) {
+  clearTimeout(timer);
+  if (reduce || leaving) return;
+  timer = setTimeout(() => {
+    const gap = performance.now() - lastStrike;
+    if (gap < 1200) return schedule(1200 - gap + 20);
+    const side = state.mood > .3 ? 'right' : state.mood < -.3 ? 'left' : (Math.random() < .5 ? 'left' : 'right');
+    strike(skyPoint(side));
+    schedule(Math.abs(state.mood) > .3 ? rand(2600, 5200) : rand(4200, 9000));
+  }, ms);
+}
+
+// Mood: Cinema warms the crimson side, TV cools the storm side.
+let moodTween = null;
+function setMood(v) {
+  if (!G) { state.mood = v; return; }
+  if (moodTween) moodTween.kill();
+  moodTween = G.to(state, { mood: v, duration: .9, ease: 'power2.out' });
+}
+let hoverCount = 0;
+cards.forEach(card => {
+  const m = +card.dataset.mood;
+  const enter = () => {
+    if (leaving) return;
+    hoverCount++;
+    setMood(m);
+    if (!reduce) schedule(Math.max(380, 1220 - (performance.now() - lastStrike)));
+  };
+  const leave = () => {
+    if (leaving) return;
+    hoverCount = Math.max(0, hoverCount - 1);
+    setTimeout(() => { if (!hoverCount && !leaving) setMood(0); }, 60);
+  };
+  card.addEventListener('pointerenter', enter);
+  card.addEventListener('focus', enter);
+  card.addEventListener('pointerleave', e => {
+    leave();
+    card.classList.remove('tracking');
+    card.style.setProperty('--rx', '0deg'); card.style.setProperty('--ry', '0deg');
+  });
+  card.addEventListener('blur', leave);
+  card.addEventListener('pointermove', e => {
+    if (reduce || e.pointerType !== 'mouse' || leaving) return;
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    card.classList.add('tracking');
+    card.style.setProperty('--rx', ((.5 - y) * 9).toFixed(2) + 'deg');
+    card.style.setProperty('--ry', ((x - .5) * 11).toFixed(2) + 'deg');
+    card.style.setProperty('--gx', (x * 100).toFixed(1) + '%');
+    card.style.setProperty('--gy', (y * 100).toFixed(1) + '%');
+  });
+  card.addEventListener('click', e => choose(card, e));
+  card.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    const i = cards.indexOf(card), n = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? i - 1 : i + 1;
+    if (cards[n]) { e.preventDefault(); cards[n].focus(); }
+  });
+});
+
+function choose(card, e) {
+  e.preventDefault();
+  if (leaving) return;
+  leaving = true;
+  clearTimeout(timer);
+  const href = card.href;
+  const go = () => { location.href = href; };
+  card.classList.add('chosen');
+  cards.forEach(c => { if (c !== card) c.classList.add('dim'); });
+  if (reduce || !G) {
+    veil.style.transition = 'opacity .45s linear';
+    veil.style.opacity = '1';
+    setTimeout(go, 480);
+    return;
+  }
+  setMood(+card.dataset.mood);
+  const r = card.getBoundingClientRect();
+  const delay = Math.max(0, lastStrike + 420 - performance.now()) / 1000;
+  const tl = G.timeline({ delay, onComplete: go });
+  tl.call(() => {
+    const end = { x: r.left + r.width / 2 + rand(-r.width * .15, r.width * .15), y: r.top + 4 };
+    strike(end, { from: { x: end.x + rand(-120, 120), y: -30 }, pulses: 1, w: 1.5, card, mood: +card.dataset.mood > 0 ? 'warm' : 'cool' });
+  })
+    .to(state, { zoom: 2.6, duration: 1.4, ease: 'power3.in' }, .2)
+    .to('.ui', { opacity: 0, duration: .55, ease: 'power2.in' }, .45)
+    .to(state, { exposure: 0, duration: .6, ease: 'power2.in' }, 1.0)
+    .to(veil, { opacity: 1, duration: .45, ease: 'power1.in' }, 1.15);
+}
+
+addEventListener('pointermove', e => {
+  if (reduce) return;
+  pointer.tx = (e.clientX / W - .5) * 2;
+  pointer.ty = (e.clientY / H - .5) * 2;
+}, { passive: true });
+
+const pointerPan = { x: 0, y: 0 };
+let raf = 0;
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  const t = now / 1000;
+  pointer.x += (pointer.tx - pointer.x) * .045;
+  pointer.y += (pointer.ty - pointer.y) * .045;
+  pointerPan.x = -pointer.x * 16; pointerPan.y = -pointer.y * 10;
+  wordmark.style.transform = `translate3d(${(pointer.x * 5).toFixed(2)}px,${(pointer.y * 3).toFixed(2)}px,0)`;
+  const I = drawBolts(now);
+  wmGlow.style.opacity = (I * .9).toFixed(3);
+  if (gl && gl.ready) {
+    const u = gl.u;
+    const kenBurns = 1 + .045 * (.5 - .5 * Math.cos(t * Math.PI * 2 / 52));
+    u.uTime.value = t;
+    u.uZoom.value = state.zoom * kenBurns;
+    u.uExposure.value = state.exposure;
+    u.uMood.value = state.mood;
+    u.uPan.value.set(pointerPan.x + Math.sin(t * .05) * 10, pointerPan.y + Math.cos(t * .04) * 6);
+    u.uFlash.value = I * .95;
+    if (flashBolt) {
+      const [fu, fv] = toUV(flashBolt.end.x, flashBolt.end.y);
+      u.uFlashPos.value.set(fu, fv);
+      u.uFlashCol.value.set(...flashBolt.pal.flash);
+    }
+    gl.renderer.render(gl.scene, gl.cam);
+  } else if (I > 0 || still.dataset.lit) {
+    still.style.filter = I > 0 ? `brightness(${(1 + I * .7).toFixed(3)}) contrast(${(1 + I * .2).toFixed(3)})` : '';
+    still.dataset.lit = I > 0 ? '1' : '';
+  }
+}
+
+function start() {
+  if (running || reduce) return;
+  running = true;
+  raf = requestAnimationFrame(frame);
+  if (!leaving) schedule(rand(3000, 6000));
+}
+function stop() {
+  running = false;
+  cancelAnimationFrame(raf);
+  clearTimeout(timer);
+}
+document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+addEventListener('resize', layout);
+addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
+// Opening: the god emerges from the dark, the first bolt reveals the name.
+if (!reduce && G) {
+  state.exposure = 0; state.zoom = 1.14;
+  G.set('.reveal', { opacity: 0 });
+  G.set(wordmark, { '--ls': '1.3em', filter: 'blur(10px)' });
+  const tl = G.timeline();
+  tl.to(state, { exposure: 1, duration: 2.6, ease: 'power2.out' }, .1)
+    .to(state, { zoom: 1, duration: 3.4, ease: 'power3.out' }, .1)
+    .to(wordmark, { opacity: 1, '--ls': '0.64em', filter: 'blur(0px)', duration: 1.8, ease: 'expo.out' }, .7)
+    .call(() => {
+      strike(skyPoint('left'), { pulses: 2 });
+      wordmark.classList.add('lit');
+    }, null, 1.15)
+    .to('.choose .reveal, .foot', { opacity: 1, duration: 1.1, stagger: .09, ease: 'power2.out' }, 1.5)
+    .from('.choose .reveal', { y: 18, duration: 1.2, stagger: .09, ease: 'power3.out' }, 1.5);
+  start();
+  clearTimeout(timer);
+  schedule(rand(5200, 7500));
+} else if (!reduce) {
+  start();
+}
+})();
+</script>
+</body>
+</html>

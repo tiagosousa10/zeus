@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zeus — Bem-vindo ao Olimpo</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#000; --elev:#1c1c1e; --elev-2:#2c2c2e; --text:#f5f5f7; --text-2:rgba(235,235,245,.62); --text-3:rgba(235,235,245,.36);
+  --hair:rgba(255,255,255,.09); --accent:#7de3f0; --live:#ff453a; --glass:rgba(44,44,48,.52); --blur:blur(28px) saturate(180%);
+  --r-xl:24px; --r-lg:18px; --r-md:12px; --spring:cubic-bezier(.2,1.25,.4,1); --out:cubic-bezier(.22,1,.36,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:17px/1.47 var(--font);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* cena */
+.scene{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+.sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -10%,#0d1424 0%,#05070c 55%,#000 100%)}
+.dawn{position:absolute;inset:0;opacity:0;background:radial-gradient(70% 55% at 50% 8%,rgba(255,214,160,.30),rgba(255,190,120,.08) 45%,transparent 75%)}
+.art{position:absolute;left:50%;top:0;width:var(--S);aspect-ratio:1;margin-left:calc(var(--S) / -2);will-change:transform;
+  -webkit-mask-image:radial-gradient(closest-side at 50% 44%,#000 58%,transparent 100%);mask-image:radial-gradient(closest-side at 50% 44%,#000 58%,transparent 100%)}
+.art img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.art .soft{filter:blur(14px) saturate(.8);transform:scale(1.04);opacity:.45}
+.art .sharp{opacity:0}
+.sun{position:absolute;left:49.8%;top:15.5%;width:70%;aspect-ratio:1;translate:-50% -50%;opacity:.1;mix-blend-mode:screen}
+.sun::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(closest-side,rgba(255,246,222,.95),rgba(255,214,150,.45) 30%,rgba(255,190,120,.1) 62%,transparent)}
+.rays{position:absolute;inset:-20%;border-radius:50%;opacity:.55;
+  background:repeating-conic-gradient(from 0deg,rgba(255,236,200,.22) 0deg 3deg,transparent 3deg 14deg);
+  -webkit-mask-image:radial-gradient(closest-side,#000 10%,transparent 78%);mask-image:radial-gradient(closest-side,#000 10%,transparent 78%);
+  animation:spin 90s linear infinite}
+@keyframes spin{to{rotate:360deg}}
+.paused .rays{animation-play-state:paused}
+.bolt-layer{-webkit-mask-image:none;mask-image:none}
+.bolt{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bolt .charge{opacity:0}
+.bolt path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+#clouds{position:absolute;inset:0;width:100%;height:100%}
+.fade{position:absolute;inset:0;background:
+  linear-gradient(to bottom,rgba(0,0,0,.55) 0,transparent 16%),
+  linear-gradient(to bottom,transparent 34%,rgba(0,0,0,.72) 58%,#000 82%)}
+.flash{position:absolute;inset:0;background:radial-gradient(90% 80% at 18% 30%,#eafcff,#bdf3fa 40%,rgba(125,227,240,.4));opacity:0}
+
+/* moldura */
+.top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:max(20px,env(safe-area-inset-top)) clamp(16px,4vw,48px) 0;z-index:3}
+.mark{font-size:15px;font-weight:600;letter-spacing:.52em;margin-right:-.52em}
+.skip{color:var(--text-2);text-decoration:none;font-size:15px;padding:8px 12px;border-radius:999px;transition:color .2s,background .2s}
+.skip:hover{color:var(--text);background:rgba(255,255,255,.08)}
+
+.rail{position:fixed;left:clamp(16px,4vw,48px);top:50%;translate:0 -50%;z-index:2;margin:0;padding:0;list-style:none;display:flex;flex-direction:column-reverse;gap:22px}
+.rail li{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text-3);transition:color .5s var(--out)}
+.rail li::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--text-3);transition:background .5s,box-shadow .5s,scale .5s var(--spring)}
+.rail li.done::before{background:var(--text-2)}
+.rail li.on{color:var(--text)}
+.rail li.on::before{background:var(--accent);box-shadow:0 0 0 5px rgba(125,227,240,.16);scale:1.25}
+.alt{position:fixed;left:clamp(16px,4vw,48px);top:calc(50% - 190px);z-index:2;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.alt b{display:block;font-size:22px;font-weight:600;color:var(--text);letter-spacing:-.01em}
+
+/* painel */
+.panel{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));translate:-50% 0;z-index:3;width:min(560px,calc(100% - 32px));
+  max-height:calc(100dvh - 120px);overflow:auto;background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--hair);border-radius:var(--r-xl);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+form{margin:0;padding:28px 28px 20px}
+.step h1,.step h2{margin:0 0 8px;font-size:28px;line-height:1.15;font-weight:700;letter-spacing:-.015em}
+.step h1{font-size:34px}
+.step h1:focus,.step h2:focus{outline:none}
+.step p{margin:0 0 20px;color:var(--text-2);font-size:16px;max-width:46ch}
+.group{margin:0 0 18px;padding:0;border:0}
+.group legend,.lbl{font-size:13px;color:var(--text-2);margin-bottom:10px;padding:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;font:inherit;font-size:15px;color:var(--text);background:var(--elev-2);border:1px solid var(--hair);border-radius:999px;padding:8px 16px;cursor:pointer;
+  transition:background .25s,border-color .25s,color .25s,scale .35s var(--spring)}
+.chip:hover{background:#3a3a3e}
+.chip:active{scale:.96}
+.chip[aria-pressed="true"]{background:rgba(125,227,240,.14);border-color:rgba(125,227,240,.55);color:var(--accent);padding-left:36px}
+.chip i{position:absolute;left:8px;top:50%;translate:0 -50%;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#000;font:600 12px/20px var(--font);text-align:center;font-style:normal;display:none}
+.chip[aria-pressed="true"] i{display:block}
+.field{display:block;margin-bottom:12px}
+.input{width:100%;font:15px/1.3 var(--font);color:var(--text);background:rgba(0,0,0,.35);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px 14px;transition:border-color .2s}
+#tmdb{font-family:var(--mono)}
+.input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(125,227,240,.18)}
+.input::placeholder{color:var(--text-3)}
+.help{color:var(--accent);font-size:15px;text-decoration:none}
+.help:hover{text-decoration:underline}
+.note{font-size:14px;color:var(--text-3);margin:10px 0 0;min-height:1.4em}
+.note.ok{color:var(--accent)}
+.note.err{color:var(--live)}
+.addons{list-style:none;margin:0 0 6px;padding:0;border-radius:var(--r-lg);background:rgba(0,0,0,.28);border:1px solid var(--hair)}
+.addons li{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.addons li+li{border-top:1px solid var(--hair)}
+.addons .ico{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:15px;color:#000}
+.addons div{flex:1;min-width:0}
+.addons b{display:block;font-weight:600;font-size:16px}
+.addons small{color:var(--text-2);font-size:14px}
+.switch{flex:none;width:51px;height:31px;border-radius:999px;border:0;background:#39393d;position:relative;cursor:pointer;transition:background .3s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);transition:translate .4s var(--spring)}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{translate:20px 0}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid var(--hair);margin-bottom:16px}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;padding:7px 18px;border-radius:999px;font-size:15px;color:var(--text-2);transition:background .25s,color .25s}
+.seg input:checked+span{background:var(--elev-2);color:var(--text)}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.sum{margin:0 0 6px;display:grid;grid-template-columns:auto 1fr;gap:8px 18px;font-size:15px}
+.sum dt{color:var(--text-3)}
+.sum dd{margin:0}
+
+.foot{display:flex;align-items:center;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid var(--hair)}
+.count{flex:1;text-align:center;font-size:13px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.btn{font:inherit;font-size:16px;font-weight:600;border-radius:999px;padding:12px 22px;border:0;cursor:pointer;text-decoration:none;display:inline-block;
+  transition:scale .4s var(--spring),background .2s,color .2s}
+.btn:active{scale:.96}
+.btn.primary{background:var(--text);color:#000}
+.btn.primary:hover{background:#fff;scale:1.03}
+.btn.ghost{background:transparent;color:var(--text-2)}
+.btn.ghost:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.btn[hidden]{display:none}
+.btn.glow{box-shadow:0 0 0 0 rgba(125,227,240,.6);animation:ring 2.4s var(--out) 1}
+@keyframes ring{to{box-shadow:0 0 0 18px rgba(125,227,240,0)}}
+
+@media (max-width:760px){
+  .rail{top:calc(max(20px,env(safe-area-inset-top)) + 40px);left:50%;translate:-50% 0;flex-direction:row;gap:6px}
+  .rail li{font-size:0;gap:0}
+  .rail li::before{width:26px;height:3px;border-radius:2px}
+  .rail li.on::before{box-shadow:none;scale:1}
+  .alt{display:none}
+  form{padding:22px 20px 16px}
+  .foot{flex-wrap:wrap;gap:8px}
+  .foot .primary{order:-1;flex:1 1 100%;text-align:center}
+  .foot .ghost{flex:1}
+  .count{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .step h1{font-size:28px}.step h2{font-size:24px}
+  .step p{font-size:15px}
+  .fade{background:linear-gradient(to bottom,rgba(0,0,0,.55) 0,transparent 14%),linear-gradient(to bottom,transparent 26%,rgba(0,0,0,.75) 46%,#000 66%)}
+}
+@media (prefers-reduced-motion:reduce){
+  .rays{animation:none}
+  .btn,.chip,.switch::after,.rail li::before{transition:none}
+  .btn.glow{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="scene" id="scene" aria-hidden="true">
+  <div class="sky"></div>
+  <div class="dawn" id="dawn"></div>
+  <div class="art" id="art">
+    <img class="soft" src="img/zeus-2.webp" alt="">
+    <img class="sharp" id="sharp" src="img/zeus-2.webp" alt="">
+    <div class="sun" id="sun"><i class="rays"></i></div>
+  </div>
+  <canvas id="clouds"></canvas>
+  <div class="fade"></div>
+  <div class="art bolt-layer" id="boltLayer">
+    <svg class="bolt" viewBox="0 0 626 626">
+      <defs>
+        <radialGradient id="gCharge"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#bff6fc"/><stop offset=".6" stop-color="#7de3f0" stop-opacity=".35"/><stop offset="1" stop-color="#7de3f0" stop-opacity="0"/></radialGradient>
+        <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      <g class="charge" id="charge"><circle cx="108" cy="186" r="70" fill="url(#gCharge)"/></g>
+      <g id="strike">
+        <path pathLength="1" stroke="#7de3f0" stroke-width="16" filter="url(#fGlow)" d="M108 196 L86 258 L104 272 L66 350 L86 362 L40 452 L60 464 L14 566 L32 578 L-24 720 L-8 734 L-60 900"/>
+        <path pathLength="1" stroke="#f2feff" stroke-width="3.5" d="M108 196 L86 258 L104 272 L66 350 L86 362 L40 452 L60 464 L14 566 L32 578 L-24 720 L-8 734 L-60 900"/>
+        <path pathLength="1" stroke="#bff6fc" stroke-width="1.6" d="M86 362 L120 410 L108 420 L150 488"/>
+        <path pathLength="1" stroke="#bff6fc" stroke-width="1.6" d="M14 566 L60 610 L48 622 L92 690"/>
+      </g>
+    </svg>
+  </div>
+  <div class="flash" id="flash"></div>
+</div>
+
+<header class="top">
+  <span class="mark" aria-label="Zeus">ZEUS</span>
+  <a class="skip" href="portal.html">Saltar</a>
+</header>
+
+<div class="alt" aria-hidden="true"><b id="alt">0 m</b>altitude</div>
+<ol class="rail" id="rail" aria-hidden="true">
+  <li>Início</li><li>Idiomas</li><li>TMDB</li><li>Add-ons</li><li>Listas IPTV</li><li>Olimpo</li>
+</ol>
+
+<main class="panel">
+  <form id="flow" novalidate>
+    <section class="step" aria-labelledby="h1">
+      <h1 id="h1" tabindex="-1">Bem-vindo ao Zeus</h1>
+      <p>Filmes, séries e TV num só sítio. O Motor corre neste Mac e trata das transferências por ti. Faltam quatro escolhas rápidas.</p>
+    </section>
+
+    <section class="step" aria-labelledby="h2" hidden>
+      <h2 id="h2" tabindex="-1">Idiomas</h2>
+      <p>Escolhe por ordem de preferência. É esta ordem que decide a faixa de áudio e as legendas.</p>
+      <fieldset class="group"><legend>Áudio</legend><div class="chips" data-chips="audio">
+        <button type="button" class="chip" aria-pressed="true"><i>1</i>Português</button>
+        <button type="button" class="chip" aria-pressed="false"><i></i>English</button>
+        <button type="button" class="chip" aria-pressed="false"><i></i>Español</button>
+        <button type="button" class="chip" aria-pressed="true"><i>2</i>Original</button>
+      </div></fieldset>
+      <fieldset class="group"><legend>Legendas</legend><div class="chips" data-chips="subs">
+        <button type="button" class="chip" aria-pressed="true"><i>1</i>Português</button>
+        <button type="button" class="chip" aria-pressed="false"><i></i>English</button>
+        <button type="button" class="chip" aria-pressed="false"><i></i>Español</button>
+        <button type="button" class="chip" aria-pressed="false"><i></i>Original</button>
+      </div></fieldset>
+    </section>
+
+    <section class="step" aria-labelledby="h3" hidden>
+      <h2 id="h3" tabindex="-1">Chave TMDB</h2>
+      <p>O Zeus vai buscar capas, sinopses e elencos ao TMDB. A chave fica guardada só neste Mac.</p>
+      <label class="field"><span class="lbl" style="display:block">Chave da API (v3)</span>
+        <input class="input" id="tmdb" name="tmdb" autocomplete="off" spellcheck="false" placeholder="32 caracteres, por exemplo 3f9a…" aria-describedby="tmdbNote"></label>
+      <a class="help" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">Como obter uma chave</a>
+      <p class="note" id="tmdbNote" aria-live="polite">Podes deixar em branco e adicionar depois nas Definições.</p>
+    </section>
+
+    <section class="step" aria-labelledby="h4" hidden>
+      <h2 id="h4" tabindex="-1">Add-ons</h2>
+      <p>Estes add-ons fazem parte do catálogo aprovado. Podes mudar isto quando quiseres.</p>
+      <ul class="addons">
+        <li><span class="ico" style="background:#f5c26b">C</span><div><b id="a1">Cinemeta</b><small>Fichas de filmes e séries</small></div>
+          <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="a1" data-addon="Cinemeta"></button></li>
+        <li><span class="ico" style="background:#a78bfa">T</span><div><b id="a2">Torrentio</b><small>Fontes torrent para o Motor</small></div>
+          <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="a2" data-addon="Torrentio"></button></li>
+        <li><span class="ico" style="background:#7de3f0">O</span><div><b id="a3">OpenSubtitles</b><small>Legendas em mais de 60 idiomas</small></div>
+          <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="a3" data-addon="OpenSubtitles"></button></li>
+      </ul>
+    </section>
+
+    <section class="step" aria-labelledby="h5" hidden>
+      <h2 id="h5" tabindex="-1">Listas IPTV</h2>
+      <p>As tuas listas são só tuas: os outros membros não as veem.</p>
+      <div class="seg" role="radiogroup" aria-label="Tipo de lista">
+        <label><input type="radio" name="kind" value="xtream" checked><span>Xtream</span></label>
+        <label><input type="radio" name="kind" value="m3u"><span>M3U</span></label>
+      </div>
+      <div id="xtream">
+        <label class="field"><span class="sr">Servidor</span><input class="input" name="srv" placeholder="Servidor, por exemplo http://tv.exemplo.pt:8080" autocomplete="off"></label>
+        <label class="field"><span class="sr">Utilizador</span><input class="input" name="usr" placeholder="Utilizador" autocomplete="off"></label>
+        <label class="field"><span class="sr">Palavra-passe</span><input class="input" name="pwd" type="password" placeholder="Palavra-passe" autocomplete="off"></label>
+      </div>
+      <div id="m3u" hidden>
+        <label class="field"><span class="sr">Endereço da lista M3U</span><input class="input" name="url" placeholder="Endereço da lista, por exemplo https://…/lista.m3u" autocomplete="off"></label>
+      </div>
+      <p class="note" id="iptvNote" aria-live="polite"></p>
+    </section>
+
+    <section class="step" aria-labelledby="h6" hidden>
+      <h2 id="h6" tabindex="-1">Tudo pronto</h2>
+      <p>Chegaste ao Olimpo. Podes mudar qualquer escolha nas Definições.</p>
+      <dl class="sum" id="sum"></dl>
+    </section>
+
+    <div class="foot">
+      <button type="button" class="btn ghost" id="back" hidden>Voltar</button>
+      <span class="count" id="count" aria-live="polite">Passo 1 de 6</span>
+      <button type="button" class="btn ghost" id="later" hidden>Mais tarde</button>
+      <button type="submit" class="btn primary" id="next">Começar</button>
+      <a class="btn primary" id="enter" href="portal.html" hidden>Entrar no Zeus</a>
+    </div>
+  </form>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const steps = $$('.step'), N = steps.length, rail = $$('#rail li');
+  const art = $('#art'), boltLayer = $('#boltLayer'), sharp = $('#sharp'), soft = $('.art .soft'), sun = $('#sun'), dawn = $('#dawn');
+  const back = $('#back'), next = $('#next'), later = $('#later'), enter = $('#enter'), count = $('#count'), alt = $('#alt');
+  const state = { p: 0 };
+  const PEAK = 2918; // Mytikas, o cume do Olimpo
+  let cur = 0, S = 0, clouds = null, strikeTl = null;
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function size() {
+    const w = innerWidth, h = innerHeight;
+    S = w <= 760 ? Math.min(w * 1.3, h * .75) : Math.min(940, h * 1.08, w * .9);
+    art.style.setProperty('--S', S + 'px'); boltLayer.style.setProperty('--S', S + 'px');
+    clouds && clouds.resize(w, h);
+    applyScene();
+  }
+
+  function applyScene() {
+    const p = state.p;
+    art.style.transform = boltLayer.style.transform = `translate3d(0,${lerp(-.62 * S, -.03 * S, p)}px,0)`;
+    sharp.style.opacity = Math.pow(p, 1.4).toFixed(3);
+    soft.style.opacity = lerp(.55, .2, p).toFixed(3);
+    sun.style.opacity = lerp(.08, 1, p * p).toFixed(3);
+    sun.style.scale = lerp(.7, 1.15, p).toFixed(3);
+    dawn.style.opacity = p.toFixed(3);
+    alt.textContent = Math.round(p * PEAK).toLocaleString('pt-PT') + ' m';
+    clouds && clouds.set(p);
+  }
+
+  function initClouds() {
+    if (!window.THREE) return null;
+    const canvas = $('#clouds');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(55, 1, .1, 200);
+    cam.position.set(0, 0, 24);
+    const H = 56;
+
+    const tex = [0, 1, 2].map(seed => {
+      const c = document.createElement('canvas'); c.width = c.height = 256;
+      const g = c.getContext('2d');
+      let s = seed * 9301 + 49297;
+      const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+      for (let i = 0; i < 16; i++) {
+        const x = 128 + (rnd() - .5) * 120, y = 140 + (rnd() - .5) * 56, r = 34 + rnd() * 52;
+        const gr = g.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, 'rgba(255,255,255,.5)'); gr.addColorStop(.6, 'rgba(255,255,255,.18)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+      }
+      g.globalCompositeOperation = 'destination-in';
+      const edge = g.createRadialGradient(128, 128, 60, 128, 128, 128);
+      edge.addColorStop(0, '#fff'); edge.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = edge; g.fillRect(0, 0, 256, 256);
+      return new THREE.CanvasTexture(c);
+    });
+
+    const dusk = new THREE.Color('#27324a'), mid = new THREE.Color('#8a9bb8'), gold = new THREE.Color('#fff1dc');
+    const sprites = [];
+    for (let i = 0; i < 84; i++) {
+      const y = -14 + Math.random() * (H + 26);
+      let x = (Math.random() - .5) * 74;
+      if (y > H - 12 && Math.abs(x) < 15) x = Math.sign(x || 1) * (15 + Math.random() * 18);
+      const z = -58 + Math.random() * 68;
+      const t = Math.min(Math.max(y / H, 0), 1);
+      const col = t < .5 ? dusk.clone().lerp(mid, t * 2) : mid.clone().lerp(gold, (t - .5) * 2);
+      const near = z > -6;
+      const mat = new THREE.SpriteMaterial({ map: tex[i % 3], color: col, transparent: true, depthWrite: false, opacity: near ? .22 : lerp(.6, .38, (z + 58) / 52) });
+      const sp = new THREE.Sprite(mat);
+      const k = (near ? 16 : 10) + Math.random() * 20;
+      sp.scale.set(k * 1.6, k * .9, 1);
+      sp.position.set(x, y, z);
+      sp.userData.v = (Math.random() * .6 + .2) * (Math.random() < .5 ? -1 : 1);
+      scene.add(sp); sprites.push(sp);
+    }
+
+    let raf = 0, last = 0, dirty = true, mx = 0;
+    const loop = now => {
+      raf = requestAnimationFrame(loop);
+      const dt = Math.min((now - last) / 1000 || 0, .05); last = now;
+      if (!RM) {
+        for (const sp of sprites) {
+          sp.position.x += sp.userData.v * dt;
+          if (sp.position.x > 44) sp.position.x = -44; else if (sp.position.x < -44) sp.position.x = 44;
+        }
+        cam.position.x += (mx * 1.6 - cam.position.x) * .04;
+        dirty = true;
+      }
+      if (dirty) { renderer.render(scene, cam); dirty = false; }
+    };
+    if (!RM && matchMedia('(pointer:fine)').matches) addEventListener('pointermove', e => { mx = e.clientX / innerWidth - .5; });
+    return {
+      resize(w, h) { renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); dirty = true; },
+      set(p) { cam.position.y = p * H; dirty = true; },
+      start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); } },
+      stop() { cancelAnimationFrame(raf); raf = 0; }
+    };
+  }
+
+  /* raio final */
+  const strikePaths = $$('#strike path'), charge = $('#charge'), flash = $('#flash'), sceneEl = $('#scene');
+  function resetStrike() {
+    strikeTl && strikeTl.kill();
+    gsap.set(strikePaths, { strokeDashoffset: 1, opacity: 1 });
+    gsap.set(charge, { opacity: 0, scale: .4, svgOrigin: '108 186' });
+    gsap.set(flash, { opacity: 0 });
+  }
+  function strike(delay) {
+    resetStrike();
+    const tl = gsap.timeline({ delay, onComplete: () => enter.classList.add('glow') });
+    if (RM) {
+      tl.to(charge, { opacity: .6, scale: 1, duration: .8 })
+        .to(strikePaths, { strokeDashoffset: 0, duration: 0 })
+        .fromTo(strikePaths, { opacity: 0 }, { opacity: .5, duration: .8 });
+    } else {
+      tl.to(charge, { opacity: 1, scale: 1, duration: 1, ease: 'power2.in' })
+        .to(charge, { opacity: .55, scale: .85, duration: .4, yoyo: true, repeat: 1, ease: 'sine.inOut' })
+        .to(strikePaths.slice(0, 2), { strokeDashoffset: 0, duration: .18, ease: 'power4.in' })
+        .to(strikePaths.slice(2), { strokeDashoffset: 0, duration: .14, ease: 'power3.in' }, '-=.04')
+        .to(flash, { opacity: .45, duration: .05 }, '-=.06')
+        .to(flash, { opacity: 0, duration: .7, ease: 'power2.out' })
+        .fromTo(sceneEl, { x: -5 }, { x: 0, duration: .5, ease: 'elastic.out(1,.3)' }, '<')
+        .to(strikePaths, { opacity: .35, duration: 1.6, ease: 'power2.out' }, '+=.2')
+        .to(charge, { opacity: .45, scale: .7, duration: 1.2 }, '<');
+    }
+    strikeTl = tl;
+  }
+
+  /* escolhas */
+  $$('[data-chips]').forEach(group => {
+    group.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      const on = b.getAttribute('aria-pressed') === 'true';
+      if (on && $$('.chip[aria-pressed="true"]', group).length === 1) return;
+      b.setAttribute('aria-pressed', String(!on));
+      b.dataset.t = on ? '' : Date.now();
+      $$('.chip[aria-pressed="true"]', group).sort((a, c) => (a.dataset.t || 0) - (c.dataset.t || 0)).forEach((c, i) => { $('i', c).textContent = i + 1; });
+    });
+  });
+  $$('.chip[aria-pressed="true"]').forEach((c, i) => { c.dataset.t = i; });
+  const picked = k => $$(`[data-chips="${k}"] .chip[aria-pressed="true"]`).sort((a, c) => (a.dataset.t || 0) - (c.dataset.t || 0)).map(c => c.lastChild.textContent.trim());
+
+  $$('.switch').forEach(s => s.addEventListener('click', () => s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true'))));
+
+  const tmdb = $('#tmdb'), tmdbNote = $('#tmdbNote');
+  tmdb.addEventListener('input', () => {
+    const v = tmdb.value.trim();
+    tmdbNote.className = 'note' + (v && /^[a-f0-9]{32}$/i.test(v) ? ' ok' : v ? ' err' : '');
+    tmdbNote.textContent = !v ? 'Podes deixar em branco e adicionar depois nas Definições.'
+      : /^[a-f0-9]{32}$/i.test(v) ? 'A chave tem o formato certo.' : 'A chave tem 32 letras e números (0 a 9, a a f).';
+  });
+
+  const form = $('#flow'), iptvNote = $('#iptvNote');
+  let iptv = 'Mais tarde';
+  $$('input[name="kind"]').forEach(r => r.addEventListener('change', () => {
+    $('#xtream').hidden = r.value !== 'xtream'; $('#m3u').hidden = r.value !== 'm3u';
+    iptvNote.textContent = ''; iptvNote.className = 'note';
+  }));
+  function addIptv() {
+    const kind = form.kind.value;
+    const fields = kind === 'xtream' ? [form.srv, form.usr, form.pwd] : [form.url];
+    const empty = fields.find(f => !f.value.trim());
+    if (empty) {
+      iptvNote.className = 'note err';
+      iptvNote.textContent = kind === 'xtream' ? 'Preenche o servidor, o utilizador e a palavra-passe.' : 'Preenche o endereço da lista.';
+      empty.focus(); return;
+    }
+    iptv = kind === 'xtream' ? 'Uma lista Xtream adicionada' : 'Uma lista M3U adicionada';
+    go(cur + 1);
+  }
+
+  function summary() {
+    const v = tmdb.value.trim();
+    const addons = $$('.switch[aria-checked="true"]').map(s => s.dataset.addon);
+    const rows = [['Áudio', picked('audio').join(', ')], ['Legendas', picked('subs').join(', ')],
+      ['TMDB', v ? 'Chave guardada' : 'Por adicionar'], ['Add-ons', addons.join(', ') || 'Nenhum'], ['Listas IPTV', iptv]];
+    $('#sum').innerHTML = rows.map(([k, d]) => `<dt>${k}</dt><dd>${d}</dd>`).join('');
+  }
+
+  function ui() {
+    const last = cur === N - 1;
+    back.hidden = cur === 0;
+    later.hidden = cur !== 4;
+    next.hidden = last; enter.hidden = !last; enter.classList.remove('glow');
+    next.textContent = cur === 0 ? 'Começar' : cur === 4 ? 'Adicionar agora' : 'Continuar';
+    count.textContent = `Passo ${cur + 1} de ${N}`;
+    rail.forEach((li, i) => { li.classList.toggle('on', i === cur); li.classList.toggle('done', i < cur); });
+  }
+
+  function go(i, instant) {
+    if (i < 0 || i >= N || (i === cur && !instant)) return;
+    const dir = i > cur ? 1 : -1, old = steps[cur], nw = steps[i];
+    cur = i;
+    if (i === N - 1) summary();
+    ui();
+    history.replaceState(null, '', '#passo-' + (i + 1));
+
+    const show = () => {
+      steps.forEach(s => { s.hidden = s !== nw; });
+      gsap.fromTo(nw, { opacity: 0, y: RM ? 0 : 14 * dir }, { opacity: 1, y: 0, duration: .5, ease: 'power3.out' });
+      $('h1,h2', nw).focus({ preventScroll: true });
+    };
+    if (instant || old === nw) show();
+    else gsap.to(old, { opacity: 0, y: RM ? 0 : -10 * dir, duration: .22, ease: 'power2.in', onComplete: show });
+
+    const target = i / (N - 1);
+    gsap.killTweensOf(state);
+    if (instant) { state.p = target; applyScene(); }
+    else if (RM) {
+      gsap.to(sceneEl, { opacity: 0, duration: .3, onComplete: () => { state.p = target; applyScene(); gsap.to(sceneEl, { opacity: 1, duration: .5 }); } });
+    } else gsap.to(state, { p: target, duration: 2.2, ease: 'power2.inOut', onUpdate: applyScene });
+
+    if (i === N - 1) strike(instant ? .4 : RM ? .6 : 1.9); else resetStrike();
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (cur === 4) addIptv(); else go(cur + 1);
+  });
+  back.addEventListener('click', () => go(cur - 1));
+  later.addEventListener('click', () => { iptv = 'Mais tarde'; go(cur + 1); });
+  addEventListener('keydown', e => {
+    if (e.key === 'Escape' && cur > 0) { e.preventDefault(); go(cur - 1); }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    document.documentElement.classList.toggle('paused', document.hidden);
+    if (!clouds) return;
+    document.hidden ? clouds.stop() : clouds.start();
+  });
+
+  clouds = initClouds();
+  addEventListener('resize', size);
+  size();
+  clouds && clouds.start();
+  const m = /#passo-(\d)/.exec(location.hash);
+  const start = m ? Math.min(Math.max(+m[1] - 1, 0), N - 1) : 0;
+  if (start) go(start, true); else { ui(); resetStrike(); }
+})();
+</script>
+</body>
+</html>

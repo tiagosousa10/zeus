@@ -1,0 +1,562 @@
+.portal-screen *,
+.portal-screen *::before,
+.portal-screen *::after {
+  box-sizing: border-box;
+}
+.portal-screen {
+  --bg: #000;
+  --elev: #1c1c1e;
+  --elev-2: #2c2c2e;
+  --text: #f5f5f7;
+  --text-2: rgba(235, 235, 245, 0.62);
+  --text-3: rgba(235, 235, 245, 0.36);
+  --hair: rgba(255, 255, 255, 0.09);
+  --accent: #7de3f0;
+  --live: #ff453a;
+  --ok: #30d158;
+  --glass: rgba(44, 44, 48, 0.52);
+  --blur: blur(28px) saturate(180%);
+  --r-xl: 24px;
+  --r-lg: 18px;
+  --r-md: 12px;
+  --spring: cubic-bezier(0.2, 1.25, 0.4, 1);
+  --out: cubic-bezier(0.22, 1, 0.36, 1);
+  --font:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter,
+    system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --gutter: clamp(16px, 4vw, 56px);
+  --warm: 255, 92, 64;
+  --cool: 125, 227, 240;
+}
+.portal-screen {
+  background: var(--bg);
+  color-scheme: dark;
+}
+.portal-screen,
+.portal-screen {
+  overflow-x: clip;
+}
+.portal-screen {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.portal-screen #still,
+.portal-screen #gl,
+.portal-screen #bolts,
+.portal-screen .scrim,
+.portal-screen #veil {
+  position: fixed;
+  pointer-events: none;
+}
+.portal-screen #still {
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1.2s var(--out);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 20%,
+    #000 80%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 20%,
+    #000 80%,
+    transparent 100%
+  );
+}
+.portal-screen #still img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 10%,
+    #000 66%,
+    transparent 90%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 10%,
+    #000 66%,
+    transparent 90%
+  );
+}
+.portal-screen #still.on {
+  opacity: 0.88;
+}
+.portal-screen #gl {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1s linear;
+}
+.portal-screen #gl.on {
+  opacity: 1;
+}
+.portal-screen .scrim {
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.94) 0%,
+    rgba(0, 0, 0, 0.74) 26%,
+    rgba(0, 0, 0, 0.18) 52%,
+    rgba(0, 0, 0, 0) 64%
+  );
+}
+.portal-screen #bolts {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  mix-blend-mode: screen;
+}
+.portal-screen #veil {
+  inset: 0;
+  z-index: 9;
+  background: #000;
+  opacity: 0;
+}
+
+.portal-screen .ui {
+  position: relative;
+  z-index: 3;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: max(32px, env(safe-area-inset-top)) var(--gutter)
+    max(20px, env(safe-area-inset-bottom));
+}
+
+.portal-screen .wordmark {
+  justify-self: center;
+  margin: clamp(8px, 3vh, 32px) 0 0;
+  position: relative;
+  font-size: clamp(22px, 2.6vw, 36px);
+  font-weight: 600;
+  line-height: 1;
+  --ls: 0.64em;
+  letter-spacing: var(--ls);
+  padding-left: var(--ls);
+}
+.portal-screen .wm-text {
+  display: block;
+  color: transparent;
+  background: linear-gradient(
+    105deg,
+    var(--text) 0 40%,
+    #fff 45%,
+    #d9fbff 47.5%,
+    var(--accent) 50%,
+    #fff 52.5%,
+    var(--text) 58% 100%
+  );
+  background-size: 340% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.portal-screen .wordmark.lit .wm-text {
+  animation: portal-sweep 1.8s var(--out) both;
+}
+@keyframes portal-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+.portal-screen .wm-glow {
+  position: absolute;
+  inset: 0;
+  padding-left: inherit;
+  color: transparent;
+  opacity: 0;
+  --gc: var(--cool);
+  text-shadow:
+    0 0 14px rgba(var(--gc), 0.95),
+    0 0 2px #fff,
+    0 0 34px rgba(var(--gc), 0.55);
+}
+
+.portal-screen .choose {
+  align-self: end;
+  display: grid;
+  justify-items: center;
+  gap: clamp(18px, 3vh, 30px);
+}
+.portal-screen .hello {
+  text-align: center;
+}
+.portal-screen .hello h2 {
+  margin: 0;
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.1;
+}
+.portal-screen .hello p {
+  margin: 6px 0 0;
+  color: var(--text-2);
+}
+
+.portal-screen .modules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 340px));
+  gap: 24px;
+  width: 100%;
+  justify-content: center;
+  perspective: 1000px;
+}
+.portal-screen .slot {
+  min-width: 0;
+}
+.portal-screen .card {
+  --rx: 0deg;
+  --ry: 0deg;
+  --lift: 0px;
+  --s: 1;
+  --gx: 50%;
+  --gy: 0%;
+  --tint: var(--cool);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  height: 206px;
+  padding: 22px 24px;
+  border-radius: var(--r-xl);
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--hair);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  transform: perspective(900px) translateY(var(--lift)) rotateX(var(--rx))
+    rotateY(var(--ry)) scale(var(--s));
+  transition:
+    transform 0.55s var(--spring),
+    box-shadow 0.5s var(--out),
+    border-color 0.5s var(--out),
+    opacity 0.5s var(--out);
+  will-change: transform;
+  outline: none;
+}
+.portal-screen .card.warm {
+  --tint: var(--warm);
+}
+.portal-screen .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.5;
+  transition: opacity 0.5s var(--out);
+  background: radial-gradient(
+    120% 90% at var(--ox, 100%) 120%,
+    rgba(var(--tint), 0.28),
+    transparent 60%
+  );
+}
+.portal-screen .card.cool {
+  --ox: 0%;
+}
+.portal-screen .glare {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s var(--out);
+  background: radial-gradient(
+    80% 70% at var(--gx) var(--gy),
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0) 62%
+  );
+}
+.portal-screen .card:hover,
+.portal-screen .card:focus-visible,
+.portal-screen .card.chosen {
+  --lift: -10px;
+  --s: 1.045;
+  border-color: rgba(var(--tint), 0.38);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 36px 70px -28px rgba(0, 0, 0, 0.95),
+    0 0 60px -18px rgba(var(--tint), 0.5);
+}
+.portal-screen .card:hover::before,
+.portal-screen .card:focus-visible::before,
+.portal-screen .card.chosen::before {
+  opacity: 1;
+}
+.portal-screen .card:hover .glare,
+.portal-screen .card:focus-visible .glare {
+  opacity: 1;
+}
+.portal-screen .card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 5px;
+}
+.portal-screen .card.tracking {
+  transition:
+    transform 0.12s linear,
+    box-shadow 0.5s var(--out),
+    border-color 0.5s var(--out);
+}
+.portal-screen .card.dim {
+  opacity: 0.25;
+}
+.portal-screen .card.struck {
+  animation: portal-struck 0.65s var(--out);
+}
+@keyframes portal-struck {
+  0% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+      0 0 90px 10px rgba(var(--tint), 0.75);
+  }
+  100% {
+  }
+}
+
+.portal-screen .card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.portal-screen .icon {
+  width: 34px;
+  height: 34px;
+  color: var(--text);
+}
+.portal-screen .badge {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border: 1px solid var(--hair);
+}
+.portal-screen .card h3 {
+  grid-row: 3;
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.05;
+}
+.portal-screen .card p {
+  grid-row: 4;
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.portal-screen .live {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.18);
+}
+
+.portal-screen .foot {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(18px, 3vh, 30px);
+}
+.portal-screen .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  font: 12px/1 var(--mono);
+  letter-spacing: 0;
+  color: var(--text-2);
+  background: rgba(28, 28, 30, 0.6);
+  border: 1px solid var(--hair);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+.portal-screen .chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.5);
+  animation: portal-breathe 2.8s ease-in-out infinite;
+}
+@keyframes portal-breathe {
+  50% {
+    box-shadow: 0 0 0 5px rgba(48, 209, 88, 0);
+  }
+}
+
+.portal-screen .sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .portal-screen .modules {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .portal-screen .card {
+    height: auto;
+    min-height: 104px;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 16px;
+    padding: 18px 18px;
+    align-items: center;
+  }
+  .portal-screen .card-top {
+    display: contents;
+  }
+  .portal-screen .icon {
+    grid-row: 1 / 3;
+    grid-column: 1;
+    width: 30px;
+    height: 30px;
+  }
+  .portal-screen .badge {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    font-size: 11px;
+  }
+  .portal-screen .card h3 {
+    grid-row: 1;
+    grid-column: 2;
+    font-size: 24px;
+    align-self: end;
+  }
+  .portal-screen .card p {
+    grid-row: 2;
+    grid-column: 2;
+    margin: 2px 0 0;
+    align-self: start;
+  }
+  .portal-screen .card:hover,
+  .portal-screen .card:focus-visible,
+  .portal-screen .card.chosen {
+    --lift: -4px;
+    --s: 1.02;
+  }
+}
+
+.portal-screen.rm .card,
+.portal-screen.rm .card.tracking {
+  transform: none;
+  transition:
+    opacity 0.4s linear,
+    border-color 0.3s linear,
+    box-shadow 0.3s linear;
+}
+.portal-screen.rm .glare {
+  display: none;
+}
+.portal-screen.rm .chip i {
+  animation: none;
+}
+.portal-screen.rm .wm-text {
+  background-position: 50% 0;
+  color: var(--text);
+  background: none;
+}
+.portal-screen.rm .reveal {
+  animation: portal-fade 0.8s linear both;
+}
+.portal-screen.rm #still.on {
+  opacity: 0.8;
+}
+@keyframes portal-fade {
+  from {
+    opacity: 0;
+  }
+}
+.portal-screen.nojs .reveal {
+  opacity: 1;
+}
+
+.portal-screen {
+  min-height: 100svh;
+  isolation: isolate;
+}
+.portal-screen .portal-painting {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.portal-screen .chip.offline i {
+  background: var(--live);
+  animation: none;
+}
+.portal-screen.is-leaving #veil {
+  opacity: 1;
+  transition: opacity 0.64s ease;
+}
+.portal-screen .ui {
+  font-family: var(--font);
+}
+
+.portal-screen .portal-save-status,
+.portal-screen .portal-save-error {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  max-width: 44ch;
+}
+.portal-screen .portal-save-status {
+  color: var(--text-2);
+}
+.portal-screen .portal-save-error {
+  color: #ff6961;
+}
+.portal-screen .portal-save-error p {
+  margin: 0 0 6px;
+}
+.portal-screen .portal-save-error button {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.portal-screen .card[aria-disabled="true"] {
+  cursor: wait;
+}

@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Add-ons</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/hefesto.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* A forja: brasa em vez de ciano; o ferro dos símbolos é Palatino, como letras cunhadas. */
+:root{--accent:#ffb46e;--cool:255,180,110;--ember:255,122,42;--serif:"Iowan Old Style",Palatino,"Palatino Linotype","Book Antiqua",Georgia,serif}
+.z-switch[aria-checked="true"]::before{background:#d9692a}
+.fg-hero{position:relative;min-height:min(70vh,660px);display:grid;align-items:end;overflow:hidden;isolation:isolate;padding:calc(var(--nav-h) + 24px) var(--gutter) clamp(36px,6vh,64px)}
+.fg-art{position:absolute;inset:0 auto 0 0;width:min(68vw,1100px);overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,#000 48%,transparent 97%),linear-gradient(0deg,transparent 0,#000 34%,#000 88%,transparent 100%);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,#000 48%,transparent 97%),linear-gradient(0deg,transparent 0,#000 34%,#000 88%,transparent 100%);mask-composite:intersect}
+.fg-pan{position:absolute;left:0;top:0;width:167%;translate:0 -15%}
+.fg-art img{width:100%;max-width:none;height:auto;transform-origin:32% 38%;filter:brightness(.82) contrast(1.06) saturate(1.05)}
+.fg-embers{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+.fg-copy{position:relative;z-index:2;justify-self:end;width:min(470px,100%)}
+.fg-copy .z-lede{margin-top:14px}
+.fg-meta{display:flex;gap:18px;margin-top:22px;color:var(--text-2);font-size:15px}
+.fg-meta b{color:var(--text);font-weight:600}
+#sparks{position:fixed;inset:0;z-index:85;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+.z-flash{background:radial-gradient(circle at var(--fx,50%) var(--fy,50%),rgba(255,214,150,.95),rgba(255,120,40,.55) 30%,rgba(120,30,0,0) 70%)}
+.toc{margin:8px auto 0;width:max-content;max-width:calc(100% - 2 * var(--gutter))}
+.wrap{width:min(1180px,100%);margin:0 auto;padding:0 var(--gutter) 96px}
+.sec{padding-top:clamp(44px,7vh,80px);scroll-margin-top:var(--nav-h)}
+.sec>header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px;margin-bottom:20px}
+.sec>header p{margin-top:6px}
+.tok{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font:600 22px/1 var(--serif);color:#ffd9b0;
+  background:radial-gradient(120% 120% at 30% 18%,#54402f,#1b1411 72%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -3px 8px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+.hot .tok,.tok.hot{animation:temper 2.6s var(--out)}
+@keyframes temper{0%{background:#fff3d2;color:#8a3000;box-shadow:0 0 0 1px #fff inset,0 0 46px 8px rgba(255,196,110,.95)}
+  22%{background:#ff9a3a;color:#3a1200;box-shadow:0 0 34px 5px rgba(255,110,30,.75)}
+  60%{background:#6e200c;color:#ffb27a;box-shadow:0 0 18px 0 rgba(200,40,10,.4)}}
+.hot{animation:glow 2.6s var(--out)}
+@keyframes glow{0%{box-shadow:inset 0 0 0 1px rgba(255,220,160,.9),0 0 60px -10px rgba(255,140,50,.8)}}
+.inst{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.inst li{position:relative;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto auto;align-items:center;gap:14px;padding:12px 14px 12px 6px;border-radius:var(--r-lg);background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px var(--hair);transition:background .3s,opacity .3s}
+.inst li.is-drag{z-index:2;background:rgba(var(--ember),.09);box-shadow:inset 0 0 0 1px rgba(var(--ember),.5),0 24px 50px -20px #000}
+.inst li.is-off .tok,.inst li.is-off .nm{opacity:.42}
+.grip{width:34px;height:46px;display:grid;place-items:center;padding:0;border:0;border-radius:var(--r-sm);background:none;color:var(--text-3);cursor:grab;touch-action:none}
+.grip:hover{color:var(--text)}
+.grip svg{width:18px;height:18px}
+.is-drag .grip{cursor:grabbing}
+.nm b{font-weight:600}
+.nm small{display:block;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pos{font:600 13px/1 var(--mono);color:var(--text-3);min-width:1.4em;text-align:right}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin-bottom:20px}
+.tools .z-search{flex:1 1 260px;max-width:380px}
+.cat{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.card{display:grid;grid-template-rows:auto 1fr auto auto;gap:12px;padding:18px;border-radius:var(--r-lg);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));box-shadow:inset 0 0 0 1px var(--hair)}
+.card__top{display:flex;gap:14px;align-items:center}
+.card__top b{display:block;font-size:17px;font-weight:600}
+.card p{font-size:15px;color:var(--text-2);line-height:1.45}
+.card footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
+.done{display:inline-flex;align-items:center;gap:6px;font-size:15px;color:var(--accent)}
+.empty{grid-column:1/-1;padding:40px 20px;text-align:center;color:var(--text-2)}
+.note{display:flex;gap:10px;align-items:flex-start;margin-top:22px;max-width:70ch;color:var(--text-3);font-size:14px}
+.note svg{flex:none;width:18px;height:18px;margin-top:1px}
+.sheet{width:min(640px,100%)}
+.sh-head{display:flex;gap:16px;align-items:center;padding-right:48px}
+.sh-head p{margin-top:4px}
+fieldset{border:0;margin:0 0 18px;padding:0;min-width:0}
+legend{padding:0;margin-bottom:10px}
+.q .z-chip[aria-pressed="true"]{text-decoration:line-through;text-decoration-color:rgba(var(--cool),.8)}
+.sh-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.chk{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;cursor:pointer}
+.chk input{width:20px;height:20px;margin:0;accent-color:#e07b33}
+.src{font:12px/1.4 var(--mono);color:var(--text-3);overflow-wrap:anywhere}
+@media (max-width:760px){
+  .fg-hero{min-height:620px;align-items:end}
+  .fg-art{width:100%;inset:0;-webkit-mask-image:linear-gradient(0deg,transparent 30%,#000 62%);mask-image:linear-gradient(0deg,transparent 30%,#000 62%)}
+  .fg-pan{width:190%;translate:-4% -10%}
+  .fg-copy{justify-self:start}
+  .inst li{grid-template-columns:auto auto minmax(0,1fr) auto;padding-right:12px;row-gap:8px}
+  .inst .pos{display:none}
+  .inst .acts{grid-column:3/-1;justify-content:flex-start;min-width:0}
+  .inst .z-switch{grid-column:4;grid-row:1}
+}
+.acts{display:flex;justify-content:flex-end;gap:6px;min-width:216px}
+html.z-rm .fg-embers,html.z-rm #sparks{display:none}
+</style>
+</head>
+<body>
+<main>
+  <section class="fg-hero" aria-labelledby="h-title">
+    <div class="fg-art" aria-hidden="true"><div class="fg-pan"><img id="forge" src="img/hefesto.webp" alt="" width="2400" height="1864" decoding="async"></div></div>
+    <canvas class="fg-embers" id="embers" aria-hidden="true"></canvas>
+    <div class="fg-copy">
+      <h1 class="z-display" id="h-title">Add-ons</h1>
+      <p class="z-lede">Escolhe de onde vêm os teus filmes, séries e legendas. Aqui só aparecem Add-ons aprovados pelo Administrador.</p>
+      <p class="fg-meta"><span><b class="z-num" id="n-inst">4</b> instalados</span><span><b class="z-num" id="n-cat">9</b> no catálogo</span></p>
+    </div>
+  </section>
+
+  <nav class="z-tabs toc" aria-label="Secções">
+    <a href="#instalados">Instalados</a><a href="#catalogo">Catálogo</a>
+  </nav>
+
+  <div class="wrap">
+    <section class="sec" id="instalados" aria-labelledby="h-inst">
+      <header>
+        <div><h2 class="z-t2" id="h-inst" tabindex="-1">Instalados</h2>
+        <p class="z-muted z-callout" id="inst-help">Arrasta pela pega para mudar a ordem; as Fontes do primeiro aparecem primeiro. Com o teclado, foca a pega e usa as setas.</p></div>
+      </header>
+      <ol class="inst" id="inst" aria-describedby="inst-help"></ol>
+      <p class="z-sr" id="live" aria-live="polite"></p>
+    </section>
+
+    <section class="sec" id="catalogo" aria-labelledby="h-cat">
+      <header><div><h2 class="z-t2" id="h-cat">Catálogo</h2>
+        <p class="z-muted z-callout">Importado do registo público da comunidade Stremio e revisto pelo Administrador.</p></div></header>
+      <div class="tools">
+        <form class="z-search" role="search" onsubmit="return false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <input type="search" id="q" placeholder="Procurar Add-ons" aria-label="Procurar Add-ons" autocomplete="off" aria-controls="cat">
+        </form>
+        <div class="z-chips" id="kinds" role="group" aria-label="Tipo">
+          <button class="z-chip" type="button" data-k="" aria-pressed="true">Todos</button>
+          <button class="z-chip" type="button" data-k="filmes" aria-pressed="false">Filmes</button>
+          <button class="z-chip" type="button" data-k="series" aria-pressed="false">Séries</button>
+          <button class="z-chip" type="button" data-k="legendas" aria-pressed="false">Legendas</button>
+          <button class="z-chip" type="button" data-k="catalogos" aria-pressed="false">Catálogos</button>
+        </div>
+        <span class="z-foot z-num" id="count" aria-live="polite"></span>
+      </div>
+      <div class="cat" id="cat"></div>
+      <p class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
+        Falta algum? Pede ao Administrador para o aprovar. Por segurança, não é possível colar o endereço de um Add-on.</p>
+    </section>
+  </div>
+<p class="z-foot z-muted" style="padding:0 var(--gutter) 28px">Protótipo interactivo · Dados de demonstração. As alterações duram até recarregares esta página; nenhum email é enviado.</p>
+</main>
+
+<div class="z-modal" id="m-tor" hidden>
+  <div class="z-scrim" data-close></div>
+  <div class="z-sheet sheet" role="dialog" aria-modal="true" aria-labelledby="tor-h">
+    <button class="z-icon-btn z-sheet__close" type="button" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <form class="z-sheet__body" id="f-tor" novalidate>
+      <div class="sh-head"><span class="tok" aria-hidden="true">T</span><div><h2 class="z-t2" id="tor-h">Configurar Torrentio</h2><p class="z-foot">Só tu vês esta configuração. A chave fica guardada na tua conta.</p></div></div>
+      <div class="z-field" style="margin-top:8px"><label class="z-label" for="t-debrid">Serviço Debrid</label>
+        <select class="z-input" id="t-debrid" name="debrid" aria-describedby="t-debrid-h">
+          <option value="">Nenhum</option><option value="realdebrid">Real-Debrid</option><option value="alldebrid">AllDebrid</option><option value="premiumize">Premiumize</option>
+        </select>
+        <p class="z-help" id="t-debrid-h">Com um serviço Debrid, as Fontes em cache começam logo a reproduzir.</p></div>
+      <div class="z-field" id="t-key-f"><label class="z-label" for="t-key">Chave API</label>
+        <div class="z-input-wrap"><input class="z-input z-input--mono" id="t-key" name="apikey" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" aria-describedby="t-key-h">
+          <button type="button" data-reveal="t-key" aria-pressed="false">Mostrar</button></div>
+        <p class="z-help" id="t-key-h"></p></div>
+      <fieldset><legend class="z-label">Fornecedores</legend><div class="z-chips" id="t-prov"></div></fieldset>
+      <fieldset class="q"><legend class="z-label">Qualidades a excluir</legend><div class="z-chips" id="t-qual"></div></fieldset>
+      <div class="z-field"><label class="z-label" for="t-sort">Ordenar Fontes por</label>
+        <select class="z-input" id="t-sort" name="sort">
+          <option value="quality">Qualidade, depois seeders</option><option value="qualitysize">Qualidade, depois tamanho</option><option value="seeders">Seeders</option><option value="size">Tamanho</option>
+        </select></div>
+      <div class="sh-actions"><button class="z-btn z-btn--primary" type="submit" id="t-save">Guardar</button><button class="z-btn z-btn--ghost" type="button" data-close>Cancelar</button></div>
+      <p class="z-msg" id="t-msg" aria-live="assertive"></p>
+    </form>
+  </div>
+</div>
+
+<div class="z-modal" id="m-gen" hidden>
+  <div class="z-scrim" data-close></div>
+  <div class="z-sheet sheet" role="dialog" aria-modal="true" aria-labelledby="gen-h">
+    <button class="z-icon-btn z-sheet__close" type="button" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <form class="z-sheet__body" id="f-gen" novalidate>
+      <div class="sh-head"><span class="tok" id="gen-tok" aria-hidden="true"></span><div><h2 class="z-t2" id="gen-h"></h2><p class="z-foot">Formulário gerado a partir do manifesto do Add-on.</p></div></div>
+      <div id="gen-fields" style="margin-top:8px"></div>
+      <p class="src" id="gen-src"></p>
+      <div class="sh-actions"><button class="z-btn z-btn--primary" type="submit">Guardar</button><button class="z-btn z-btn--ghost" type="button" data-close>Cancelar</button></div>
+      <p class="z-msg" id="g-msg" aria-live="assertive"></p>
+    </form>
+  </div>
+</div>
+
+<canvas id="sparks" aria-hidden="true"></canvas>
+<div class="z-flash" id="flash" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { modal, toast, reveal, prefersReducedMotion } from './shared/fx.js';
+
+mountNav({ active: 'cinema', page: 'addons' });
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion(), G = window.gsap;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rand = (a, b) => a + Math.random() * (b - a);
+
+/* Brasas: ambiente sobe da bigorna; burst() é a martelada. Pára com o separador escondido ou fora do ecrã. */
+const HEAT = [[255, 246, 220], [255, 196, 96], [255, 120, 36], [150, 30, 8]];
+const heat = k => { const t = (1 - k) * 3, i = Math.min(2, t | 0), f = t - i, a = HEAT[i], b = HEAT[i + 1]; return a.map((v, j) => v + (b[j] - v) * f | 0).join(','); };
+function embers(canvas, src = null, rate = 0) {
+  const ctx = canvas.getContext('2d'), P = [];
+  let W = 1, H = 1, raf = 0, last = 0, seen = true, acc = 0;
+  const size = () => { const r = canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); W = r.width || 1; H = r.height || 1; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); };
+  new ResizeObserver(size).observe(canvas); size();
+  const live = () => !RM && !document.hidden && seen && (P.length || (src && rate));
+  const kick = () => { if (!raf && live()) { last = 0; raf = requestAnimationFrame(step); } };
+  function step(now) {
+    raf = 0;
+    const dt = Math.min(now - (last || now), 50) / 1000; last = now;
+    if (src && rate) for (acc += dt * rate; acc > 1; acc--) { const s = src(); if (s) P.push({ x: s.x + rand(-14, 14), y: s.y + rand(-6, 6), vx: rand(-12, 12), vy: rand(-70, -30), g: -8, drag: .6, age: 0, life: rand(1.8, 3.6), r: rand(.8, 2.1), sway: rand(6, 22), w: rand(1, 3), ph: rand(0, 6) }); }
+    ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    for (let i = P.length - 1; i >= 0; i--) {
+      const p = P[i]; p.age += dt;
+      if (p.age > p.life) { P.splice(i, 1); continue; }
+      const ox = p.x, oy = p.y, k = 1 - p.age / p.life, c = heat(k), a = Math.pow(k, .6) * (p.flick ? .7 + .3 * Math.random() : 1);
+      p.vy += p.g * dt; const d = Math.pow(p.drag, dt); p.vx *= d; p.vy *= d;
+      p.x += (p.vx + (p.sway ? Math.sin(now / 1000 * p.w + p.ph) * p.sway : 0)) * dt; p.y += p.vy * dt;
+      if (p.streak) { ctx.strokeStyle = `rgba(${c},${a})`; ctx.lineWidth = p.r; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+      ctx.fillStyle = `rgba(${c},${a * .16})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, 7); ctx.fill();
+      ctx.fillStyle = `rgba(${c},${a})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+    if (live()) raf = requestAnimationFrame(step); else ctx.clearRect(0, 0, W, H);
+  }
+  document.addEventListener('visibilitychange', kick);
+  new IntersectionObserver(([e]) => { seen = e.isIntersecting; kick(); }).observe(canvas);
+  return {
+    burst(x, y, n = 60, spread = 1.15) {
+      if (RM) return;
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + rand(-spread, spread), v = rand(180, 640);
+        P.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 980, drag: .25, age: 0, life: rand(.45, 1.1), r: rand(.9, 1.9), streak: true, flick: true });
+      }
+      for (let i = 0; i < n / 4; i++) P.push({ x: x + rand(-20, 20), y, vx: rand(-30, 30), vy: rand(-120, -50), g: -10, drag: .5, age: 0, life: rand(1.2, 2.4), r: rand(1, 2), sway: rand(8, 20), w: 2, ph: rand(0, 6) });
+      kick();
+    },
+    setRate(r) { rate = r; kick(); },
+  };
+}
+
+const heroCanvas = $('#embers'), forgeImg = $('#forge');
+const anvil = () => { const r = forgeImg.getBoundingClientRect(), c = heroCanvas.getBoundingClientRect(); return { x: r.left - c.left + r.width * .41, y: r.top - c.top + r.height * .57 }; };
+const hearth = embers(heroCanvas, anvil, 0);
+const sparks = embers($('#sparks'));
+
+/* Clarão quente: um por acção e nunca com menos de 700 ms entre dois. */
+let lastFlash = 0;
+function strike(el) {
+  const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+  if (RM || !G) return;
+  sparks.burst(x, y, 70);
+  const now = performance.now();
+  if (now - lastFlash > 700) {
+    lastFlash = now;
+    const f = $('#flash'); f.style.setProperty('--fx', x + 'px'); f.style.setProperty('--fy', y + 'px');
+    G.timeline().to(f, { opacity: .42, duration: .06, ease: 'power2.in' }).to(f, { opacity: 0, duration: .8, ease: 'power2.out' });
+  }
+  G.fromTo(forgeImg, { filter: 'brightness(1.25) contrast(1.1) saturate(1.2)' }, { filter: 'brightness(.82) contrast(1.06) saturate(1.05)', duration: 1.4, ease: 'power2.out' });
+  hearth.burst(anvil().x, anvil().y, 16, .6);
+}
+
+/* Dados de exemplo: Add-ons aprovados do Catálogo. */
+const RES = { catalog: 'Catálogos', meta: 'Fichas', stream: 'Fontes', subtitles: 'Legendas' };
+const OS_CFG = [
+  { key: 'lang1', type: 'select', title: 'Idioma preferido', options: ['Português (Portugal)', 'Português (Brasil)', 'English', 'Español', 'Français'], default: 'Português (Portugal)' },
+  { key: 'lang2', type: 'select', title: 'Segundo idioma', options: ['Nenhum', 'English', 'Español', 'Français'], default: 'English' },
+  { key: 'hi', type: 'checkbox', title: 'Incluir legendas para surdos', default: false },
+  { key: 'ai', type: 'checkbox', title: 'Mostrar legendas traduzidas por máquina', default: false },
+  { key: 'apikey', type: 'password', title: 'Chave da API OpenSubtitles (opcional)', default: '' },
+];
+const SC_CFG = [
+  { key: 'country', type: 'select', title: 'País', options: ['Portugal', 'Brasil', 'Espanha', 'Estados Unidos'], default: 'Portugal' },
+  ...['Netflix', 'Disney+', 'HBO Max', 'Prime Video', 'Apple TV+'].map((t, i) => ({ key: 'p' + i, type: 'checkbox', title: t, default: i < 2 })),
+];
+const ADDONS = [
+  { id: 'com.linvo.cinemeta', name: 'Cinemeta', v: '3.0.13', desc: 'Catálogos e fichas de filmes e séries, com dados do IMDb.', kinds: ['catalogos', 'filmes', 'series'], res: ['catalog', 'meta'] },
+  { id: 'com.stremio.torrentio.addon', name: 'Torrentio', v: '0.0.15', desc: 'Fontes torrent de vários fornecedores, com serviços Debrid.', kinds: ['filmes', 'series'], res: ['stream'], cfg: 'torrentio' },
+  { id: 'org.stremio.opensubtitlesv3', name: 'OpenSubtitles v3', v: '1.0.0', desc: 'Legendas em dezenas de idiomas, escolhidas pelo nome do ficheiro.', kinds: ['legendas'], res: ['subtitles'], cfg: OS_CFG },
+  { id: 'tmdb-addon', name: 'The Movie Database', v: '3.1.6', desc: 'Catálogos populares e em tendência, com fichas em português.', kinds: ['catalogos', 'filmes', 'series'], res: ['catalog', 'meta'] },
+  { id: 'kitsu-anime', name: 'Anime Kitsu', v: '0.0.11', desc: 'Catálogos e fichas de anime a partir do Kitsu.', kinds: ['catalogos', 'series'], res: ['catalog', 'meta'] },
+  { id: 'pw.ers.streaming-catalogs', name: 'Streaming Catalogs', v: '1.4.2', desc: 'O que está na Netflix, Disney+, HBO Max e outros, no teu país.', kinds: ['catalogos', 'filmes', 'series'], res: ['catalog'], cfg: SC_CFG },
+  { id: 'org.publicdomainmovies', name: 'Public Domain Movies', v: '1.2.0', desc: 'Clássicos em domínio público, para ver sem mais nada.', kinds: ['filmes'], res: ['catalog', 'stream'] },
+  { id: 'org.stremio.watchhub', name: 'WatchHub', v: '1.6.0', desc: 'Mostra em que serviços oficiais cada título está disponível.', kinds: ['filmes', 'series'], res: ['stream'] },
+  { id: 'subsource.addon', name: 'Subsource', v: '2.0.3', desc: 'Legendas da comunidade Subsource, com versões por lançamento.', kinds: ['legendas'], res: ['subtitles'] },
+];
+const byId = new Map(ADDONS.map(a => [a.id, a]));
+const state = new Map([['com.linvo.cinemeta', { on: true }], ['com.stremio.torrentio.addon', { on: true }], ['org.stremio.opensubtitlesv3', { on: true }], ['tmdb-addon', { on: false }]]);
+const DEBRID = { realdebrid: 'Real-Debrid', alldebrid: 'AllDebrid', premiumize: 'Premiumize' };
+const PROV = ['YTS', 'EZTV', 'RARBG', '1337x', 'The Pirate Bay', 'KickassTorrents', 'TorrentGalaxy', 'MagnetDL', 'Nyaa', 'Rutor', 'Comando', 'Torrent9'];
+const QUAL = ['4K', 'Remux', 'HDR', 'Dolby Vision', '1080p', '720p', '480p', '3D', 'Screener', 'CAM', 'Desconhecida'];
+const tor = { debrid: 'realdebrid', key: 'XK4P7Q2M9RT5WZ8B3NJ6HC1VDLYF0SGA', prov: new Set(PROV.slice(0, 8)), qual: new Set(['3D', 'Screener', 'CAM', 'Desconhecida']), sort: 'quality' };
+const gen = new Map([['org.stremio.opensubtitlesv3', Object.fromEntries(OS_CFG.map(f => [f.key, f.default]))]]);
+
+const GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+const summary = a => a.cfg === 'torrentio' ? `${tor.debrid ? DEBRID[tor.debrid] : 'Sem Debrid'}, ${tor.prov.size} fornecedores` : a.res.map(r => RES[r]).join(' e ');
+const instEl = $('#inst'), live = $('#live');
+function renderInst() {
+  instEl.innerHTML = [...state].map(([id, s], i) => { const a = byId.get(id); return `<li data-id="${id}" class="${s.on ? '' : 'is-off'}">
+    <button class="grip" type="button" aria-label="Mover ${esc(a.name)}, posição ${i + 1} de ${state.size}">${GRIP}</button>
+    <span class="tok" aria-hidden="true">${esc(a.name[0])}</span>
+    <span class="nm"><b>${esc(a.name)}</b><small>${esc(summary(a))}</small></span>
+    <span class="pos" aria-hidden="true">${i + 1}</span>
+    <button class="z-switch" type="button" role="switch" aria-checked="${s.on}" aria-label="${esc(a.name)} activo" data-act="toggle"></button>
+    <span class="acts">${a.cfg ? `<button class="z-btn z-btn--secondary z-btn--sm" type="button" data-act="cfg">Configurar</button>` : ''}<button class="z-btn z-btn--ghost z-btn--sm" type="button" data-act="rm">Remover</button></span></li>`; }).join('');
+  $('#n-inst').textContent = state.size;
+}
+function syncOrder() {
+  const ids = $$('li', instEl).map(li => li.dataset.id), next = new Map(ids.map(id => [id, state.get(id)]));
+  state.clear(); next.forEach((v, k) => state.set(k, v));
+  $$('li', instEl).forEach((li, i) => { li.querySelector('.pos').textContent = i + 1; li.querySelector('.grip').setAttribute('aria-label', `Mover ${byId.get(li.dataset.id).name}, posição ${i + 1} de ${state.size}`); });
+}
+function flip(mutate) {
+  const items = $$('li', instEl), before = new Map(items.map(li => [li, li.getBoundingClientRect().top]));
+  mutate();
+  if (RM) return;
+  items.forEach(li => { const d = before.get(li) - li.getBoundingClientRect().top; if (d && !li.classList.contains('is-drag')) li.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.22,1,.36,1)' }); });
+}
+const announce = li => { syncOrder(); const i = $$('li', instEl).indexOf(li); live.textContent = `${byId.get(li.dataset.id).name} passou para a posição ${i + 1} de ${state.size}.`; };
+
+instEl.addEventListener('pointerdown', e => {
+  const h = e.target.closest('.grip'); if (!h || e.button) return;
+  const li = h.closest('li'); e.preventDefault(); h.setPointerCapture(e.pointerId);
+  li.classList.add('is-drag');
+  const move = ev => {
+    const others = $$('li', instEl).filter(x => x !== li);
+    const after = others.find(x => { const r = x.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; }) || null;
+    if (after !== li.nextElementSibling) flip(() => instEl.insertBefore(li, after));
+  };
+  const up = () => {
+    h.removeEventListener('pointermove', move); li.classList.remove('is-drag');
+    announce(li); h.focus();
+  };
+  h.addEventListener('pointermove', move);
+  h.addEventListener('pointerup', up, { once: true }); h.addEventListener('pointercancel', up, { once: true });
+});
+instEl.addEventListener('keydown', e => {
+  const h = e.target.closest('.grip'); if (!h || !['ArrowUp', 'ArrowDown'].includes(e.key)) return;
+  e.preventDefault();
+  const li = h.closest('li'), sib = e.key === 'ArrowUp' ? li.previousElementSibling : li.nextElementSibling?.nextElementSibling;
+  if (e.key === 'ArrowUp' && !sib) return; if (e.key === 'ArrowDown' && !li.nextElementSibling) return;
+  flip(() => instEl.insertBefore(li, sib)); announce(li); h.focus();
+});
+instEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const li = b.closest('li'), id = li.dataset.id, a = byId.get(id), s = state.get(id);
+  if (b.dataset.act === 'toggle') { s.on = !s.on; b.setAttribute('aria-checked', s.on); li.classList.toggle('is-off', !s.on); live.textContent = `${a.name} ${s.on ? 'activado' : 'desactivado'}.`; }
+  if (b.dataset.act === 'cfg') openCfg(a, b);
+  if (b.dataset.act === 'rm') {
+    const done = () => { state.delete(id); renderInst(); renderCat(); toast(`«${a.name}» removido.`); ($('#inst .grip') || $('#h-inst')).focus(); };
+    if (G && !RM) G.to(li, { opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: -10, duration: .35, ease: 'power2.in', onComplete: done }); else done();
+  }
+});
+
+/* Catálogo */
+let kind = '', q = '';
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function renderCat() {
+  const list = ADDONS.filter(a => (!kind || a.kinds.includes(kind)) && (!q || norm(a.name + ' ' + a.desc).includes(norm(q))));
+  $('#count').textContent = `${list.length} ${list.length === 1 ? 'Add-on' : 'Add-ons'}`;
+  $('#n-cat').textContent = ADDONS.length;
+  $('#cat').innerHTML = list.length ? list.map(a => `<article class="card" data-id="${a.id}" aria-labelledby="c-${a.id.replace(/\W/g, '')}">
+    <div class="card__top"><span class="tok" aria-hidden="true">${esc(a.name[0])}</span><div><b id="c-${a.id.replace(/\W/g, '')}">${esc(a.name)}</b><span class="z-tag z-tag--mono">v${esc(a.v)}</span></div></div>
+    <p>${esc(a.desc)}</p>
+    <div class="z-tags">${a.res.map(r => `<span class="z-tag">${RES[r]}</span>`).join('')}${a.cfg ? '<span class="z-tag z-tag--gold">Configurável</span>' : ''}</div>
+    <footer>${state.has(a.id) ? `<span class="done"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Instalado</span>` : `<button class="z-btn z-btn--secondary z-btn--sm" type="button" data-install aria-label="Instalar ${esc(a.name)}">Instalar</button>`}</footer></article>`).join('')
+    : `<p class="empty">Nenhum Add-on corresponde à pesquisa.<br><button class="z-link" type="button" id="clear">Limpar pesquisa e filtro</button></p>`;
+}
+$('#q').addEventListener('input', e => { q = e.target.value.trim(); renderCat(); });
+$('#kinds').addEventListener('click', e => {
+  const b = e.target.closest('.z-chip'); if (!b) return;
+  kind = b.dataset.k; $$('.z-chip', $('#kinds')).forEach(c => c.setAttribute('aria-pressed', c === b)); renderCat();
+});
+$('#cat').addEventListener('click', e => {
+  if (e.target.id === 'clear') { q = ''; $('#q').value = ''; $('[data-k=""]').click(); $('#q').focus(); return; }
+  const b = e.target.closest('[data-install]'); if (!b) return;
+  const card = b.closest('.card'), a = byId.get(card.dataset.id);
+  if (b.disabled) return;
+  b.disabled = true; b.setAttribute('aria-busy', 'true'); b.textContent = 'A instalar…';
+  setTimeout(() => {
+    strike(b);
+    state.set(a.id, { on: true });
+    if (Array.isArray(a.cfg)) gen.set(a.id, Object.fromEntries(a.cfg.map(f => [f.key, f.default])));
+    renderInst(); renderCat();
+    const nc = $(`.card[data-id="${a.id}"]`), ni = $(`#inst li[data-id="${a.id}"]`);
+    [nc, ni].forEach(el => { el?.classList.add('hot'); setTimeout(() => el?.classList.remove('hot'), 2700); });
+    nc?.querySelector('footer').setAttribute('tabindex', '-1'); nc?.querySelector('footer').focus({ preventScroll: true });
+    toast(`«${a.name}» instalado. Está no fim da lista de instalados.`);
+    if (a.cfg) setTimeout(() => openCfg(a, ni.querySelector('[data-act="cfg"]')), RM ? 300 : 1100);
+  }, RM ? 150 : 520);
+});
+
+/* Configuração: Torrentio tem adaptador próprio; os restantes usam o formulário do manifesto. */
+const mTor = modal($('#m-tor')), mGen = modal($('#m-gen'));
+const chips = (el, all, set) => { el.innerHTML = all.map(p => `<button class="z-chip" type="button" aria-pressed="${set.has(p)}">${esc(p)}</button>`).join(''); };
+let genFor = null;
+function openCfg(a, from) {
+  if (a.cfg === 'torrentio') {
+    $('#t-debrid').value = tor.debrid; $('#t-key').value = tor.key; $('#t-sort').value = tor.sort;
+    chips($('#t-prov'), PROV, tor.prov); chips($('#t-qual'), QUAL, tor.qual);
+    $('#t-msg').textContent = ''; debridUI(); return mTor.open(from);
+  }
+  genFor = a; const v = gen.get(a.id) || {};
+  $('#gen-h').textContent = `Configurar ${a.name}`; $('#gen-tok').textContent = a.name[0];
+  $('#gen-src').textContent = `Manifesto: ${a.id} v${a.v}`; $('#g-msg').textContent = '';
+  $('#gen-fields').innerHTML = a.cfg.map(f => {
+    const id = 'g-' + f.key, val = v[f.key] ?? f.default;
+    if (f.type === 'checkbox') return `<label class="chk"><input type="checkbox" id="${id}" name="${f.key}"${val ? ' checked' : ''}>${esc(f.title)}</label>`;
+    if (f.type === 'select') return `<div class="z-field"><label class="z-label" for="${id}">${esc(f.title)}</label><select class="z-input" id="${id}" name="${f.key}">${f.options.map(o => `<option${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`;
+    return `<div class="z-field"><label class="z-label" for="${id}">${esc(f.title)}</label><input class="z-input${f.type === 'password' ? ' z-input--mono' : ''}" type="${f.type}" id="${id}" name="${f.key}" value="${esc(val)}" autocomplete="off" spellcheck="false"></div>`;
+  }).join('');
+  mGen.open(from);
+}
+$('#f-gen').addEventListener('submit', e => {
+  e.preventDefault();
+  gen.set(genFor.id, Object.fromEntries(genFor.cfg.map(f => { const el = $('#g-' + f.key); return [f.key, f.type === 'checkbox' ? el.checked : el.value]; })));
+  mGen.close(); toast(`Configuração de «${genFor.name}» guardada.`);
+});
+document.addEventListener('click', e => {
+  const c = e.target.closest('#t-prov .z-chip, #t-qual .z-chip');
+  if (c) c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') !== 'true');
+  const r = e.target.closest('[data-reveal]');
+  if (r) { const f = document.getElementById(r.dataset.reveal), show = f.type === 'password'; f.type = show ? 'text' : 'password'; r.textContent = show ? 'Ocultar' : 'Mostrar'; r.setAttribute('aria-pressed', show); }
+});
+function debridUI() {
+  const d = $('#t-debrid').value, key = $('#t-key');
+  key.disabled = !d; key.removeAttribute('aria-invalid');
+  $('#t-key-f').style.opacity = d ? 1 : .45;
+  const h = $('#t-key-h'); h.className = 'z-help';
+  h.textContent = d ? `Copia a chave da tua conta ${DEBRID[d]}, na página da API.` : 'Escolhe um serviço Debrid para usar uma chave.';
+}
+$('#t-debrid').addEventListener('change', debridUI);
+$('#f-tor').addEventListener('submit', e => {
+  e.preventDefault();
+  const d = $('#t-debrid').value, key = $('#t-key'), msg = $('#t-msg'), btn = $('#t-save');
+  const prov = $$('#t-prov [aria-pressed="true"]').map(c => c.textContent);
+  if (d && !/^[A-Za-z0-9]{16,}$/.test(key.value.trim())) {
+    key.setAttribute('aria-invalid', 'true'); $('#t-key-h').className = 'z-help is-error';
+    $('#t-key-h').textContent = `A chave ${DEBRID[d]} tem pelo menos 16 letras e números, sem espaços.`; msg.textContent = 'Corrige a chave API para guardar.'; return key.focus();
+  }
+  if (!prov.length) { msg.textContent = 'Escolhe pelo menos um fornecedor.'; return $('#t-prov .z-chip').focus(); }
+  btn.setAttribute('aria-busy', 'true'); btn.textContent = 'A guardar…'; msg.textContent = '';
+  setTimeout(() => {
+    Object.assign(tor, { debrid: d, key: key.value.trim(), sort: $('#t-sort').value, prov: new Set(prov), qual: new Set($$('#t-qual [aria-pressed="true"]').map(c => c.textContent)) });
+    btn.removeAttribute('aria-busy'); btn.textContent = 'Guardar';
+    if (!RM) sparks.burst(btn.getBoundingClientRect().left + btn.offsetWidth / 2, btn.getBoundingClientRect().top, 18, .7);
+    mTor.close(); renderInst(); toast('Configuração do Torrentio guardada.');
+  }, 600);
+});
+
+renderInst(); renderCat();
+
+/* Entrada: a forja acende do escuro e a primeira brasa sobe da bigorna. */
+if (G && !RM) {
+  G.fromTo(forgeImg, { scale: 1.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 3.2, ease: 'power3.out' });
+  const drift = G.to(forgeImg, { scale: 1.045, duration: 38, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 3.2 });
+  setTimeout(() => { hearth.setRate(9); hearth.burst(anvil().x, anvil().y, 14, .5); }, 1300);
+  let heroVisible = true;
+  const syncDrift = () => drift.paused(!heroVisible || document.hidden);
+  new IntersectionObserver(([e]) => { heroVisible = e.isIntersecting; syncDrift(); }).observe($('.fg-hero'));
+  document.addEventListener('visibilitychange', syncDrift);
+  reveal(['.fg-copy > *', '.toc'], { delay: 1, stagger: .1 });
+} else hearth.setRate(0);
+</script>
+</body>
+</html>

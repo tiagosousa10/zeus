@@ -1,0 +1,88 @@
+/* The approved shared/zeus.css owns typography, colours, spacing and controls. */
+:root {
+  color-scheme: dark;
+}
+[hidden] {
+  display: none !important;
+}
+button,
+a,
+input,
+select {
+  touch-action: manipulation;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+.app-page {
+  min-height: 100svh;
+}
+.app-content {
+  max-width: 1500px;
+  margin: auto;
+  padding: 24px var(--gutter) 70px;
+}
+.button-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.muted {
+  color: var(--text-2);
+}
+.app-note {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 20px;
+}
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.empty-state {
+  text-align: center;
+  max-width: 620px;
+  margin: 40px auto;
+  padding: 45px 20px;
+  color: #aaa;
+}
+.empty-state > span {
+  font-size: 36px;
+  color: var(--gold);
+}
+.empty-state h2 {
+  color: #eee;
+  font: 600 28px/1.2 var(--font);
+}
+.surface {
+  border: 1px solid #ffffff17;
+  background: #ffffff06;
+  border-radius: 22px;
+  padding: 28px;
+}
+.form-grid {
+  display: grid;
+  gap: 18px;
+}
+.error-message {
+  color: #ffaaa4;
+  background: #b3392915;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+.success-message {
+  color: #b2e5ca;
+}
+.page-loading {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 20px;
+  text-align: center;
+  letter-spacing: 0.1em;
+  color: #aaa;
+}
+.page-loading b {
+  font: 48px Georgia;
+  color: var(--gold);
+}

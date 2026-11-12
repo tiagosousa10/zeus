@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, TV</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/hermes.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* Hermes: palco, aura e figura recortada em canvas */
+.stage{position:absolute;inset:0 0 auto;height:max(100svh,760px);overflow:hidden;pointer-events:none;z-index:0}
+.stage::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000 0,rgba(0,0,0,.6) 22%,transparent 46%),linear-gradient(90deg,rgba(0,0,0,.5),transparent 40%)}
+.aura{position:absolute;right:-6vw;top:-4vh;width:min(70vw,980px);aspect-ratio:1;opacity:.55;background:radial-gradient(closest-side,rgba(var(--cool),.2),rgba(var(--cool),.07) 45%,transparent 72%),radial-gradient(40% 30% at 62% 30%,rgba(190,250,255,.08),transparent)}
+.hermes{--px:0px;--py:0px;position:absolute;right:max(-3vw,-48px);top:calc(var(--nav-h) - 3vh);height:min(108svh,1060px);aspect-ratio:1778/2400;transform:translate3d(var(--px),var(--py),0);transition:opacity 1.1s var(--out),transform 1.2s var(--out);-webkit-mask-image:linear-gradient(180deg,#000 50%,transparent 90%);mask-image:linear-gradient(180deg,#000 50%,transparent 90%)}
+.hermes__rise,.hermes__float{height:100%}
+.hermes__float{animation:z-hover 9s ease-in-out infinite alternate}
+.hermes canvas{display:block;height:100%;width:100%;opacity:0;transition:opacity 1.4s var(--out)}
+.hermes.is-on canvas{opacity:1}
+@keyframes z-hover{to{transform:translate3d(0,-14px,0) rotate(-.6deg)}}
+body[data-tab="guia"] .hermes{opacity:.2;transform:translate3d(calc(var(--px) + 9vw),var(--py),0) scale(.9)}
+body[data-tab="guia"] .aura{opacity:.25}
+.bolts{position:fixed;inset:0;z-index:30;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+main{position:relative;z-index:1;min-height:100svh}
+.tv-tabs{position:relative;z-index:2;margin:6px var(--gutter) 0;width:max-content;max-width:calc(100% - 2 * var(--gutter))}
+.head{position:relative;z-index:2;padding:28px var(--gutter) 0;max-width:680px}
+.head .z-lede{margin-top:8px}
+.mono{--h:200;flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:linear-gradient(150deg,hsl(var(--h) 48% 30%),hsl(var(--h) 45% 11%));box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);font-size:14px;font-weight:800;letter-spacing:-.04em}
+.live-p>i{background:var(--accent)}
+
+/* Em directo: televisor com sinal fictício */
+.hero{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,min(780px,54vw));gap:22px;padding:22px var(--gutter) 40px}
+.tv{position:relative;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:#010203;box-shadow:0 0 0 1px rgba(var(--cool),.16),0 50px 90px -40px #000,0 0 140px -60px rgba(var(--cool),.7)}
+.tv:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.feed{--h:200;position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;overflow:hidden;transform-origin:50% 50%}
+.feed::before{content:"";position:absolute;inset:-35%;background:radial-gradient(38% 42% at 32% 36%,hsl(var(--h) 70% 38% / .85),transparent 70%),radial-gradient(34% 40% at 70% 66%,hsl(calc(var(--h) + 45) 60% 26% / .9),transparent 70%),linear-gradient(160deg,hsl(var(--h) 40% 9%),#000 70%);animation:z-drift 18s ease-in-out infinite alternate}
+.feed::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),radial-gradient(120% 90% at 50% 45%,transparent 50%,rgba(0,0,0,.7))}
+@keyframes z-drift{to{transform:translate3d(9%,-7%,0) rotate(10deg) scale(1.12)}}
+.feed__mono{position:relative;z-index:1;font-size:clamp(68px,10vw,156px);font-weight:800;line-height:.9;letter-spacing:-.06em;color:rgba(255,255,255,.93);text-shadow:0 0 50px hsl(var(--h) 90% 60% / .5)}
+.feed__name{position:relative;z-index:1;font-size:15px;font-weight:600;color:rgba(255,255,255,.7)}
+.tv .z-badge--live{position:absolute;z-index:3;left:16px;top:16px;background:rgba(0,0,0,.45)}
+.osd{position:absolute;z-index:3;top:12px;right:18px;display:grid;justify-items:end;opacity:0;transition:opacity .35s var(--out);pointer-events:none}
+.osd.is-on{opacity:1}
+.osd b{font-size:clamp(34px,4vw,52px);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 22px rgba(var(--cool),.9)}
+.osd span{font-size:14px;color:var(--text-2)}
+.info{display:grid;gap:10px}
+.info__ch{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;font-size:15px}
+.info__time{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;max-width:520px;font-size:13px;color:var(--text-2)}
+.info__act{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.info__act .z-icon-btn{width:44px;height:44px}
+.z-btn[aria-pressed="true"] svg{color:var(--accent)}
+.tvc{width:clamp(220px,21vw,312px)}
+.tvc .z-card__art,.tvc-art{--h:200;display:grid;place-items:center;background:radial-gradient(90% 130% at 18% 0%,hsl(var(--h) 52% 27%),hsl(var(--h) 42% 8%) 72%)}
+.tvc__mono{font-size:clamp(34px,3.2vw,50px);font-weight:800;letter-spacing:-.06em;color:rgba(255,255,255,.9)}
+.tvc .z-badge--live,.tvc-art .z-badge--live{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.4)}
+.tvc__n{position:absolute;top:9px;right:12px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.rows-empty{padding:0 var(--gutter) 80px;color:var(--text-2)}
+
+/* Guia: grelha com coluna fixa, régua e linha «agora» */
+.guide{position:relative;z-index:2;padding:0 var(--gutter) 80px}
+.g-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:20px 0 14px}
+.g-bar .z-chips{flex:1 1 auto}
+.g-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+.epg{position:relative;overflow:auto;max-height:max(440px,calc(100svh - var(--nav-h) - 250px));border-radius:var(--r-xl);background:rgba(10,12,14,.9);box-shadow:inset 0 0 0 1px var(--hair);overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#333 transparent}
+.epg__in{position:relative;width:calc(var(--chw) + var(--dayw))}
+.epg__head{position:sticky;top:0;z-index:4;display:flex;height:44px;background:#121416;box-shadow:0 1px 0 var(--hair)}
+.epg__corner{position:sticky;left:0;z-index:5;flex:0 0 var(--chw);display:flex;align-items:center;padding:0 14px;background:#121416;font-size:13px;font-weight:600;box-shadow:1px 0 0 var(--hair)}
+.epg__ruler{position:relative;flex:0 0 var(--dayw)}
+.epg__ruler span{position:absolute;top:0;bottom:0;padding:13px 0 0 8px;border-left:1px solid var(--hair);font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.epg__ruler span.is-half{color:var(--text-3);border-left-color:rgba(255,255,255,.05)}
+.epg__row{display:flex;height:var(--rowh);border-bottom:1px solid rgba(255,255,255,.05)}
+.epg__ch{position:sticky;left:0;z-index:3;flex:0 0 var(--chw);display:flex;align-items:center;gap:10px;padding:0 12px;background:#0e1012;box-shadow:1px 0 0 var(--hair);min-width:0}
+.epg__ch span{min-width:0;display:grid;font-size:14px;line-height:1.25}
+.epg__ch b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.epg__ch small{color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums}
+.epg__lane{position:relative;flex:0 0 var(--dayw)}
+.epg__b{position:absolute;top:5px;bottom:5px;display:grid;align-content:center;gap:2px;padding:0 10px;border:0;border-radius:10px;background:rgba(255,255,255,.06);color:var(--text);font-size:14px;line-height:1.25;text-align:left;overflow:hidden;transition:background .2s}
+.epg__b:hover{background:rgba(255,255,255,.11)}
+.epg__b b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.epg__b small{display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.epg__b.is-past{background:rgba(255,255,255,.028);color:var(--text-2)}
+.epg__b.is-live{background:linear-gradient(90deg,rgba(var(--cool),.2) var(--p,0%),rgba(var(--cool),.07) var(--p,0%));box-shadow:inset 2px 0 0 var(--accent)}
+.epg__b.is-sel{background:rgba(var(--cool),.22);box-shadow:inset 0 0 0 1px rgba(var(--cool),.6)}
+.epg__b:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cu{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:6px;background:rgba(var(--cool),.12);color:var(--accent);font-size:11px;font-weight:600}
+.cu svg{width:10px;height:10px}
+.nowline{position:absolute;top:0;bottom:0;z-index:2;width:0;pointer-events:none;transition:left 1s linear}
+.nowline::before{content:"";position:absolute;inset:0 auto 0 -1px;width:2px;background:linear-gradient(180deg,#fff,var(--accent) 20%,rgba(var(--cool),.4));box-shadow:0 0 8px 1px rgba(var(--cool),.75),0 0 28px 5px rgba(var(--cool),.22)}
+.nowline svg{position:absolute;top:44px;left:-7px;width:14px;height:calc(100% - 44px);overflow:visible}
+.nowline path{fill:none;stroke:#e9feff;stroke-width:1;stroke-linejoin:round;opacity:.7}
+.nowline i{position:absolute;left:-3px;top:44px;width:6px;height:28px;border-radius:3px;background:linear-gradient(180deg,transparent,#fff,transparent);box-shadow:0 0 12px rgba(var(--cool),.9);animation:z-spark 3.2s linear infinite}
+@keyframes z-spark{to{top:100%}}
+.now-tag{position:absolute;top:10px;z-index:1;transform:translateX(-50%);padding:3px 8px;border-radius:999px;background:var(--accent);color:#001014;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 0 18px rgba(var(--cool),.7)}
+.g-detail{position:sticky;top:calc(var(--nav-h) + 14px);display:grid;gap:12px;padding:22px}
+.g-detail__ch{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text-2)}
+.g-detail p{font-size:15px;color:var(--text-2)}
+.g-detail .z-btn{justify-self:start}
+
+/* Favoritos */
+.fav{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;max-width:1040px;padding:24px var(--gutter) 80px}
+.fav h3{margin-bottom:12px;font-size:17px;font-weight:600}
+.sort{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.sort li{position:relative;display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:8px 10px 8px 4px;border-radius:var(--r-lg);background:rgba(28,28,30,.78);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:inset 0 0 0 1px var(--hair)}
+.sort li.is-drag{z-index:5;background:rgba(40,46,50,.96);box-shadow:inset 0 0 0 1px rgba(var(--cool),.55),0 26px 50px -18px #000,0 0 40px -14px rgba(var(--cool),.5);cursor:grabbing}
+.handle{width:34px;height:44px;display:grid;place-items:center;padding:0;border:0;border-radius:8px;background:none;color:var(--text-3);cursor:grab;touch-action:none}
+.handle:hover{color:var(--text)}
+.handle svg{width:18px;height:18px}
+.fav__t{display:grid;min-width:0;font-size:15px;line-height:1.3}
+.fav__t small{color:var(--text-2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grp{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair)}
+.grp:last-child{border-bottom:0}
+.grp span{display:grid;font-size:15px}
+.grp small{color:var(--text-3);font-size:13px}
+.fav-add{margin-top:22px}
+.fav-add .z-chip{padding:6px 12px;font-size:14px}
+
+/* Listas IPTV */
+.lists{position:relative;z-index:2;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px;max-width:1040px;padding:24px var(--gutter) 80px}
+.lc{display:grid;gap:12px;align-content:start;padding:22px}
+.lc header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lc dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 0}
+.lc dt{font-size:12px;color:var(--text-3)}
+.lc dd{margin:2px 0 0;font-size:15px;font-weight:600}
+.lc .z-msg{margin:0}
+.lc__act{display:flex;gap:8px;flex-wrap:wrap}
+.lc.is-new{animation:z-arrive 1.1s var(--out)}
+@keyframes z-arrive{0%{box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 0 80px 6px rgba(var(--cool),.6)}}
+.lc-add{display:grid;place-content:center;justify-items:center;gap:10px;min-height:220px;border:1px dashed rgba(255,255,255,.18);border-radius:var(--r-xl);background:rgba(255,255,255,.02);color:var(--text-2);font-size:15px;transition:border-color .3s,color .3s,background .3s}
+.lc-add:hover{border-color:rgba(var(--cool),.6);color:var(--text);background:rgba(var(--cool),.05)}
+.lc-add svg{width:26px;height:26px}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);background:rgba(var(--cool),.08);color:var(--text-2);font-size:14px;line-height:1.4}
+.note svg{flex:none;width:18px;height:18px;color:var(--accent);margin-top:1px}
+.z-seg label{cursor:pointer}
+
+@media (max-width:1000px){
+  .g-layout{grid-template-columns:minmax(0,1fr)}
+  .g-detail{position:static}
+  .fav{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:760px){
+  .hero{grid-template-columns:minmax(0,1fr);padding-top:16px}
+  .hermes{top:calc(var(--nav-h) + 40vw);right:-26vw;height:76svh;opacity:.5}
+  .aura{top:20vh;right:-40vw;width:120vw}
+  .tv{border-radius:16px}
+  .info__time{max-width:none}
+  .sort li{grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px}
+  .sort li .z-num{display:none}
+  .lc dl{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){.hermes__float,.feed::before,.nowline i{animation:none}.nowline svg{display:none}}
+</style>
+</head>
+<body data-tab="directo">
+<div class="stage" aria-hidden="true">
+  <div class="aura" id="aura"></div>
+  <div class="hermes" id="hermes"><div class="hermes__rise"><div class="hermes__float"><canvas id="hermes-c" width="1778" height="2400"></canvas></div></div></div>
+</div>
+<canvas class="bolts" id="bolts" aria-hidden="true"></canvas>
+
+<main class="z-page">
+  <h1 class="z-sr">TV</h1>
+  <div class="z-tabs tv-tabs" role="tablist" aria-label="Secções da TV">
+    <button type="button" role="tab" id="t-directo" data-tab="directo" aria-controls="p-directo">Em directo</button>
+    <button type="button" role="tab" id="t-guia" data-tab="guia" aria-controls="p-guia">Guia</button>
+    <button type="button" role="tab" id="t-favoritos" data-tab="favoritos" aria-controls="p-favoritos">Favoritos</button>
+    <button type="button" role="tab" id="t-listas" data-tab="listas" aria-controls="p-listas">Listas IPTV</button>
+  </div>
+
+  <section id="p-directo" role="tabpanel" aria-labelledby="t-directo">
+    <div class="hero">
+      <div class="tv" id="tv" tabindex="0" role="group" aria-label="Pré-visualização do canal. Setas para cima e para baixo mudam de canal." aria-describedby="zap-hint">
+        <div class="feed" id="feed"></div>
+        <span class="z-badge z-badge--live">EM DIRECTO</span>
+        <div class="osd" id="osd" aria-hidden="true"></div>
+        <div class="z-grain" aria-hidden="true"></div>
+      </div>
+      <div class="info">
+        <div class="info__ch" id="i-ch"></div>
+        <h2 class="z-t1" id="i-title"></h2>
+        <div class="info__time" id="i-time"></div>
+        <p class="z-muted" id="i-next"></p>
+        <div class="info__act">
+          <button class="z-btn z-btn--primary" type="button" id="watch"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z"/></svg>Ver agora</button>
+          <button class="z-btn z-btn--secondary" type="button" id="fav-btn" aria-pressed="false"></button>
+          <button class="z-icon-btn" type="button" id="ch-up" aria-label="Canal seguinte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 14.5l6-6 6 6"/></svg></button>
+          <button class="z-icon-btn" type="button" id="ch-down" aria-label="Canal anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button>
+        </div>
+        <p class="z-foot" id="zap-hint">Escreve o número do canal para saltar directamente.</p>
+      </div>
+    </div>
+    <div class="z-rows" id="rows"></div>
+  </section>
+
+  <section id="p-guia" role="tabpanel" aria-labelledby="t-guia" hidden>
+    <div class="head">
+      <h2 class="z-t1">Guia de programação</h2>
+      <p class="z-lede" id="g-hint">Percorre a grelha com as setas. Enter vê o directo, revê um programa que já passou ou marca um lembrete.</p>
+    </div>
+    <div class="guide">
+      <div class="g-bar">
+        <div class="z-chips" id="days" role="group" aria-label="Dia"></div>
+        <button class="z-btn z-btn--secondary z-btn--sm" type="button" id="g-now">Agora</button>
+      </div>
+      <div class="g-layout">
+        <div class="epg" id="epg" role="region" aria-label="Grelha de programação" aria-describedby="g-hint"></div>
+        <aside class="g-detail z-glass" id="g-detail" aria-label="Programa seleccionado"></aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="p-favoritos" role="tabpanel" aria-labelledby="t-favoritos" hidden>
+    <div class="head">
+      <h2 class="z-t1">Favoritos</h2>
+      <p class="z-lede">Arrasta pela pega para mudar a ordem. Os grupos escondidos saem do Directo e do Guia.</p>
+    </div>
+    <div class="fav">
+      <div>
+        <h3 id="fav-h">A tua ordem</h3>
+        <ul class="sort" id="fav-list" aria-labelledby="fav-h"></ul>
+        <p class="z-muted" id="fav-empty" hidden>Ainda não tens favoritos. Escolhe canais abaixo ou toca na estrela no Directo.</p>
+        <div class="fav-add"><h3 id="fav-add-h">Adicionar aos favoritos</h3><div class="z-chips" id="fav-add" role="group" aria-labelledby="fav-add-h"></div></div>
+      </div>
+      <div class="z-glass z-panel"><h3>Grupos</h3><div id="groups"></div></div>
+    </div>
+  </section>
+
+  <section id="p-listas" role="tabpanel" aria-labelledby="t-listas" hidden>
+    <div class="head">
+      <h2 class="z-t1">Listas IPTV</h2>
+      <p class="z-lede">As tuas listas privadas, Xtream ou M3U. O Zeus lê delas os canais e o guia.</p>
+    </div>
+    <div class="lists" id="lists"></div>
+  </section>
+</main>
+
+<div class="z-modal" id="add" hidden>
+  <div class="z-scrim" data-close></div>
+  <div class="z-sheet z-sheet--sm" role="dialog" aria-modal="true" aria-labelledby="add-t">
+    <button class="z-icon-btn z-sheet__close" type="button" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <form class="z-sheet__body" id="add-f" novalidate>
+      <h2 class="z-t2" id="add-t">Adicionar lista</h2>
+      <div class="z-seg" role="radiogroup" aria-label="Tipo de lista"><label><input type="radio" name="kind" value="xtream" checked>Xtream</label><label><input type="radio" name="kind" value="m3u">M3U</label></div>
+      <div class="z-field"><label class="z-label" for="f-name">Nome</label><input class="z-input" id="f-name" name="name" placeholder="Casa" autocomplete="off"></div>
+      <div data-kind="xtream">
+        <div class="z-field"><label class="z-label" for="f-host">Servidor</label><input class="z-input z-input--mono" id="f-host" name="host" type="url" inputmode="url" placeholder="http://servidor:8080" autocomplete="off" spellcheck="false"></div>
+        <div class="z-field"><label class="z-label" for="f-user">Utilizador</label><input class="z-input" id="f-user" name="user" autocomplete="off" spellcheck="false"></div>
+        <div class="z-field"><label class="z-label" for="f-pass">Palavra-passe</label><div class="z-input-wrap"><input class="z-input" id="f-pass" name="pass" type="password" autocomplete="off"><button type="button" id="f-reveal" aria-pressed="false" aria-controls="f-pass">Mostrar</button></div></div>
+      </div>
+      <div data-kind="m3u" hidden>
+        <div class="z-field"><label class="z-label" for="f-m3u">URL da lista M3U</label><input class="z-input z-input--mono" id="f-m3u" name="m3u" type="url" inputmode="url" placeholder="https://…/lista.m3u" autocomplete="off" spellcheck="false"></div>
+        <div class="z-field"><label class="z-label" for="f-epg">URL do guia EPG (opcional)</label><input class="z-input z-input--mono" id="f-epg" name="epg" type="url" inputmode="url" placeholder="https://…/guia.xml" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <p class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Demonstração: usa dados fictícios. Nenhuma ligação será feita ao fornecedor.</p>
+      <p class="z-msg" id="add-msg" role="alert"></p>
+      <button class="z-btn z-btn--primary z-btn--block" type="submit" id="add-go">Adicionar lista</button>
+    </form>
+  </div>
+</div>
+<div class="z-sr" id="live" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { lightning, rows, modal, toast, prefersReducedMotion, ICON } from './shared/fx.js';
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion(), G = window.gsap;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const MIN = 60000, pad = n => String(n).padStart(2, '0');
+const hm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const svg = (d, fill) => `<svg viewBox="0 0 24 24" ${fill ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true">${d}</svg>`;
+const STAR = 'M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z';
+const I = {
+  star: svg(`<path d="${STAR}"/>`), starOn: svg(`<path d="${STAR}"/>`, 1),
+  grip: svg('<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>', 1),
+  rewind: svg('<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/>'), plus: svg('<path d="M12 5v14M5 12h14"/>'),
+};
+
+/* Dados fictícios: 30 canais em 8 grupos, grelha gerada por dia com semente fixa */
+const GROUPS = {
+  Desporto: { h: 152, dur: [60, 90, 120, 30], t: ['Liga, jornada 12', 'Resumo da jornada', 'Ténis, quartos de final', 'Surf na Nazaré', 'Ciclismo, etapa 4', 'Andebol, Taça de Portugal', 'Noite de futebol', 'Atletismo, meeting de Lisboa', 'Basquetebol, liga', 'Grande área'], d: ['Directo com comentário e análise ao intervalo.', 'Os golos, os lances e as polémicas da jornada.', 'Transmissão integral, com estatísticas em tempo real.', 'Antevisão, entrevistas e as escolhas dos treinadores.'] },
+  'Notícias': { h: 210, dur: [30, 30, 60, 15, 45], t: ['Jornal da Noite', 'Grande Entrevista', 'Última Hora', 'Edição da Manhã', 'Mercados em Directo', 'Mundo em 30 minutos', 'Debate da Nação', 'Repórter', 'Meteorologia', 'Fecho de Edição'], d: ['A actualidade nacional e internacional, com directos.', 'Uma conversa longa com quem está a decidir o país.', 'Os números do dia e o que mexe nos mercados.', 'Reportagem de fundo, contada por quem lá esteve.'] },
+  Filmes: { h: 22, dur: [95, 110, 120, 135], t: ['Heat (1995)', 'Collateral (2004)', 'Casablanca (1942)', 'Blade Runner (1982)', 'Alien (1979)', 'Vertigo (1958)', 'Drive (2011)', 'Fargo (1996)', 'Zodiac (2007)', 'Ronin (1998)'], d: ['Um clássico em versão restaurada, sem cortes.', 'Policial nocturno com uma das grandes perseguições do cinema.', 'Ficção científica que mudou o género.', 'Thriller tenso, montado como um relógio.'] },
+  'Séries': { h: 268, dur: [30, 45, 45, 60], t: ['Os Herdeiros, T2 E4', 'Linha de Fogo, T1 E7', 'Distrito Sul, T3 E1', 'A Casa da Ribeira, T1 E2', 'Turno da Noite, T4 E9', 'Madrugada, T2 E3', 'Os Vizinhos, T5 E11', 'Código Azul, T1 E5'], d: ['Episódio novo. Uma herança divide a família.', 'Uma noite longa na esquadra do centro.', 'Recapitulação e dois episódios seguidos.', 'Comédia de bairro com um elenco de luxo.'] },
+  'Documentários': { h: 96, dur: [45, 60, 60], t: ['Planeta Azul', 'Cosmos', 'Os Últimos Lobos', 'A Rota da Seda', 'Vulcões', 'Lisboa Subterrânea', 'Oceano Profundo', 'Mitos do Olimpo', 'Engenharia Extrema', 'Grécia Antiga'], d: ['Filmado ao longo de três anos em quatro continentes.', 'A ciência explicada com imagens de cortar a respiração.', 'Uma viagem pela história, com arqueólogos no terreno.', 'Natureza em estado puro, narrada em português.'] },
+  'Música': { h: 318, dur: [30, 60, 60], t: ['Top 40', 'Live Sessions', 'Noite de Fado', 'Jazz no Clube', 'Clássicos dos 80', 'Videoclipes', 'Concerto no Coliseu', 'Acústico'], d: ['Os mais ouvidos da semana, sem interrupções.', 'Concerto gravado ao vivo, em alta definição.', 'Vozes novas e velhas casas de fado.', 'Sessão intimista, só voz e guitarra.'] },
+  Infantil: { h: 44, dur: [15, 30, 30, 25], t: ['Desenhos da manhã', 'Aventuras no Bosque', 'O Pequeno Cientista', 'Contos do Mar', 'Bichinhos', 'Hora do Conto', 'Robôs Amigos', 'Ateliê de Desenho'], d: ['Animação para os mais pequenos, dobrada em português.', 'Experiências simples para fazer em casa.', 'Histórias contadas devagar, antes de dormir.', 'Aventuras curtas com muita música.'] },
+  Internacional: { h: 186, dur: [30, 30, 60], t: ['World Report', 'Le Journal', 'Telegiornale', 'Noticiario 24', 'Weekend Review', 'Cine Europa', 'Mundo Latino', 'Viagem pela Europa'], d: ['Notícias internacionais na língua original.', 'Cinema europeu com legendas em português.', 'Grandes viagens, cidade a cidade.', 'Magazine semanal de cultura e sociedade.'] },
+};
+const CH = [
+  ['Arena 1', 'Desporto', 'A1', 1], ['Arena 2', 'Desporto', 'A2', 1], ['Estádio+', 'Desporto', 'E+'], ['Pista Motor', 'Desporto', 'PM'],
+  ['Notícias 24', 'Notícias', 'N24', 1], ['Agora', 'Notícias', 'Ag', 1], ['Mundo Hoje', 'Notícias', 'MH'], ['Mercados', 'Notícias', 'Me'],
+  ['Cinema Mais', 'Filmes', 'CM', 1], ['Clássicos', 'Filmes', 'Cl', 1], ['Sessão Noir', 'Filmes', 'SN'], ['Grande Ecrã', 'Filmes', 'GE', 1],
+  ['Séries Um', 'Séries', 'S1', 1], ['Drama', 'Séries', 'Dr', 1], ['Riso', 'Séries', 'Ri'], ['Policial', 'Séries', 'Po'],
+  ['Planeta', 'Documentários', 'Pl', 1], ['História Viva', 'Documentários', 'HV', 1], ['Ciência', 'Documentários', 'Ci'], ['Oceano', 'Documentários', 'Oc'],
+  ['Música HD', 'Música', 'HD'], ['Fado', 'Música', 'Fa'], ['Clube Jazz', 'Música', 'CJ'],
+  ['Pirilampo', 'Infantil', 'Pi', 1], ['Bichinhos', 'Infantil', 'Bi'], ['Hora do Conto', 'Infantil', 'HC'],
+  ['Atlântico', 'Internacional', 'At'], ['Mondo', 'Internacional', 'Mo'], ['Hispano 24', 'Internacional', 'H24'], ['Nord', 'Internacional', 'No'],
+].map(([name, group, mono, catchup], i) => ({ n: i + 1, name, group, mono, catchup: !!catchup, h: GROUPS[group].h + (i % 4) * 12 }));
+const byN = n => CH.find(c => c.n === n);
+
+const rng = s => () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const day0 = off => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off); return +d; };
+const schedCache = new Map();
+function sched(ch, off) {
+  const k = `${ch.n}:${day0(off)}`;
+  if (schedCache.has(k)) return schedCache.get(k);
+  const g = GROUPS[ch.group], r = rng(ch.n * 7919 + (off + 50) * 104729), end = day0(off) + 1440 * MIN, list = [];
+  let t = day0(off) - (2 + Math.floor(r() * 6)) * 15 * MIN, last = -1;
+  while (t < end + 6 * 60 * MIN) {
+    const dur = g.dur[Math.floor(r() * g.dur.length)] * MIN;
+    let i = Math.floor(r() * g.t.length); if (i === last) i = (i + 1) % g.t.length; last = i;
+    list.push({ ch, s: t, e: t + dur, t: g.t[i], d: g.d[i % g.d.length] });
+    t += dur;
+  }
+  schedCache.set(k, list); return list;
+}
+function nowNext(ch) {
+  const now = Date.now(), l = sched(ch, 0), i = l.findIndex(p => p.s <= now && now < p.e);
+  const cur = l[i] || sched(ch, 1).find(p => p.s <= now && now < p.e);
+  return [cur, l[i + 1] || sched(ch, 1).find(p => p.s >= cur.e)];
+}
+const prog = p => clamp((Date.now() - p.s) / (p.e - p.s), 0, 1);
+const left = p => Math.max(1, Math.round((p.e - Date.now()) / MIN));
+
+/* Preferências do membro, guardadas só neste browser */
+const stored = (() => { try { return JSON.parse(localStorage.getItem('zeus.tv') || '{}'); } catch { return {}; } })();
+const channels = (value, fallback) => Array.isArray(value) ? [...new Set(value.filter(n => byN(n)))] : fallback;
+const S = { fav: channels(stored?.fav, [9, 5, 1, 17, 13]), recent: channels(stored?.recent, [5, 13, 22, 27, 2]), hidden: new Set(Array.isArray(stored?.hidden) ? stored.hidden.filter(g => Object.hasOwn(GROUPS, g)) : []), cur: byN(stored?.cur) ? stored.cur : 9 };
+const save = () => { try { localStorage.setItem('zeus.tv', JSON.stringify({ fav: S.fav, recent: S.recent, hidden: [...S.hidden], cur: S.cur })); } catch {} };
+const visible = () => CH.filter(c => !S.hidden.has(c.group));
+const monoS = ch => `<span class="mono" style="--h:${ch.h}" aria-hidden="true">${esc(ch.mono)}</span>`;
+const say = msg => { $('#live').textContent = msg; };
+
+/* Navegação: separadores dentro da página, ligados à barra de topo e ao #hash */
+const TABS = ['directo', 'guia', 'favoritos', 'listas'];
+const fromHash = () => TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'directo';
+const nav = mountNav({ active: 'tv', page: fromHash() === 'guia' ? 'guia' : 'canais' });
+const navLinks = $$('.z-nav__links a', nav.el);
+nav.el.addEventListener('click', e => { const a = e.target.closest('.z-nav__links a'); if (!a) return; e.preventDefault(); show(a.hash.slice(1) || 'directo'); });
+const tabs = $$('[role="tab"]');
+let tab = null, rowsApi = null;
+function show(name) {
+  if (name === tab) return;
+  const first = !tab; tab = name;
+  document.body.dataset.tab = name;
+  tabs.forEach(t => { const on = t.dataset.tab === name; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+  TABS.forEach(n => { $('#p-' + n).hidden = n !== name; });
+  navLinks.forEach(a => (a.hash === '#guia') === (name === 'guia') ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+  if (!first) history.replaceState(null, '', name === 'directo' ? location.pathname : '#' + name);
+  rowsApi?.hide(true);
+  if (name === 'guia') openGuide();
+  if (name === 'favoritos') renderFav();
+  if (name === 'listas') renderLists();
+  ambient();
+  if (!first && G && !RM) G.fromTo('#p-' + name, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .55, ease: 'power3.out', clearProps: 'all' });
+}
+$('.tv-tabs').addEventListener('click', e => { const t = e.target.closest('[role="tab"]'); if (t) show(t.dataset.tab); });
+$('.tv-tabs').addEventListener('keydown', e => {
+  const i = tabs.indexOf(document.activeElement), n = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+  if (i < 0 || n === undefined) return;
+  e.preventDefault(); const t = tabs[(n + tabs.length) % tabs.length]; t.focus(); show(t.dataset.tab);
+});
+addEventListener('hashchange', () => show(fromHash()));
+
+/* Hermes: recorte do fundo cinzento por luminância e duotone teal sobre preto */
+const hermes = $('#hermes'), hc = $('#hermes-c'), aura = $('#aura');
+async function keyHermes() {
+  const img = new Image(); img.src = 'img/hermes.webp'; await img.decode();
+  const H = 1200, W = Math.round(img.naturalWidth * H / img.naturalHeight), g = hc.getContext('2d', { willReadFrequently: true });
+  hc.width = W; hc.height = H; g.drawImage(img, 0, 0, W, H);
+  const im = g.getImageData(0, 0, W, H), d = im.data, E = Math.round(W * .05);
+  const lum = i => (.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]) / 255, ss = (a, b, x) => { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+  for (let y = 0; y < H; y++) {
+    let bg = 0;
+    for (let x = 0; x < E; x++) bg += lum((y * W + x) * 4) + lum((y * W + W - 1 - x) * 4);
+    bg /= 2 * E;
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4, l = lum(i), a = ss(.06, .2, bg - l), t = clamp(l / .42, 0, 1) ** 1.15, lo = Math.min(1, t * 1.6), hi = Math.max(0, t * 1.6 - .6);
+      d[i] = 5 + 28 * lo + 200 * hi; d[i + 1] = 10 + 96 * lo + 150 * hi; d[i + 2] = 12 + 110 * lo + 135 * hi; d[i + 3] = 255 * a;
+    }
+  }
+  g.putImageData(im, 0, 0); hermes.classList.add('is-on');
+}
+keyHermes().catch(() => { hc.replaceWith(Object.assign(new Image(), { src: 'img/hermes.webp', alt: '', style: 'height:100%;filter:grayscale(1) brightness(.5) contrast(1.6);mix-blend-mode:lighten' })); hermes.classList.add('is-on'); });
+
+let lastI = -1;
+const sky = lightning($('#bolts'), {
+  palette: 'cool', ambient: false, every: [7000, 14000], first: [3500, 6500], area: { x: [.62, .96], y: [.06, .32] },
+  onFrame: I => { if (I === lastI) return; lastI = I; hc.style.filter = I ? `brightness(${(1 + I * 1.2).toFixed(2)}) contrast(${(1 + I * .3).toFixed(2)})` : ''; aura.style.opacity = (tab === 'guia' ? .25 : .55) + I * .45; },
+});
+const ambient = () => sky.setAmbient(tab !== 'guia' && scrollY < innerHeight * .45 && !RM);
+const caduceus = () => { const r = hc.getBoundingClientRect(); return { x: r.left + r.width * .65, y: r.top + r.height * .37 }; };
+const arcTo = (el, fx = .96, fy = .42) => { const r = el.getBoundingClientRect(); return sky.strike({ x: r.left + r.width * fx, y: r.top + r.height * fy }, { from: caduceus(), pulses: 1, width: 1.4 }); };
+let raf = 0, ptr = 0;
+const parallax = () => { raf = 0; hermes.style.setProperty('--px', (ptr * -14).toFixed(1) + 'px'); hermes.style.setProperty('--py', (scrollY * .22).toFixed(1) + 'px'); };
+if (!RM) {
+  addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; ptr = e.clientX / innerWidth - .5; raf ||= requestAnimationFrame(parallax); }, { passive: true });
+  addEventListener('scroll', () => { raf ||= requestAnimationFrame(parallax); }, { passive: true });
+}
+let wasAmb = true;
+addEventListener('scroll', () => { const on = scrollY < innerHeight * .45; if (on !== wasAmb) { wasAmb = on; ambient(); } }, { passive: true });
+
+/* Em directo: televisor, zapping e filas */
+const tvEl = $('#tv'), feed = $('#feed'), osd = $('#osd');
+const paintFeed = ch => { feed.style.setProperty('--h', ch.h); feed.innerHTML = `<span class="feed__mono">${esc(ch.mono)}</span><span class="feed__name">${esc(ch.name)}</span>`; };
+function paintInfo() {
+  const ch = byN(S.cur), [p, nx] = nowNext(ch), fav = S.fav.includes(ch.n);
+  $('#i-ch').innerHTML = `${monoS(ch)}<b>${esc(ch.name)}</b><span class="z-faint z-num">Canal ${ch.n}</span><span class="z-tag">${esc(ch.group)}</span>`;
+  $('#i-title').textContent = p.t;
+  $('#i-time').innerHTML = `<span class="z-num">${hm(p.s)}</span><span class="z-progress live-p" role="progressbar" aria-label="Progresso do programa" aria-valuenow="${Math.round(prog(p) * 100)}" aria-valuemin="0" aria-valuemax="100"><i style="--p:${prog(p).toFixed(3)}"></i></span><span class="z-num">${hm(p.e)}, faltam ${left(p)} min</span>`;
+  $('#i-next').textContent = `A seguir, às ${hm(nx.s)}: ${nx.t}`;
+  const fb = $('#fav-btn'); fb.setAttribute('aria-pressed', fav); fb.innerHTML = `${fav ? I.starOn : I.star}${fav ? 'Nos favoritos' : 'Favorito'}`;
+}
+let osdT = 0;
+const showOSD = html => { osd.innerHTML = html; osd.classList.add('is-on'); clearTimeout(osdT); osdT = setTimeout(() => osd.classList.remove('is-on'), 2400); };
+let lastZap = 0;
+function zap(n) {
+  const ch = byN(n); if (!ch) return;
+  const changed = n !== S.cur, now = performance.now(), quick = RM || !G || now - lastZap < 700;
+  lastZap = now; S.cur = n; S.recent = [n, ...S.recent.filter(x => x !== n)].slice(0, 10); save();
+  showOSD(`<b>${pad(n)}</b><span>${esc(ch.name)}</span>`);
+  paintInfo(); say(`Canal ${n}, ${ch.name}: ${nowNext(ch)[0].t}.`);
+  if (!changed) return;
+  if (quick) { paintFeed(ch); G?.fromTo(feed, { opacity: .2 }, { opacity: 1, duration: .25 }); }
+  else {
+    arcTo(tvEl);
+    G.timeline().to(feed, { scaleY: .006, filter: 'brightness(2.2)', duration: .13, ease: 'power3.in' }).call(() => paintFeed(ch)).to(feed, { scaleY: 1, filter: 'brightness(1)', duration: .45, ease: 'expo.out' });
+  }
+  renderRecent();
+}
+function step(d) { const l = visible(); if (!l.length) return; const i = l.findIndex(c => c.n === S.cur); zap(l[(i + d + l.length) % l.length].n); }
+function tune(n) {
+  const far = tvEl.getBoundingClientRect().bottom < 0;
+  tvEl.focus({ preventScroll: true });
+  if (far) { scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' }); setTimeout(() => zap(n), RM ? 0 : 520); } else zap(n);
+}
+$('#ch-up').addEventListener('click', () => step(1));
+$('#ch-down').addEventListener('click', () => step(-1));
+tvEl.addEventListener('keydown', e => { const d = { ArrowUp: 1, ArrowDown: -1 }[e.key]; if (d) { e.preventDefault(); step(d); } });
+$('#watch').addEventListener('click', () => toast(`A abrir ${byN(S.cur).name} em ecrã inteiro…`));
+$('#fav-btn').addEventListener('click', () => toggleFav(S.cur));
+function toggleFav(n) {
+  const on = !S.fav.includes(n);
+  S.fav = on ? [...S.fav, n] : S.fav.filter(x => x !== n); save();
+  toast(on ? `${byN(n).name} está nos favoritos.` : `${byN(n).name} saiu dos favoritos.`);
+  paintInfo(); renderRows(); if (tab === 'favoritos') renderFav();
+}
+let digits = '', digT = 0;
+document.addEventListener('keydown', e => {
+  if (tab !== 'directo' || !/^\d$/.test(e.key) || e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input,textarea,select') || !$('#add').hidden) return;
+  digits = (digits + e.key).slice(-2); showOSD(`<b>${digits.padEnd(2, '-')}</b>`);
+  clearTimeout(digT);
+  digT = setTimeout(() => { const n = +digits; digits = ''; byN(n) ? tune(n) : showOSD(`<b>${pad(n)}</b><span>Sem canal</span>`); }, 1100);
+});
+
+const rowsEl = $('#rows');
+const cardInner = ch => {
+  const [p] = nowNext(ch);
+  return `<span class="z-card__art" style="--h:${ch.h}"><span class="tvc__mono" aria-hidden="true">${esc(ch.mono)}</span><span class="z-badge z-badge--live">EM DIRECTO</span><span class="tvc__n">${pad(ch.n)}</span><span class="z-progress live-p"><i style="--p:${prog(p).toFixed(3)}"></i></span></span><span class="z-card__cap">${esc(p.t)}<small><span>${esc(ch.name)}</span><span>Faltam ${left(p)} min</span></small></span>`;
+};
+const cardLabel = ch => { const [p] = nowNext(ch); return `${ch.name}, canal ${ch.n}. Em directo: ${p.t}. Faltam ${left(p)} minutos.`; };
+const card = ch => `<button class="z-card z-card--wide tvc" type="button" data-ch="${ch.n}" data-in-list="${S.fav.includes(ch.n)}" aria-label="${esc(cardLabel(ch))}">${cardInner(ch)}</button>`;
+const row = (id, title, list) => list.length ? `<section class="z-row" data-row="${id}" aria-labelledby="r-${id}"><h3 class="z-row__title" id="r-${id}">${esc(title)}</h3><div class="z-track">${list.map(card).join('')}</div></section>` : '';
+const preview = c => {
+  const ch = byN(+c.dataset.ch), [p, nx] = nowNext(ch), fav = c.dataset.inList === 'true';
+  return `<div class="z-preview__art tvc-art" style="--h:${ch.h}"><span class="tvc__mono">${esc(ch.mono)}</span><span class="z-badge z-badge--live">EM DIRECTO</span><span class="z-progress live-p"><i style="--p:${prog(p).toFixed(3)}"></i></span></div>
+    <div class="z-preview__body"><div class="z-preview__actions"><button tabindex="-1" data-act="play" aria-label="Ver agora">${ICON.play}</button><button tabindex="-1" data-act="list" aria-pressed="${fav}" aria-label="Favorito">${fav ? ICON.check : ICON.plus}</button><button tabindex="-1" data-act="more" aria-label="Sintonizar">${ICON.down}</button></div>
+    <div class="z-preview__title">${esc(p.t)}</div><div class="z-meta"><span>${esc(ch.name)}</span><span>Faltam ${left(p)} min</span></div><p class="z-foot">A seguir, às ${hm(nx.s)}: ${esc(nx.t)}</p></div>`;
+};
+function renderRows() {
+  rowsApi?.hide(true);
+  const groups = Object.keys(GROUPS).filter(g => !S.hidden.has(g));
+  rowsEl.innerHTML = row('fav', 'Favoritos', S.fav.map(byN)) + row('rec', 'Vistos recentemente', S.recent.map(byN)) + groups.map((g, i) => row('g' + i, g, CH.filter(c => c.group === g))).join('')
+    || '<p class="rows-empty">Todos os grupos estão escondidos. Volta a mostrá-los em Favoritos.</p>';
+  rowsApi ? rowsApi.refresh() : (rowsApi = rows(rowsEl, { render: preview }));
+}
+function renderRecent() {
+  const track = $('[data-row="rec"] .z-track', rowsEl);
+  if (track && !track.contains(document.activeElement)) track.innerHTML = S.recent.map(byN).map(card).join('');
+}
+function refreshCards() { $$('.tvc', rowsEl).forEach(c => { const ch = byN(+c.dataset.ch); c.innerHTML = cardInner(ch); c.setAttribute('aria-label', cardLabel(ch)); }); }
+rowsEl.addEventListener('click', e => { const c = e.target.closest('.tvc'); if (c) tune(+c.dataset.ch); });
+rowsEl.addEventListener('z:action', e => {
+  const n = +e.detail.card.dataset.ch;
+  if (e.detail.action === 'play') { rowsApi.hide(true); tune(n); }
+  if (e.detail.action === 'list') { rowsApi.hide(true); toggleFav(n); }
+});
+
+/* Guia */
+const epg = $('#epg'), detailEl = $('#g-detail');
+let gDay = 0, gBuilt = '', gProgs = [], sel = null, cursor = 0, ppm = 5, chw = 210;
+const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const dayLabel = off => ({ '-1': 'Ontem', 0: 'Hoje', 1: 'Amanhã' })[off] || (d => `${WD[d.getDay()]} ${d.getDate()}`)(new Date(day0(off)));
+$('#days').innerHTML = [-1, 0, 1, 2, 3, 4].map(o => `<button class="z-chip" type="button" data-day="${o}" aria-pressed="${o === 0}">${dayLabel(o)}</button>`).join('');
+const stateOf = p => { const now = Date.now(); return p.e <= now ? 'past' : p.s <= now ? 'live' : 'next'; };
+function blockHTML(p, i) {
+  const start = day0(gDay), s = Math.max(p.s, start), e = Math.min(p.e, start + 1440 * MIN), st = stateOf(p), cu = st === 'past' && p.ch.catchup;
+  const label = `${p.ch.name}, ${hm(p.s)} às ${hm(p.e)}: ${p.t}${st === 'live' ? ', em directo' : ''}${cu ? ', disponível para rever' : ''}`;
+  return `<button class="epg__b is-${st}" type="button" tabindex="-1" data-i="${i}" style="left:${((s - start) / MIN * ppm + 1).toFixed(1)}px;width:${((e - s) / MIN * ppm - 3).toFixed(1)}px${st === 'live' ? `;--p:${(prog(p) * 100).toFixed(1)}%` : ''}" aria-label="${esc(label)}"><b>${esc(p.t)}</b><small>${hm(p.s)}${cu ? `<span class="cu">${I.rewind}Rever</span>` : ''}</small></button>`;
+}
+function buildGuide() {
+  const narrow = innerWidth < 760; ppm = narrow ? 3.2 : 5; chw = narrow ? 104 : 210;
+  const start = day0(gDay), end = start + 1440 * MIN, list = visible();
+  gProgs = []; sel = null;
+  let ticks = '';
+  for (let m = 0; m < 1440; m += 30) ticks += `<span style="left:${m * ppm}px"${m % 60 ? ' class="is-half"' : ''}>${pad(m / 60 | 0)}:${pad(m % 60)}</span>`;
+  const lanes = list.map(ch => `<div class="epg__row"><div class="epg__ch">${monoS(ch)}<span><b>${esc(ch.name)}</b><small>${ch.n}</small></span></div><div class="epg__lane">${sched(ch, gDay).filter(p => p.e > start && p.s < end).map(p => blockHTML(p, gProgs.push(p) - 1)).join('')}</div></div>`).join('');
+  epg.style.cssText = `--chw:${chw}px;--dayw:${1440 * ppm}px;--rowh:${narrow ? 60 : 66}px`;
+  epg.innerHTML = list.length ? `<div class="epg__in"><div class="epg__head"><div class="epg__corner">${dayLabel(gDay)}</div><div class="epg__ruler" aria-hidden="true">${ticks}${gDay === 0 ? '<span class="now-tag" id="now-tag"></span>' : ''}</div></div>${lanes}${gDay === 0 ? '<div class="nowline" id="nowline" aria-hidden="true"><svg preserveAspectRatio="none"><path/></svg><i></i></div>' : ''}</div>`
+    : '<p class="z-muted" style="padding:24px">Todos os grupos estão escondidos. Mostra-os em Favoritos.</p>';
+  gBuilt = `${gDay}|${[...S.hidden]}|${narrow}`;
+  tickGuide(); filament();
+  const first = $('.epg__b.is-live', epg) || $('.epg__b', epg);
+  if (first) select(first, false);
+}
+function openGuide() { if (gBuilt !== `${gDay}|${[...S.hidden]}|${innerWidth < 760}`) buildGuide(); requestAnimationFrame(() => scrollToTime(gDay === 0 ? Date.now() : day0(gDay) + 20 * 60 * MIN, false)); }
+function scrollToTime(t, smooth = true) { const x = (t - day0(gDay)) / MIN * ppm; epg.scrollTo({ left: Math.max(0, x - (epg.clientWidth - chw) * .25), behavior: smooth && !RM ? 'smooth' : 'auto' }); }
+function tickGuide() {
+  if (gDay !== 0 || !$('#nowline')) return;
+  const x = (Date.now() - day0(0)) / MIN * ppm;
+  $('#nowline').style.left = chw + x + 'px';
+  Object.assign($('#now-tag').style, { left: x + 'px' }); $('#now-tag').textContent = hm(Date.now());
+  $$('.epg__b', epg).forEach(b => { const p = gProgs[+b.dataset.i], st = stateOf(p); if (!b.classList.contains('is-' + st)) { b.outerHTML = blockHTML(p, +b.dataset.i); } else if (st === 'live') b.style.setProperty('--p', (prog(p) * 100).toFixed(1) + '%'); });
+  if (sel && !sel.isConnected) sel = null;
+}
+function filament() {
+  const nl = $('#nowline'); if (!nl || RM) return;
+  const s = $('svg', nl), H = Math.max(1, nl.offsetHeight - 44);
+  let d = 'M7 0';
+  for (let y = 16; y < H; y += 14 + Math.random() * 14) d += ` L${(7 + (Math.random() - .5) * 8).toFixed(1)} ${y.toFixed(0)}`;
+  s.setAttribute('viewBox', `0 0 14 ${H}`); $('path', s).setAttribute('d', d + ` L7 ${H}`);
+}
+setInterval(() => { if (tab === 'guia' && !document.hidden) filament(); }, 1400);
+function ensureVisible(b) {
+  const r = b.closest('.epg__row'), x = chw + b.offsetLeft, w = Math.min(b.offsetWidth, epg.clientWidth - chw - 48), y = r.offsetTop, h = r.offsetHeight;
+  let L = epg.scrollLeft, T = epg.scrollTop;
+  if (x < L + chw) L = x - chw - 24; else if (x + w > L + epg.clientWidth) L = x + w - epg.clientWidth + 24;
+  if (y < T + 44) T = y - 44; else if (y + h > T + epg.clientHeight) T = y + h - epg.clientHeight;
+  if (L !== epg.scrollLeft || T !== epg.scrollTop) epg.scrollTo({ left: L, top: T, behavior: RM ? 'auto' : 'smooth' });
+}
+const reminders = new Set();
+function select(b, focus = true) {
+  if (sel?.isConnected) { sel.tabIndex = -1; sel.classList.remove('is-sel'); }
+  sel = b; b.tabIndex = 0; b.classList.add('is-sel');
+  if (focus) { b.focus({ preventScroll: true }); ensureVisible(b); }
+  const p = gProgs[+b.dataset.i], ch = p.ch, st = stateOf(p), k = ch.n + ':' + p.s, dur = Math.round((p.e - p.s) / MIN);
+  const when = st === 'live' ? `Em directo, faltam ${left(p)} min` : st === 'past' ? `Terminou às ${hm(p.e)}` : gDay === 0 ? `Começa às ${hm(p.s)}, daqui a ${Math.round((p.s - Date.now()) / MIN)} min` : `${dayLabel(gDay)}, às ${hm(p.s)}`;
+  const act = st === 'live' ? ['watch', 'Ver agora', 'primary'] : st === 'past' ? (ch.catchup ? ['catch', 'Rever desde o início', 'primary'] : null) : ['remind', reminders.has(k) ? 'Lembrete marcado' : 'Lembrar-me', 'secondary'];
+  detailEl.innerHTML = `<div class="g-detail__ch">${monoS(ch)}<span>${esc(ch.name)}</span><span class="z-faint z-num">${ch.n}</span></div>
+    <h3 class="z-t3">${esc(p.t)}</h3>
+    <div class="z-meta"><span class="z-num">${hm(p.s)} às ${hm(p.e)}</span><span>${dur} min</span>${st === 'live' ? '<span class="z-badge z-badge--live">EM DIRECTO</span>' : ''}${st === 'past' && ch.catchup ? `<span class="cu">${I.rewind}Rever</span>` : ''}</div>
+    ${st === 'live' ? `<span class="z-progress live-p"><i style="--p:${prog(p).toFixed(3)}"></i></span>` : ''}
+    <p>${esc(when)}.</p><p>${esc(p.d)}</p>
+    ${act ? `<button class="z-btn z-btn--${act[2]} z-btn--sm" type="button" data-act="${act[0]}"${act[0] === 'remind' ? ` aria-pressed="${reminders.has(k)}"` : ''}>${act[1]}</button>` : '<p class="z-foot">Este canal não guarda programas para rever.</p>'}`;
+}
+function act(kind, p) {
+  if (kind === 'watch') { show('directo'); scrollTo({ top: 0 }); setTimeout(() => zap(p.ch.n), RM ? 0 : 360); }
+  if (kind === 'catch') toast(`A abrir «${p.t}» desde o início…`);
+  if (kind === 'remind') {
+    const k = p.ch.n + ':' + p.s, on = !reminders.has(k); on ? reminders.add(k) : reminders.delete(k);
+    toast(on ? `Lembrete marcado para as ${hm(p.s)}.` : 'Lembrete removido.'); select(sel, false);
+  }
+}
+const primary = p => { const st = stateOf(p); return st === 'live' ? 'watch' : st === 'past' ? (p.ch.catchup ? 'catch' : null) : 'remind'; };
+epg.addEventListener('click', e => {
+  const b = e.target.closest('.epg__b'); if (!b) return;
+  const p = gProgs[+b.dataset.i]; cursor = Math.max(p.s, day0(gDay)) + MIN;
+  if (e.detail === 0 && primary(p)) { select(b, false); act(primary(p), p); } else select(b, false);
+});
+detailEl.addEventListener('click', e => { const a = e.target.closest('[data-act]'); if (a && sel) act(a.dataset.act, gProgs[+sel.dataset.i]); });
+epg.addEventListener('keydown', e => {
+  const b = e.target.closest('.epg__b'); if (!b) return;
+  const lane = b.parentElement, bs = [...lane.children], i = bs.indexOf(b), rs = $$('.epg__row', epg), ri = rs.indexOf(lane.parentElement);
+  const v = { ArrowDown: 1, ArrowUp: -1, PageDown: 6, PageUp: -6 }[e.key];
+  let t = null;
+  if (e.key === 'ArrowRight') t = bs[i + 1]; else if (e.key === 'ArrowLeft') t = bs[i - 1];
+  else if (e.key === 'Home') t = bs[0]; else if (e.key === 'End') t = bs.at(-1);
+  else if (v) { const r2 = rs[clamp(ri + v, 0, rs.length - 1)]; t = [...$('.epg__lane', r2).children].find(x => { const p = gProgs[+x.dataset.i]; return p.s <= cursor && cursor < p.e; }) || $('.epg__b', r2); }
+  else return;
+  e.preventDefault();
+  if (!t || t === b) return;
+  if (!v) cursor = Math.max(gProgs[+t.dataset.i].s, day0(gDay)) + MIN;
+  select(t);
+});
+epg.addEventListener('focusin', e => { const b = e.target.closest('.epg__b'); if (b && b !== sel) select(b, false); });
+$('#days').addEventListener('click', e => {
+  const c = e.target.closest('[data-day]'); if (!c) return;
+  gDay = +c.dataset.day; $$('[data-day]').forEach(x => x.setAttribute('aria-pressed', x === c));
+  buildGuide(); scrollToTime(gDay === 0 ? Date.now() : day0(gDay) + 20 * 60 * MIN, false);
+});
+$('#g-now').addEventListener('click', () => {
+  if (gDay !== 0) { gDay = 0; $$('[data-day]').forEach(x => x.setAttribute('aria-pressed', x.dataset.day === '0')); buildGuide(); }
+  const rowEl = sel?.closest('.epg__row') || $('.epg__row', epg); if (!rowEl) return;
+  cursor = Date.now(); scrollToTime(Date.now());
+  const live = $('.epg__b.is-live', rowEl); if (live) setTimeout(() => select(live), RM ? 0 : 380);
+});
+matchMedia('(max-width:759px)').addEventListener('change', () => { if (tab === 'guia') openGuide(); });
+
+/* Favoritos: ordenar com ponteiro ou teclado, grupos visíveis */
+const favList = $('#fav-list');
+function renderFav() {
+  const n = S.fav.length;
+  favList.innerHTML = S.fav.map((c, i) => { const ch = byN(c), [p] = nowNext(ch); return `<li data-n="${c}"><button class="handle" type="button" aria-label="Mover ${esc(ch.name)}, posição ${i + 1} de ${n}. Usa as setas para cima e para baixo.">${I.grip}</button>${monoS(ch)}<span class="fav__t"><b>${esc(ch.name)}</b><small>${esc(p.t)}</small></span><span class="z-num z-faint">${pad(c)}</span><button class="z-icon-btn" type="button" data-unfav="${c}" aria-label="Tirar ${esc(ch.name)} dos favoritos">${I.starOn}</button></li>`; }).join('');
+  $('#fav-empty').hidden = n > 0;
+  $('#fav-add').innerHTML = CH.filter(c => !S.fav.includes(c.n)).map(c => `<button class="z-chip" type="button" data-addfav="${c.n}">${esc(c.name)}</button>`).join('');
+  $('#groups').innerHTML = Object.keys(GROUPS).map(g => `<div class="grp"><span>${esc(g)}<small>${CH.filter(c => c.group === g).length} canais</small></span><button class="z-switch" type="button" role="switch" data-grp="${esc(g)}" aria-checked="${!S.hidden.has(g)}" aria-label="Mostrar ${esc(g)}"></button></div>`).join('');
+}
+const commitOrder = () => { S.fav = $$('li', favList).map(li => +li.dataset.n); save(); renderRows(); };
+const relabel = () => { const ls = $$('li', favList); ls.forEach((li, i) => $('.handle', li).setAttribute('aria-label', `Mover ${byN(+li.dataset.n).name}, posição ${i + 1} de ${ls.length}. Usa as setas para cima e para baixo.`)); };
+const slide = (el, dy) => { if (RM) return; el.style.transition = 'none'; el.style.transform = `translateY(${dy}px)`; el.offsetHeight; el.style.transition = 'transform .28s var(--out)'; el.style.transform = ''; };
+favList.addEventListener('pointerdown', e => {
+  const h = e.target.closest('.handle'); if (!h || e.button) return;
+  const li = h.closest('li'), gap = 8; let y0 = e.clientY;
+  e.preventDefault(); h.setPointerCapture(e.pointerId); li.classList.add('is-drag'); li.style.transition = 'none';
+  const move = ev => {
+    const nx = li.nextElementSibling, pv = li.previousElementSibling, dy = ev.clientY - y0;
+    if (nx && dy > nx.offsetHeight / 2) { const s = nx.offsetHeight + gap; nx.after(li); y0 += s; slide(nx, s); }
+    else if (pv && dy < -pv.offsetHeight / 2) { const s = pv.offsetHeight + gap; pv.before(li); y0 -= s; slide(pv, -s); }
+    li.style.transform = `translateY(${ev.clientY - y0}px)`;
+  };
+  const up = () => {
+    h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up);
+    li.style.transition = 'transform .35s var(--spring)'; li.style.transform = ''; li.classList.remove('is-drag');
+    commitOrder(); relabel();
+  };
+  h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+});
+favList.addEventListener('keydown', e => {
+  const h = e.target.closest('.handle'), d = { ArrowUp: -1, ArrowDown: 1 }[e.key]; if (!h || !d) return;
+  e.preventDefault();
+  const li = h.closest('li'), o = d < 0 ? li.previousElementSibling : li.nextElementSibling; if (!o) return;
+  const s = li.offsetHeight + 8; d < 0 ? o.before(li) : o.after(li); slide(o, d < 0 ? s : -s); slide(li, d < 0 ? -s : s);
+  h.focus(); commitOrder(); relabel();
+  const ls = $$('li', favList); say(`${byN(+li.dataset.n).name} está agora na posição ${ls.indexOf(li) + 1} de ${ls.length}.`);
+});
+$('#p-favoritos').addEventListener('click', e => {
+  const u = e.target.closest('[data-unfav]'), a = e.target.closest('[data-addfav]'), g = e.target.closest('[data-grp]');
+  if (u || a) toggleFav(+(u || a).dataset[u ? 'unfav' : 'addfav']);
+  if (g) {
+    const on = g.getAttribute('aria-checked') !== 'true', name = g.dataset.grp; g.setAttribute('aria-checked', on);
+    on ? S.hidden.delete(name) : S.hidden.add(name); save(); renderRows();
+    toast(on ? `${name} voltou ao Directo e ao Guia.` : `${name} ficou escondido.`);
+  }
+});
+
+/* Listas IPTV */
+const H1 = 3600e3;
+const LISTS = [
+  { name: 'Casa', type: 'Xtream', host: 'http://tv.servidor-casa.pt:8080', n: 1284, epg: true, at: Date.now() - 2 * H1, state: 'ok' },
+  { name: 'Desporto extra', type: 'M3U', host: 'https://listas.exemplo.pt/desporto.m3u', n: 212, epg: false, at: Date.now() - 27 * H1, state: 'busy' },
+  { name: 'Viagem', type: 'Xtream', host: 'http://iptv.exemplo.net', n: 0, epg: false, at: Date.now() - 9 * 24 * H1, state: 'off', err: 'O servidor não responde. Confirma o endereço ou tenta mais tarde.' },
+];
+const STATE = { ok: 'Activa', busy: 'EPG em falta', off: 'Sem ligação' };
+const rtf = new Intl.RelativeTimeFormat('pt-PT', { numeric: 'auto' });
+const ago = t => { const m = Math.round((t - Date.now()) / MIN); return Math.abs(m) < 60 ? rtf.format(m, 'minute') : Math.abs(m) < 1440 ? rtf.format(Math.round(m / 60), 'hour') : rtf.format(Math.round(m / 1440), 'day'); };
+function renderLists() {
+  $('#lists').innerHTML = LISTS.map((l, i) => `<article class="lc z-glass" data-i="${i}" aria-labelledby="lc-${i}">
+    <header><span class="z-tag z-tag--mono">${l.type}</span><span class="z-status" data-state="${l.state}">${STATE[l.state]}</span></header>
+    <div><h3 class="z-t3" id="lc-${i}">${esc(l.name)}</h3><p class="z-code">${esc(l.host)}</p></div>
+    <dl><div><dt>Canais</dt><dd class="z-num">${l.n.toLocaleString('pt-PT')}</dd></div><div><dt>Guia EPG</dt><dd>${l.epg ? 'Em dia' : 'Em falta'}</dd></div><div><dt>Actualizada</dt><dd>${ago(l.at)}</dd></div></dl>
+    ${l.err ? `<p class="z-msg">${esc(l.err)}</p>` : !l.epg ? '<p class="z-foot">Esta lista não traz guia. Junta um URL EPG para ver a grelha.</p>' : ''}
+    <div class="lc__act"><button class="z-btn z-btn--secondary z-btn--sm" type="button" data-refresh>Actualizar</button><button class="z-btn z-btn--ghost z-btn--sm" type="button" data-remove>Remover</button></div></article>`).join('')
+    + `<button class="lc-add" type="button" id="add-open">${I.plus}Adicionar lista</button>`;
+}
+$('#lists').addEventListener('click', e => {
+  if (e.target.closest('#add-open')) return sheet.open(e.target.closest('#add-open'));
+  const art = e.target.closest('.lc'); if (!art) return;
+  const l = LISTS[+art.dataset.i], r = e.target.closest('[data-refresh]'), x = e.target.closest('[data-remove]');
+  if (r && r.getAttribute('aria-busy') !== 'true') {
+    r.setAttribute('aria-busy', 'true'); r.textContent = 'A actualizar…';
+    setTimeout(() => {
+      if (l.state === 'off') { r.removeAttribute('aria-busy'); r.textContent = 'Actualizar'; return toast(`${l.name}: o servidor continua sem responder.`); }
+      l.at = Date.now(); renderLists(); $(`.lc[data-i="${LISTS.indexOf(l)}"] [data-refresh]`)?.focus(); toast(`${l.name} actualizada.`);
+    }, 1400);
+  }
+  if (x) {
+    if (x.dataset.confirm) { LISTS.splice(LISTS.indexOf(l), 1); renderLists(); $('#add-open').focus(); toast('Lista removida.'); }
+    else { x.dataset.confirm = '1'; x.className = 'z-btn z-btn--danger z-btn--sm'; x.textContent = 'Confirmar remoção'; setTimeout(() => { if (x.isConnected) { delete x.dataset.confirm; x.className = 'z-btn z-btn--ghost z-btn--sm'; x.textContent = 'Remover'; } }, 3500); }
+  }
+});
+
+const sheet = modal($('#add')), form = $('#add-f'), msg = $('#add-msg');
+const kind = () => form.kind.value;
+form.addEventListener('change', e => { if (e.target.name === 'kind') $$('[data-kind]', form).forEach(b => { b.hidden = b.dataset.kind !== kind(); }); });
+$('#f-reveal').addEventListener('click', e => { const on = form.pass.type === 'password'; form.pass.type = on ? 'text' : 'password'; e.currentTarget.textContent = on ? 'Ocultar' : 'Mostrar'; e.currentTarget.setAttribute('aria-pressed', on); });
+const isUrl = v => { try { return /^https?:$/.test(new URL(v).protocol); } catch { return false; } };
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  if ($('#add-go').getAttribute('aria-busy') === 'true') return;
+  $$('[aria-invalid]', form).forEach(f => f.removeAttribute('aria-invalid')); msg.textContent = '';
+  const x = kind() === 'xtream', checks = x
+    ? [[form.host, isUrl(form.host.value.trim()), 'Escreve o endereço do servidor, por exemplo http://servidor:8080.'], [form.user, form.user.value.trim(), 'Falta o utilizador.'], [form.pass, form.pass.value, 'Falta a palavra-passe.']]
+    : [[form.m3u, isUrl(form.m3u.value.trim()), 'Escreve o URL completo da lista M3U.'], [form.epg, !form.epg.value.trim() || isUrl(form.epg.value.trim()), 'O URL do guia EPG não é válido.']];
+  const bad = checks.find(c => !c[1]);
+  if (bad) { bad[0].setAttribute('aria-invalid', 'true'); msg.textContent = bad[2]; bad[0].focus(); return; }
+  const go = $('#add-go'); go.setAttribute('aria-busy', 'true'); go.textContent = 'A verificar…';
+  setTimeout(() => {
+    const host = (x ? form.host : form.m3u).value.trim(), name = $('#f-name').value.trim() || new URL(host).hostname;
+    LISTS.push({ name, type: x ? 'Xtream' : 'M3U', host, n: 180 + Math.floor(Math.random() * 1400), epg: x || !!form.epg.value.trim(), at: Date.now(), state: x || form.epg.value.trim() ? 'ok' : 'busy' });
+    go.removeAttribute('aria-busy'); go.textContent = 'Adicionar lista'; form.reset();
+    form.pass.type = 'password'; $('#f-reveal').textContent = 'Mostrar'; $('#f-reveal').setAttribute('aria-pressed', 'false');
+    $$('[data-kind]', form).forEach(b => { b.hidden = b.dataset.kind !== 'xtream'; });
+    sheet.close(); renderLists();
+    const fresh = $(`.lc[data-i="${LISTS.length - 1}"]`);
+    setTimeout(() => { fresh.classList.add('is-new'); arcTo(fresh, .5, .1); fresh.querySelector('[data-refresh]').focus({ preventScroll: true }); fresh.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' }); }, 300);
+    toast('Lista adicionada.');
+  }, 1200);
+});
+
+/* Arranque: Hermes ergue-se, o primeiro raio sai do caduceu e sintoniza o televisor */
+paintFeed(byN(S.cur)); paintInfo(); renderRows(); show(fromHash());
+setInterval(() => { if (document.hidden) return; paintInfo(); refreshCards(); if (tab === 'guia') tickGuide(); }, 30000);
+if (!RM && G) {
+  const tl = G.timeline();
+  tl.fromTo('.hermes__rise', { opacity: 0, y: 90 }, { opacity: 1, y: 0, duration: 2.4, ease: 'power3.out' }, .05)
+    .fromTo(aura, { opacity: 0, scale: .7 }, { opacity: .55, scale: 1, duration: 2.6, ease: 'power2.out', clearProps: 'scale' }, .1)
+    .fromTo(['.tv-tabs', '.info > *', '.head', '#rows'], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1, stagger: .06, ease: 'expo.out', clearProps: 'transform' }, .5);
+  if (tab === 'directo') tl.set(feed, { scaleY: .006, filter: 'brightness(2.2)' }, 0).call(() => arcTo(tvEl), null, 1.25).to(feed, { scaleY: 1, filter: 'brightness(1)', duration: .55, ease: 'expo.out' }, 1.3);
+  tl.call(ambient, null, 2.6);
+} else ambient();
+</script>
+</body>
+</html>

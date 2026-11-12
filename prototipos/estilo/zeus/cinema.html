@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Zeus, Cinema</title>
+<link rel="icon" href="data:,">
+<link rel="preload" as="image" href="img/aquiles.webp">
+<link rel="stylesheet" href="shared/zeus.css">
+<style>
+/* Billboard: a pintura é o pano que um raio rasga; por trás está o backdrop do título. */
+.bb{position:relative;height:100vh;height:100svh;min-height:600px;max-height:1080px;overflow:hidden;isolation:isolate;background:#000}
+.bb__art{--pos:50% 22%}
+.bb__art::after{background:linear-gradient(90deg,rgba(0,0,0,.82) 0%,rgba(0,0,0,.42) 40%,transparent 68%),linear-gradient(0deg,#000 0%,rgba(0,0,0,.6) 24%,transparent 52%),linear-gradient(180deg,rgba(0,0,0,.5) 0,transparent 20%)}
+.bb__art img{transform-origin:62% 30%}
+.bb.is-live .bb__art img{animation:kb 46s ease-in-out infinite alternate}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.07) translate3d(-1%,-.6%,0)}}
+
+.curtain{position:absolute;inset:0;z-index:3;pointer-events:none}
+.curtain__half{position:absolute;inset:0;will-change:transform,opacity}
+.curtain__clip{position:absolute;inset:0;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 72%,transparent 100%);mask-image:linear-gradient(180deg,#000 72%,transparent 100%)}
+.curtain__clip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:46% 34%;transform-origin:47% 40%;transform:scale(1.16)}
+.curtain__clip::after{content:"";position:absolute;inset:0;background:radial-gradient(110% 85% at 48% 42%,transparent 40%,rgba(0,0,0,.82) 100%),linear-gradient(180deg,rgba(0,0,0,.55) 0,transparent 22%)}
+.curtain__seam{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:0;filter:drop-shadow(0 0 5px rgba(255,176,60,.95)) drop-shadow(0 0 22px rgba(255,120,40,.6))}
+.curtain__seam polyline{fill:none;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.curtain__seam .core{stroke:#fff4d6;stroke-width:2.2}
+.curtain__seam .glow{stroke:rgba(255,176,60,.55);stroke-width:9}
+.curtain__seam .branch{stroke:#ffe3a8;stroke-width:1.2}
+.curtain__label{position:absolute;right:var(--gutter);bottom:calc(14vh + 8px);z-index:4;margin:0;font-size:12px;color:var(--text-3);text-align:right}
+.curtain__label i{font-style:italic}
+
+.bb__content{position:absolute;z-index:5;left:var(--gutter);right:var(--gutter);bottom:clamp(150px,24vh,240px);max-width:600px;display:grid;gap:16px;justify-items:start}
+.bb__title{margin:0;line-height:1}
+.bb__title img{display:block;width:auto;max-width:min(440px,72vw);max-height:clamp(84px,16vh,170px);object-fit:contain;object-position:left bottom;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
+.bb__title span{display:block;font-size:clamp(40px,5.6vw,76px);font-weight:700;letter-spacing:-.04em;line-height:1;text-wrap:balance}
+.bb__syn{max-width:52ch;color:var(--text-2);font-size:clamp(15px,1.3vw,17px);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.bb__actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bb__actions .z-icon-btn{width:50px;height:50px}
+.bb__actions .z-icon-btn[aria-pressed="true"]{color:var(--gold)}
+.bb .z-meta .z-pill{background:rgba(var(--gold-rgb),.16);color:var(--gold)}
+.bb .z-sk{background:rgba(255,255,255,.08)}
+
+/* Filas como cantos de uma epopeia: numeral romano, título e um fio de ouro. */
+.z-rows{margin-top:-13vh}
+.rh{display:flex;align-items:baseline;gap:12px;padding:0 var(--gutter)}
+.rh .z-row__title{padding:0;flex:none}
+.rh__n{flex:none;font-size:15px;font-weight:500;letter-spacing:.16em;color:var(--bronze);font-variant-numeric:lining-nums}
+.rh__rule{flex:1;align-self:center;height:1px;min-width:24px;background:linear-gradient(90deg,rgba(var(--gold-rgb),.5),rgba(var(--gold-rgb),0) 72%);transform:scaleX(0);transform-origin:left;transition:transform 1.6s var(--out)}
+.z-row.is-in .rh__rule,html.z-rm .rh__rule{transform:none}
+.z-card:focus-visible .z-card__art{outline-color:var(--gold)}
+.z-card .z-progress>i{background:var(--gold)}
+.row-empty{margin:12px var(--gutter) 0;color:var(--text-2);font-size:15px}
+.cine-foot{padding:24px var(--gutter) 64px;color:var(--text-3);font-size:12px}
+
+@media (max-width:760px){
+  .bb{height:86svh;min-height:560px}
+  .bb__art{--pos:42% 20%}
+  .bb__art::after{background:linear-gradient(0deg,#000 0%,rgba(0,0,0,.78) 30%,rgba(0,0,0,.2) 58%,transparent 72%),linear-gradient(180deg,rgba(0,0,0,.55) 0,transparent 24%)}
+  .bb__content{bottom:clamp(96px,14vh,140px);gap:12px}
+  .bb__syn{-webkit-line-clamp:2}
+  .bb__actions{display:grid;grid-template-columns:1fr 1fr auto;width:100%;gap:8px}
+  .bb__actions .z-btn{padding:0 10px}
+  .bb__actions .z-icon-btn{width:44px;height:44px}
+  .curtain__label{bottom:calc(10vh + 8px)}
+  .z-rows{margin-top:-6vh}
+}
+@media (max-width:360px){.bb__actions .z-btn svg{display:none}}
+</style>
+</head>
+<body>
+<main>
+  <section class="bb" id="bb" aria-labelledby="bb-title">
+    <div class="z-art bb__art" id="bb-art" aria-hidden="true"></div>
+    <div class="curtain" id="curtain" aria-hidden="true">
+      <div class="curtain__half" data-side="l"><div class="curtain__clip"><img src="img/aquiles.webp" alt="" decoding="async" fetchpriority="high"></div><svg class="curtain__seam" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
+      <div class="curtain__half" data-side="r"><div class="curtain__clip"><img src="img/aquiles.webp" alt="" decoding="async"></div><svg class="curtain__seam" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
+      <p class="curtain__label">Rubens, <i>Aquiles vence Heitor</i>, 1630</p>
+    </div>
+    <div class="bb__content" id="bb-content">
+      <h1 class="bb__title" id="bb-title"><span class="z-sk" style="width:min(380px,70vw);height:clamp(64px,12vh,120px)"></span></h1>
+      <div class="z-meta" id="bb-meta"></div>
+      <p class="bb__syn" id="bb-syn"></p>
+      <div class="bb__actions" id="bb-actions" hidden>
+        <a class="z-btn z-btn--primary" id="bb-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z"/></svg>Reproduzir</a>
+        <a class="z-btn z-btn--secondary" id="bb-more">Mais informações</a>
+        <button class="z-icon-btn" type="button" id="bb-list" aria-pressed="false" aria-label="Adicionar à minha lista"></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="z-rows" id="rows" aria-busy="true">
+    <section class="z-row" aria-hidden="true"><div class="rh"><span class="z-sk z-sk--title"></span></div><div class="z-track" id="sk-track"></div></section>
+  </div>
+  <p class="cine-foot">Catálogo e imagens: Cinemeta. Pintura: Peter Paul Rubens, Musée des Beaux-Arts de Pau, domínio público.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+<script type="module">
+import { mountNav } from './shared/nav.js';
+import { rows, toast, reveal, prefersReducedMotion, flick, ICON } from './shared/fx.js';
+import { loadData, poster, backdrop, logo } from '../data.js';
+
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const RM = prefersReducedMotion(), G = window.gsap;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rand = (a, b) => a + Math.random() * (b - a);
+
+mountNav({ active: 'cinema', page: 'inicio' });
+if (!location.hash) { history.scrollRestoration = 'manual'; scrollTo(0, 0); }
+
+/* A minha lista: guardada no browser, partilhada com titulo.html pela chave zeus.lista. */
+const LS = 'zeus.lista';
+const store = {
+  read() { try { return JSON.parse(localStorage.getItem(LS)); } catch { return null; } },
+  write(v) { try { localStorage.setItem(LS, JSON.stringify(v)); } catch {} },
+};
+let myList = store.read();
+const inList = id => !!myList?.some(x => x.id === id);
+function toggleList(it, on = !inList(it.id)) {
+  myList = (myList || []).filter(x => x.id !== it.id);
+  if (on) myList.unshift({ id: it.id, type: it.type, name: it.name, releaseInfo: it.releaseInfo, imdbRating: it.imdbRating, genres: it.genres });
+  store.write(myList);
+  toast(on ? `«${it.name}» está na tua lista.` : `«${it.name}» saiu da tua lista.`);
+  return on;
+}
+
+const GEN = { Action: 'Acção', Adventure: 'Aventura', Animation: 'Animação', Biography: 'Biografia', Comedy: 'Comédia', Crime: 'Crime', Documentary: 'Documentário', Drama: 'Drama', Family: 'Família', Fantasy: 'Fantasia', History: 'História', Horror: 'Terror', Mystery: 'Mistério', Romance: 'Romance', 'Sci-Fi': 'Ficção científica', Sport: 'Desporto', Thriller: 'Thriller', War: 'Guerra', Western: 'Western' };
+const gen = g => GEN[g] || g;
+const runtime = r => { const m = parseInt(r, 10); return m ? (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`) : ''; };
+const meta = it => [it.imdbRating && `IMDb ${it.imdbRating}`, it.releaseInfo, it.type === 'series' ? 'Série' : 'Filme', it.genres?.[0] && gen(it.genres[0])].filter(Boolean);
+const href = (page, it) => `${page}?id=${encodeURIComponent(it.id)}&type=${it.type === 'series' ? 'series' : 'movie'}`;
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
+/* O pano: duas metades da pintura cortadas pela mesma costura em zigue-zague. */
+function seamPath() {
+  let pts = [[49, -4], [46, 104]], d = 9;
+  for (let g = 0; g < 5; g++) {
+    const np = [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      np.push([(ax + bx) / 2 + rand(-1, 1) * d, (ay + by) / 2], pts[i + 1]);
+    }
+    pts = np; d *= .55;
+  }
+  return pts;
+}
+function branches(pts) {
+  const out = [];
+  for (let i = 5; i < pts.length - 6; i += 1) {
+    if (Math.random() > .16) continue;
+    const [x, y] = pts[i], dir = Math.random() < .5 ? -1 : 1, len = rand(6, 14);
+    const b = [[x, y]];
+    for (let k = 1; k <= 4; k++) b.push([x + dir * len * k / 4 + rand(-1.4, 1.4), y + len * k / 4 * rand(.5, 1.1)]);
+    out.push(b);
+  }
+  return out;
+}
+const curtain = $('#curtain'), halves = $$('.curtain__half', curtain), bb = $('#bb');
+const seam = seamPath(), forks = branches(seam);
+const ptsAttr = p => p.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
+halves.forEach(h => {
+  const left = h.dataset.side === 'l';
+  const poly = left ? [[-2, -4], ...seam, [-2, 104]] : [...seam, [102, 104], [102, -4]];
+  $('.curtain__clip', h).style.clipPath = `polygon(${poly.map(([x, y]) => `${x.toFixed(2)}% ${y.toFixed(2)}%`).join(',')})`;
+  $('.curtain__seam', h).innerHTML = `<polyline class="glow" points="${ptsAttr(seam)}"/><g class="forks">${forks.map(b => `<polyline class="branch" points="${ptsAttr(b)}"/>`).join('')}</g><polyline class="core" points="${ptsAttr(seam)}"/>`;
+});
+const seams = $$('.curtain__seam', curtain), forkEls = $$('.forks', curtain);
+
+/* Raio na costura: dois pulsos (flick do fx.js), um único momento por visita. */
+function strike() {
+  const t0 = performance.now();
+  const step = now => {
+    const age = now - t0, I = flick(age, 2);
+    seams.forEach(s => s.style.opacity = Math.max(I, age > 60 ? .75 : 0).toFixed(3));
+    forkEls.forEach(f => f.style.opacity = I.toFixed(3));
+    curtain.style.filter = I > .01 ? `brightness(${(1 + I * .65).toFixed(3)}) sepia(${(I * .35).toFixed(3)})` : '';
+    if (age < 600) requestAnimationFrame(step); else curtain.style.filter = '';
+  };
+  requestAnimationFrame(step);
+}
+
+let skipped = false, introTl = null;
+const finishIntro = () => {
+  curtain.hidden = true; bb.classList.add('is-live');
+  G?.set(['#bb-content', '#bb-content > *', '#bb-art'], { clearProps: 'opacity,transform,filter' });
+};
+const skip = () => {
+  if (skipped) return; skipped = true;
+  if (introTl) introTl.progress(1); else if (!G) finishIntro();
+};
+if (RM || !G || location.hash) { curtain.hidden = true; skipped = true; }
+else {
+  ['keydown', 'pointerdown', 'wheel', 'touchstart'].forEach(ev => addEventListener(ev, skip, { once: true, passive: true }));
+  G.set('#bb-content', { opacity: 0 });
+  G.fromTo(halves, { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power2.out' });
+  G.fromTo($$('.curtain__clip img', curtain), { scale: 1.26 }, { scale: 1.16, duration: 2.6, ease: 'power2.out' });
+}
+
+/* Dados */
+$('#sk-track').innerHTML = Array.from({ length: 9 }, () => '<div class="z-card z-card--poster"><span class="z-card__art z-sk"></span></div>').join('');
+const [data] = await Promise.all([loadData(), new Promise(r => setTimeout(r, skipped ? 0 : 1300))]);
+const hero = data.hero;
+const byId = new Map();
+data.rows.forEach(r => r.items.forEach(it => byId.set(it.id, it)));
+if (!myList) { myList = [data.rows[1].items[2], data.rows[2].items[0], data.rows[1].items[6], data.rows[4].items[1]].filter(Boolean).map(it => ({ id: it.id, type: it.type, name: it.name, releaseInfo: it.releaseInfo, imdbRating: it.imdbRating, genres: it.genres })); store.write(myList); }
+myList.forEach(it => byId.has(it.id) || byId.set(it.id, it));
+
+/* Billboard */
+const art = $('#bb-art');
+art.innerHTML = `<img src="${backdrop(hero.id)}" alt="" decoding="async" fetchpriority="high">`;
+const artImg = $('img', art);
+artImg.addEventListener('error', () => { artImg.src = poster(hero.id); }, { once: true });
+$('#bb-title').innerHTML = `<img src="${logo(hero.id)}" alt="${esc(hero.name)}">`;
+$('#bb-title img').addEventListener('error', () => { $('#bb-title').innerHTML = `<span>${esc(hero.name)}</span>`; }, { once: true });
+$('#bb-meta').innerHTML = [hero.imdbRating && `<span class="z-pill">IMDb ${esc(hero.imdbRating)}</span>`, hero.releaseInfo, runtime(hero.runtime), ...(hero.genres || []).slice(0, 2).map(gen)].filter(Boolean).map(m => m.startsWith('<') ? m : `<span>${esc(m)}</span>`).join('');
+$('#bb-syn').textContent = hero.description || '';
+$('#bb-play').href = href('leitor.html', hero);
+$('#bb-more').href = href('titulo.html', hero);
+$('#bb-actions').hidden = false;
+const listBtn = $('#bb-list');
+const syncListBtn = () => { const on = inList(hero.id); listBtn.setAttribute('aria-pressed', on); listBtn.setAttribute('aria-label', on ? 'Remover da minha lista' : 'Adicionar à minha lista'); listBtn.innerHTML = on ? ICON.check : ICON.plus; };
+syncListBtn();
+listBtn.addEventListener('click', () => { toggleList(hero); syncListBtn(); renderList(); syncCards(hero.id); });
+
+const ready = img => Promise.race([img.decode?.().catch(() => {}) ?? Promise.resolve(), new Promise(r => setTimeout(r, 2500))]);
+await ready(artImg);
+
+if (!skipped && G) {
+  const contentKids = $$('#bb-content > *');
+  introTl = G.timeline({ onComplete: finishIntro });
+  introTl.set('#bb-content', { opacity: 1 })
+    .set(contentKids, { opacity: 0, y: 16 })
+    .call(() => { if (!skipped) strike(); }, null, 0)
+    .fromTo(art, { opacity: 0, scale: 1.16, filter: 'brightness(.35)' }, { opacity: 1, scale: 1, filter: 'brightness(1)', duration: 2.4, ease: 'power2.out' }, .2)
+    .to(halves[0], { xPercent: -62, rotation: -1.5, duration: 1.7, ease: 'power3.inOut' }, .25)
+    .to(halves[1], { xPercent: 62, rotation: 1.5, duration: 1.7, ease: 'power3.inOut' }, .25)
+    .to(halves, { opacity: 0, duration: 1.1, ease: 'power1.in' }, .8)
+    .to('.curtain__label', { opacity: 0, duration: .5 }, .3)
+    .to(contentKids, { opacity: 1, y: 0, duration: 1.1, stagger: .08, ease: 'expo.out' }, 1.2);
+} else {
+  finishIntro();
+  if (G) G.fromTo(art, { opacity: 0 }, { opacity: 1, duration: .6, ease: 'none' });
+}
+
+/* Filas */
+const rowsEl = $('#rows');
+const card = (it, wide) => `<button class="z-card ${wide ? 'z-card--wide' : 'z-card--poster'}" type="button" data-id="${esc(it.id)}" data-title="${esc(it.name)}" data-meta="${esc(meta(it).join('|'))}" data-backdrop="${backdrop(it.id)}" data-in-list="${inList(it.id)}"${it.progress ? ` data-progress="${it.progress}"` : ''} aria-label="${esc(it.name)}${it.progress ? `, ${Math.round(it.progress * 100)}% visto` : ''}">
+  <span class="z-card__art"><img src="${wide ? backdrop(it.id) : poster(it.id)}" alt="" loading="lazy" decoding="async"><span class="z-card__fallback">${esc(it.name)}</span>${it.progress ? `<span class="z-progress"><i style="--p:${it.progress}"></i></span>` : ''}</span>
+  ${wide ? `<span class="z-card__cap">${esc(it.name)}<small>${it.episode ? `<b>${esc(it.episode)}</b>` : ''}<span>Faltam ${Math.max(1, Math.round((1 - it.progress) * (parseInt(it.runtime, 10) || 120)))} min</span></small></span>` : ''}</button>`;
+const listTrack = () => myList.length ? myList.map(it => card(it)).join('') : '';
+const sections = [data.rows[0], { title: 'A minha lista', id: 'lista' }, ...data.rows.slice(1)];
+rowsEl.innerHTML = sections.map((r, i) => `<section class="z-row"${r.id ? ` id="${r.id}"` : ''} aria-labelledby="row-${i}">
+  <div class="rh"><span class="rh__n" aria-hidden="true">${ROMAN[i]}</span><h2 class="z-row__title" id="row-${i}">${esc(r.title)}</h2><span class="rh__rule" aria-hidden="true"></span></div>
+  <div class="z-track">${r.id === 'lista' ? listTrack() : r.items.map(it => card(it, r.kind === 'progress')).join('')}</div>
+  ${r.id === 'lista' ? `<p class="row-empty" ${myList.length ? 'hidden' : ''}>Ainda não guardaste nenhum título. Usa o botão + num cartão para o juntares aqui.</p>` : ''}</section>`).join('');
+rowsEl.removeAttribute('aria-busy');
+rows(rowsEl);
+
+function renderList() {
+  const row = $('#lista'), track = $('.z-track', row);
+  track.innerHTML = listTrack();
+  $('.row-empty', row).hidden = myList.length > 0;
+  row._upd?.();
+}
+function syncCards(id) { $$(`.z-card[data-id="${CSS.escape(id)}"]`).forEach(c => c.dataset.inList = inList(id)); }
+
+rowsEl.addEventListener('click', e => {
+  const c = e.target.closest('.z-card[data-id]'); if (!c) return;
+  location.href = href('titulo.html', byId.get(c.dataset.id));
+});
+rowsEl.addEventListener('z:action', e => {
+  const it = byId.get(e.detail.card.dataset.id); if (!it) return;
+  if (e.detail.action === 'play') location.href = href('leitor.html', it);
+  if (e.detail.action === 'list') {
+    toggleList(it, e.detail.card.dataset.inList === 'true');
+    syncCards(it.id); if (it.id === hero.id) syncListBtn();
+    if (!e.detail.card.closest('#lista')) renderList();
+  }
+});
+
+/* Fio de ouro de cada canto desenha-se quando a fila entra no ecrã. */
+const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); } }), { threshold: .3 });
+$$('.z-row', rowsEl).forEach(r => io.observe(r));
+if (!RM) reveal($$('.z-row', rowsEl), { delay: skipped ? .1 : 1.4, stagger: .08 });
+if (location.hash === '#lista') $('#lista').scrollIntoView({ block: 'start' });
+
+/* Paralaxe do backdrop ao descer. */
+if (!RM) {
+  let raf = 0;
+  addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      const y = Math.min(scrollY, innerHeight);
+      art.style.translate = `0 ${(y * .32).toFixed(1)}px`;
+      $('#bb-content').style.translate = `0 ${(y * .12).toFixed(1)}px`;
+    });
+  }, { passive: true });
+}
+</script>
+</body>
+</html>

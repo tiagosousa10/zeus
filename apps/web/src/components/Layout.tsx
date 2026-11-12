@@ -1,0 +1,326 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import gsap from "gsap";
+import { useSession } from "../lib/session";
+import { api } from "../lib/api";
+Object.assign(window, { gsap });
+const SearchIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="M16 16l4.5 4.5" />
+  </svg>
+);
+export function Nav() {
+  const { user } = useSession();
+  const host = useRef<HTMLElement>(null);
+  const [open, setOpen] = useState<"search" | "menu" | null>(null);
+  const [motor, setMotor] = useState<"ok" | "busy" | "off">("busy");
+  const [hash, setHash] = useState(location.hash);
+  const [signOutError, setSignOutError] = useState("");
+  const tv = location.pathname === "/tv";
+  const active = tv ? "tv" : "cinema";
+  const page = tv
+    ? hash === "#guia"
+      ? "guia"
+      : "canais"
+    : location.pathname === "/cinema"
+      ? hash === "#lista"
+        ? "lista"
+        : "inicio"
+      : location.pathname.slice(1);
+  const links = tv
+    ? [
+        ["canais", "Canais", "/tv"],
+        ["guia", "Guia", "/tv#guia"],
+      ]
+    : [
+        ["inicio", "Início", "/cinema"],
+        ["explorar", "Explorar", "/explorar"],
+        ["lista", "A minha lista", "/cinema#lista"],
+      ];
+  const motorLabel = {
+    ok: "Motor ligado",
+    busy: "Motor a arrancar",
+    off: "Motor desligado",
+  }[motor];
+  useEffect(() => {
+    let alive = true;
+    const check = () =>
+      api<{ ok: boolean }>("/motor/status")
+        .then((r) => alive && setMotor(r.ok ? "ok" : "off"))
+        .catch(() => alive && setMotor("off"));
+    void check();
+    const id = setInterval(check, 15000);
+    const scroll = () =>
+      host.current?.classList.toggle("is-scrolled", scrollY > 24);
+    const changeHash = () => setHash(location.hash);
+    const outside = (event: PointerEvent) => {
+      if (!host.current?.contains(event.target as Node)) setOpen(null);
+    };
+    addEventListener("scroll", scroll, { passive: true });
+    addEventListener("hashchange", changeHash);
+    document.addEventListener("pointerdown", outside);
+    scroll();
+    return () => {
+      alive = false;
+      clearInterval(id);
+      removeEventListener("scroll", scroll);
+      removeEventListener("hashchange", changeHash);
+      document.removeEventListener("pointerdown", outside);
+    };
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    const panel = host.current?.querySelector<HTMLElement>(
+      open === "search" ? "#z-nav-search" : "#z-nav-menu",
+    );
+    panel
+      ?.querySelector<HTMLElement>(
+        open === "search" ? "input" : '[role="menuitem"]',
+      )
+      ?.focus();
+    const tween =
+      panel && !matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? gsap.fromTo(
+            panel,
+            { opacity: 0, y: -8, scale: 0.98 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power3.out" },
+          )
+        : undefined;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(null);
+        host.current?.querySelector<HTMLElement>(`[data-nav-${open}]`)?.focus();
+      }
+    };
+    document.addEventListener("keydown", escape);
+    return () => {
+      tween?.kill();
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+  return (
+    <header className="z-nav" ref={host}>
+      <a
+        className="z-wordmark"
+        href="/portal"
+        aria-label="Zeus, voltar ao Portal"
+      >
+        ZEUS
+      </a>
+      <nav className="z-seg" aria-label="Módulo">
+        <a
+          href="/cinema"
+          aria-current={active === "cinema" ? "page" : undefined}
+        >
+          Cinema
+        </a>
+        <a href="/tv" aria-current={active === "tv" ? "page" : undefined}>
+          TV
+        </a>
+      </nav>
+      <nav
+        className="z-tabs z-nav__links"
+        aria-label={`Secções de ${tv ? "TV" : "Cinema"}`}
+      >
+        {links.map(([key, label, href]) => (
+          <a
+            key={key}
+            href={href}
+            aria-current={page === key ? "page" : undefined}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+      <div className="z-nav__end">
+        <button
+          className="z-icon-btn"
+          type="button"
+          data-nav-search
+          aria-label="Pesquisar"
+          aria-expanded={open === "search"}
+          aria-controls="z-nav-search"
+          onClick={() => setOpen(open === "search" ? null : "search")}
+        >
+          <SearchIcon />
+        </button>
+        <a
+          className="z-status"
+          href="/estados"
+          data-state={motor}
+          aria-live="polite"
+        >
+          {motorLabel}
+        </a>
+        <a
+          className="z-icon-btn z-nav__portal"
+          href="/portal"
+          aria-label="Portal"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {[
+              [4, 4],
+              [13.5, 4],
+              [4, 13.5],
+              [13.5, 13.5],
+            ].map(([x, y]) => (
+              <rect
+                key={`${x}-${y}`}
+                x={x}
+                y={y}
+                width="6.5"
+                height="6.5"
+                rx="2"
+              />
+            ))}
+          </svg>
+        </a>
+        <button
+          className="z-avatar"
+          type="button"
+          data-nav-menu
+          aria-haspopup="menu"
+          aria-expanded={open === "menu"}
+          aria-controls="z-nav-menu"
+          aria-label={`Menu da conta, ${user?.name || ""}`}
+          onClick={() => setOpen(open === "menu" ? null : "menu")}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setOpen("menu");
+            }
+          }}
+        >
+          {user?.name
+            .split(/\s+/)
+            .map((w) => w[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase() || "Ζ"}
+        </button>
+      </div>
+      <form
+        className="z-search z-nav__search"
+        id="z-nav-search"
+        role="search"
+        action={tv ? "/tv" : "/explorar"}
+        hidden={open !== "search"}
+        onSubmit={(e) => {
+          if (!new FormData(e.currentTarget).get("q")?.toString().trim())
+            e.preventDefault();
+        }}
+      >
+        <SearchIcon />
+        <input
+          type="search"
+          name="q"
+          placeholder={tv ? "Canais e programas" : "Filmes e séries"}
+          aria-label={`Pesquisar ${tv ? "canais e programas" : "filmes e séries"}`}
+          autoComplete="off"
+        />
+      </form>
+      <div
+        className="z-menu"
+        id="z-nav-menu"
+        role="menu"
+        aria-label="Conta"
+        hidden={open !== "menu"}
+        onKeyDown={(e) => {
+          const items = Array.from(
+            e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+          );
+          const index = items.indexOf(document.activeElement as HTMLElement);
+          const next = (
+            {
+              ArrowDown: index + 1,
+              ArrowUp: index - 1,
+              Home: 0,
+              End: items.length - 1,
+            } as Record<string, number>
+          )[e.key];
+          if (next !== undefined) {
+            e.preventDefault();
+            items[(next + items.length) % items.length]?.focus();
+          }
+        }}
+      >
+        <div className="z-menu__head">
+          <b>{user?.name}</b>
+          {user?.email}
+          <br />
+          <span className="z-status" data-state={motor}>
+            {motorLabel}
+          </span>
+        </div>
+        {[
+          ["conta", "Conta"],
+          ["addons", "Add-ons"],
+          ...(user?.role === "admin" ? [["admin", "Administração"]] : []),
+          ["portal", "Portal"],
+        ].map(([key, label]) => (
+          <a
+            className="z-menu__item"
+            role="menuitem"
+            key={key}
+            href={`/${key}`}
+            aria-current={page === key ? "page" : undefined}
+          >
+            {label}
+          </a>
+        ))}
+        <hr />
+        <button
+          className="z-menu__item"
+          role="menuitem"
+          onClick={async () => {
+            try {
+              await api("/auth/sign-out", { method: "POST", body: "{}" });
+              location.assign("/entrada");
+            } catch (e) {
+              setSignOutError(
+                e instanceof Error ? e.message : "Não foi possível sair.",
+              );
+            }
+          }}
+        >
+          Sair
+        </button>
+        {signOutError && (
+          <p role="alert" className="error-message">
+            {signOutError}
+          </p>
+        )}
+      </div>
+    </header>
+  );
+}
+export function Page({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <>
+      <Nav />
+      <main className={`app-page ${className}`}>{children}</main>
+    </>
+  );
+}
