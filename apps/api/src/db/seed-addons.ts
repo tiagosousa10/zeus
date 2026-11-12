@@ -1,4 +1,4 @@
-import seed from "./addons-seed.json";
+import seed from "./addons-seed.json" with { type: "json" };
 import { addon } from "./schema.js";
 import type { openLocalDatabase } from "./local.js";
 import { configFields } from "../modules/addons/config.js";

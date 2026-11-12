@@ -4,7 +4,12 @@ import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import bundledFfmpeg from "ffmpeg-static";
-const ffmpeg = process.env.ZEUS_FFMPEG_PATH || bundledFfmpeg?.replace("app.asar/", "app.asar.unpacked/");
+// The CommonJS package exports a path; NodeNext interprets its declarations differently.
+const bundledPath: unknown = bundledFfmpeg;
+const ffmpeg = process.env.ZEUS_FFMPEG_PATH ||
+  (typeof bundledPath === "string"
+    ? bundledPath.replace("app.asar/", "app.asar.unpacked/")
+    : null);
 import type { PlaySession } from "./sessions.js";
 
 // ffmpeg only receives this local capability URL; all provider access stays in safeStream.
