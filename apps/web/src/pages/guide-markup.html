@@ -1,0 +1,609 @@
+<section class="g-hero" aria-labelledby="g-title">
+  <div id="painting" aria-hidden="true"></div>
+  <canvas class="z-bolts" id="bolts" aria-hidden="true"></canvas>
+  <div class="g-hero__ui">
+    <p class="z-wordmark z-wordmark--hero" id="wm" aria-hidden="true">
+      <span class="z-wordmark__text">ZEUS</span
+      ><span class="z-wordmark__glow">ZEUS</span>
+    </p>
+    <div class="g-hero__copy">
+      <h1 class="z-t1" id="g-title">Guia do sistema</h1>
+      <p class="z-lede">
+        Componentes, efeitos e regras para construir os ecrãs do Zeus com a
+        mesma luz.
+      </p>
+    </div>
+    <nav class="g-modules" aria-label="Módulos de exemplo">
+      <a
+        class="g-module z-tilt is-cool"
+        href="/tv"
+        data-mood="-1"
+        aria-label="TV, canais em directo"
+      >
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="9" width="26" height="18" rx="4" />
+          <path d="M11 3l5 6 5-6" />
+        </svg>
+        <h3>TV</h3>
+        <p><span class="g-dot" aria-hidden="true"></span>Canais em directo</p>
+      </a>
+      <a
+        class="g-module z-tilt is-warm"
+        href="/cinema"
+        data-mood="1"
+        aria-label="Cinema, filmes e séries. Último usado"
+      >
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="4" y="5" width="24" height="22" rx="4" />
+          <path d="M10 5v22M22 5v22M4 12h6M4 20h6M22 12h6M22 20h6" />
+        </svg>
+        <span class="z-badge">Último usado</span>
+        <h3>Cinema</h3>
+        <p>Filmes e séries</p>
+      </a>
+    </nav>
+  </div>
+</section>
+
+<nav class="z-tabs g-toc" aria-label="Secções do guia">
+  <a href="#fundamentos">Fundamentos</a><a href="#controlos">Controlos</a
+  ><a href="#filas">Filas</a><a href="#arte">Arte</a><a href="#luz">Luz</a
+  ><a href="#nuvens">Nuvens</a><a href="#raios">Raios</a
+  ><a href="#regras">Regras</a>
+</nav>
+
+<div class="g-wrap">
+  <section class="g-sec" id="fundamentos" aria-labelledby="h-fund">
+    <h2 class="z-t2" id="h-fund">Fundamentos</h2>
+    <p class="z-lede">
+      Preto absoluto, texto quase branco, um ciano frio para a interface e o
+      ouro só para a luz quente dos raios.
+    </p>
+    <div class="g-grid">
+      <div class="z-surface g-box">
+        <h3>Cores</h3>
+        <div
+          class="g-grid"
+          style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px"
+        >
+          <div class="g-sw" style="--c: var(--bg)">
+            <i></i><b>--bg</b><span>#000</span>
+          </div>
+          <div class="g-sw" style="--c: var(--elev)">
+            <i></i><b>--elev</b><span>#1c1c1e</span>
+          </div>
+          <div class="g-sw" style="--c: var(--elev-2)">
+            <i></i><b>--elev-2</b><span>#2c2c2e</span>
+          </div>
+          <div class="g-sw" style="--c: var(--text)">
+            <i></i><b>--text</b><span>#f5f5f7</span>
+          </div>
+          <div class="g-sw" style="--c: var(--text-2)">
+            <i></i><b>--text-2</b><span>62%</span>
+          </div>
+          <div class="g-sw" style="--c: var(--text-3)">
+            <i></i><b>--text-3</b><span>36%</span>
+          </div>
+          <div class="g-sw" style="--c: var(--accent)">
+            <i></i><b>--accent</b><span>#7de3f0</span>
+          </div>
+          <div class="g-sw" style="--c: var(--gold)">
+            <i></i><b>--gold</b><span>#ffb03c</span>
+          </div>
+          <div class="g-sw" style="--c: rgb(var(--warm))">
+            <i></i><b>--warm</b><span>rgb, carmesim</span>
+          </div>
+          <div class="g-sw" style="--c: var(--bronze)">
+            <i></i><b>--bronze</b><span>#d2a77c</span>
+          </div>
+          <div class="g-sw" style="--c: var(--live)">
+            <i></i><b>--live</b><span>#ff453a</span>
+          </div>
+          <div class="g-sw" style="--c: var(--ok)">
+            <i></i><b>--ok</b><span>#30d158</span>
+          </div>
+        </div>
+      </div>
+      <div class="z-surface g-box">
+        <h3>Tipografia SF Pro</h3>
+        <div class="g-type">
+          <div>
+            <span class="z-display">Olimpo</span
+            ><code class="z-code">.z-display</code>
+          </div>
+          <div>
+            <span class="z-t1">Sessão expirada</span
+            ><code class="z-code">.z-t1</code>
+          </div>
+          <div>
+            <span class="z-t2">Continuar a ver</span
+            ><code class="z-code">.z-t2</code>
+          </div>
+          <div>
+            <span class="z-t3">Fontes</span><code class="z-code">.z-t3</code>
+          </div>
+          <div>
+            <span>Texto corrido, 17 px</span><code class="z-code">body</code>
+          </div>
+          <div>
+            <span class="z-callout">Legenda de apoio, 15 px</span
+            ><code class="z-code">.z-callout</code>
+          </div>
+          <div>
+            <span class="z-foot">Nota de rodapé, 13 px</span
+            ><code class="z-code">.z-foot</code>
+          </div>
+        </div>
+        <h3>Raios de canto</h3>
+        <div class="g-radii">
+          <div style="border-radius: var(--r-xl)">--r-xl 24</div>
+          <div style="border-radius: var(--r-lg)">--r-lg 18</div>
+          <div style="border-radius: var(--r-md)">--r-md 12</div>
+        </div>
+        <p class="z-foot">
+          Curvas: <code class="z-code">--spring</code> para elevar e carregar,
+          <code class="z-code">--out</code> para entradas e fades.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="controlos" aria-labelledby="h-ctrl">
+    <h2 class="z-t2" id="h-ctrl">Controlos</h2>
+    <p class="z-lede">
+      A interface fica calma: pílulas, vidro, um só botão branco por zona.
+    </p>
+    <div class="g-grid">
+      <div class="z-surface g-box">
+        <h3>Botões</h3>
+        <div class="g-row">
+          <button
+            class="z-btn z-btn--primary"
+            type="button"
+            data-toast="A preparar «The Dark Knight»…"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z"
+              /></svg
+            >Reproduzir
+          </button>
+          <button class="z-btn z-btn--secondary" type="button">
+            Mais informações
+          </button>
+        </div>
+        <div class="g-row">
+          <button class="z-btn z-btn--ghost z-btn--sm" type="button">
+            Mais tarde
+          </button>
+          <button class="z-btn z-btn--sm" type="button">Voltar</button>
+          <button class="z-btn z-btn--danger z-btn--sm" type="button">
+            Remover lista
+          </button>
+          <button
+            class="z-btn z-btn--primary z-btn--sm"
+            type="button"
+            id="busy"
+          >
+            Entrar
+          </button>
+          <button class="z-icon-btn" type="button" aria-label="Pesquisar">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16 16l4.5 4.5" />
+            </svg>
+          </button>
+        </div>
+        <code class="z-code g-use"
+          >.z-btn--primary | --secondary | --ghost | --danger | --sm,
+          .z-icon-btn, aria-busy</code
+        >
+      </div>
+      <div class="z-surface g-box">
+        <h3>Campos</h3>
+        <div class="z-field" style="margin: 0">
+          <label class="z-label" for="g-email">Email</label
+          ><input
+            class="z-input"
+            id="g-email"
+            type="email"
+            autocomplete="off"
+            placeholder="nome@dominio.pt"
+          />
+        </div>
+        <div class="z-field" style="margin: 0">
+          <label class="z-label" for="g-tmdb">Chave da API TMDB</label>
+          <input
+            class="z-input z-input--mono"
+            id="g-tmdb"
+            value="3f9a-chave-curta"
+            aria-invalid="true"
+            aria-describedby="g-tmdb-h"
+            spellcheck="false"
+          />
+          <p class="z-help is-error" id="g-tmdb-h">
+            A chave tem 32 letras e números (0 a 9, a a f).
+          </p>
+        </div>
+        <form class="z-search" role="search" onsubmit="return false;">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="M16 16l4.5 4.5" /></svg
+          ><input
+            type="search"
+            placeholder="Filmes e séries"
+            aria-label="Pesquisar filmes e séries"
+          />
+        </form>
+        <code class="z-code g-use"
+          >.z-field > .z-label + .z-input(--mono) + .z-help(.is-error|.is-ok),
+          .z-search</code
+        >
+      </div>
+      <div class="z-surface g-box">
+        <h3>Escolhas e dados</h3>
+        <div
+          class="z-chips"
+          id="g-langs"
+          role="group"
+          aria-label="Idiomas de áudio"
+        >
+          <button class="z-chip" type="button" aria-pressed="true">
+            <span class="z-chip__n">1</span>Português
+          </button>
+          <button class="z-chip" type="button" aria-pressed="false">
+            English
+          </button>
+          <button class="z-chip" type="button" aria-pressed="true">
+            <span class="z-chip__n">2</span>Original
+          </button>
+        </div>
+        <div class="z-tags">
+          <span class="z-tag z-tag--strong">Dolby Vision</span
+          ><span class="z-tag">HEVC</span
+          ><span class="z-tag z-tag--mono">18.4 GB</span
+          ><span class="z-tag z-tag--mono">412 seeders</span
+          ><span class="z-tag z-tag--cache">em cache</span>
+        </div>
+        <code class="z-code g-use"
+          >.z-chip[aria-pressed] + .z-chip__n,
+          .z-tag(--mono|--strong|--cache|--gold)</code
+        >
+      </div>
+      <div class="z-surface g-box">
+        <h3>Interruptor, segmentos e separadores</h3>
+        <button
+          class="z-switch"
+          type="button"
+          role="switch"
+          aria-checked="true"
+          data-switch
+        >
+          Só em cache
+        </button>
+        <div class="z-seg" role="radiogroup" aria-label="Tipo de lista">
+          <label><input type="radio" name="g-kind" checked />Xtream</label
+          ><label><input type="radio" name="g-kind" />M3U</label>
+        </div>
+        <div
+          class="z-tabs"
+          role="tablist"
+          aria-label="Exemplo de separadores"
+          style="width: max-content"
+        >
+          <button role="tab" aria-selected="true" type="button">
+            Em directo</button
+          ><button role="tab" aria-selected="false" type="button">Guia</button>
+        </div>
+        <code class="z-code g-use"
+          >.z-switch[role=switch], .z-seg (rádios ou links), .z-tabs</code
+        >
+      </div>
+      <div class="z-surface g-box">
+        <h3>Insígnias e estado</h3>
+        <div class="g-row">
+          <span class="z-badge z-badge--live">EM DIRECTO</span
+          ><span class="z-badge z-badge--cache">em cache</span
+          ><span class="z-badge z-badge--last">Último usado</span>
+        </div>
+        <div class="g-row">
+          <span class="z-status">Motor ligado</span
+          ><span class="z-status" data-state="busy">Motor a arrancar</span
+          ><span class="z-status" data-state="off">Motor desligado</span>
+        </div>
+        <span class="z-progress" style="--p: 0.62"><i></i></span>
+        <code class="z-code g-use"
+          >.z-badge--live | --cache | --last, .z-status[data-state], .z-progress
+          (--p)</code
+        >
+      </div>
+      <div class="z-surface g-box">
+        <h3>Esqueletos e avisos</h3>
+        <span class="z-sk z-sk--title"></span
+        ><span class="z-sk z-sk--line"></span
+        ><span class="z-sk z-sk--line" style="width: 60%"></span>
+        <div class="g-row">
+          <button
+            class="z-btn z-btn--sm"
+            type="button"
+            data-toast="Adicionado à tua lista."
+          >
+            Mostrar aviso
+          </button>
+        </div>
+        <code class="z-code g-use"
+          >.z-sk(--title|--line), toast('…') em fx.js</code
+        >
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="filas" aria-labelledby="h-rows">
+    <h2 class="z-t2" id="h-rows">Filas e folha de detalhe</h2>
+    <p class="z-lede">
+      Passa o rato meio segundo sobre um cartão para o expandir. Setas e teclado
+      paginam. Clicar abre os detalhes do título e as Fontes disponíveis.
+    </p>
+    <div class="g-rows z-rows" id="rows" aria-busy="true">
+      <section class="z-row" aria-hidden="true">
+        <span
+          class="z-sk z-sk--title"
+          style="margin: 0 var(--row-inset)"
+        ></span>
+        <div class="z-track"></div>
+      </section>
+    </div>
+    <code class="z-code g-use"
+      >.z-row > .z-row__title + .z-track > .z-card(--poster|--wide) >
+      .z-card__art; rows(root); modal(el).open(origem)</code
+    >
+  </section>
+
+  <section class="g-sec" id="arte" aria-labelledby="h-art">
+    <h2 class="z-t2" id="h-art">Arte que se dissolve em preto</h2>
+    <p class="z-lede">
+      Uma figura por ecrã, sempre a fundir-se no preto pelo lado do texto. A
+      dessaturação e o grão contam estados do sistema.
+    </p>
+    <div class="g-frame">
+      <div class="z-art z-art--left" id="g-art">
+        <img src="/art/img/zeus-4.webp" alt="" loading="lazy" />
+      </div>
+      <div class="z-vignette"></div>
+      <div class="g-frame__copy">
+        <h3 class="z-t1">A sessão expirou</h3>
+        <p>
+          Por segurança, a sessão termina ao fim de 30 dias sem atividade. Entra
+          outra vez para continuares onde ficaste.
+        </p>
+        <a class="z-btn z-btn--primary" href="/entrada">Entrar outra vez</a>
+      </div>
+    </div>
+    <div class="g-ctrl">
+      <div
+        class="z-seg"
+        role="radiogroup"
+        aria-label="Direção da fusão"
+        id="g-scrim"
+      >
+        <label
+          ><input
+            type="radio"
+            name="g-scrim"
+            value="z-art--left"
+            checked
+          />Esquerda</label
+        ><label
+          ><input
+            type="radio"
+            name="g-scrim"
+            value="z-art--right"
+          />Direita</label
+        ><label><input type="radio" name="g-scrim" value="" />Base</label
+        ><label
+          ><input
+            type="radio"
+            name="g-scrim"
+            value="z-art--center"
+          />Centro</label
+        >
+      </div>
+      <button
+        class="z-switch"
+        type="button"
+        role="switch"
+        aria-checked="false"
+        id="g-mute"
+      >
+        Dessaturar
+      </button>
+      <button
+        class="z-switch"
+        type="button"
+        role="switch"
+        aria-checked="false"
+        id="g-grain"
+      >
+        Grão
+      </button>
+    </div>
+    <code class="z-code g-use"
+      >.z-art(--left|--right|--billboard|--center|.is-muted|.is-dim) > img,
+      --pos, .z-vignette, .z-grain, .z-mask-x|y|radial|b, grain(el)</code
+    >
+  </section>
+
+  <section class="g-sec" id="luz" aria-labelledby="h-light">
+    <h2 class="z-t2" id="h-light">Luz do cursor sobre o mármore</h2>
+    <p class="z-lede">
+      O busto fica na penumbra e só a zona sob o cursor acende. Sem rato, a luz
+      orbita devagar. O painel de vidro é o mesmo da entrada.
+    </p>
+    <div class="g-frame g-light">
+      <div id="g-bust">
+        <img
+          src="/art/img/zeus-6.webp"
+          alt=""
+          width="794"
+          height="794"
+          loading="lazy"
+        />
+      </div>
+      <div class="g-light__mask"></div>
+      <form class="z-glass" onsubmit="return false;" aria-labelledby="g-login">
+        <h3 class="z-t2" id="g-login">Entrar</h3>
+        <div
+          class="z-divider"
+          style="margin: 12px 0 18px; background: none"
+        ></div>
+        <div class="z-field">
+          <label class="z-label" for="g-l-email">Email</label
+          ><input
+            class="z-input"
+            id="g-l-email"
+            type="email"
+            autocomplete="off"
+          />
+        </div>
+        <div class="z-field">
+          <label class="z-label" for="g-l-pw">Palavra-passe</label>
+          <div class="z-input-wrap">
+            <input
+              class="z-input"
+              id="g-l-pw"
+              type="password"
+              autocomplete="off"
+            /><button type="button" data-reveal="g-l-pw" aria-pressed="false">
+              Mostrar
+            </button>
+          </div>
+        </div>
+        <button class="z-btn z-btn--primary z-btn--block" type="submit">
+          Continuar
+        </button>
+      </form>
+    </div>
+    <code class="z-code g-use"
+      >cursorLight(elComImg, { rest, orbit, tint }) ; .z-glass .z-panel</code
+    >
+  </section>
+
+  <section class="g-sec" id="nuvens" aria-labelledby="h-clouds">
+    <h2 class="z-t2" id="h-clouds">Subida pelas nuvens</h2>
+    <p class="z-lede">
+      Camadas de nuvens em paralaxe. O progresso de um fluxo sobe a câmara até
+      ao cume.
+    </p>
+    <div class="g-frame" id="g-sky">
+      <div class="g-sky"></div>
+      <div class="g-olympus z-mask-radial" id="g-olympus">
+        <img src="/art/img/zeus-2.webp" alt="" loading="lazy" />
+      </div>
+      <canvas class="g-clouds" id="g-clouds" aria-hidden="true"></canvas>
+      <div class="g-sky-fade"></div>
+      <label class="g-alt"
+        ><span class="z-foot">Altitude</span
+        ><b class="z-num" id="g-alt-v">0 m</b
+        ><input type="range" id="g-alt" min="0" max="100" value="0"
+      /></label>
+    </div>
+    <code class="z-code g-use"
+      >const c = clouds(canvas); c.set(passo / total)</code
+    >
+  </section>
+
+  <section class="g-sec" id="raios" aria-labelledby="h-bolts">
+    <h2 class="z-t2" id="h-bolts">Raios</h2>
+    <p class="z-lede">
+      Raios procedimentais com ramificações. Frio para a TV, quente para o
+      Cinema, neutro no resto. Nunca mais de três clarões por segundo.
+    </p>
+    <div class="g-frame g-storm">
+      <canvas class="z-bolts" id="g-bolts" aria-hidden="true"></canvas>
+      <div class="g-ctrl">
+        <button
+          class="z-btn z-btn--sm z-btn--secondary"
+          type="button"
+          data-strike="cool"
+        >
+          Raio frio
+        </button>
+        <button
+          class="z-btn z-btn--sm z-btn--secondary"
+          type="button"
+          data-strike="warm"
+        >
+          Raio quente
+        </button>
+        <button
+          class="z-btn z-btn--sm z-btn--secondary"
+          type="button"
+          data-strike="neutral"
+        >
+          Raio neutro
+        </button>
+      </div>
+    </div>
+    <code class="z-code g-use"
+      >lightning(canvas, { palette, ambient, onStrike: p => painting.flash(p,
+      p.color) }).strike(alvo)</code
+    >
+  </section>
+
+  <section class="g-sec" id="regras" aria-labelledby="h-rules">
+    <h2 class="z-t2" id="h-rules">Regras</h2>
+    <ul class="g-rules">
+      <li class="z-surface">
+        <b>Uma figura por ecrã.</b>Uma estátua, um enquadramento, nunca uma
+        galeria de deuses.
+      </li>
+      <li class="z-surface">
+        <b>A imagem acaba sempre em preto.</b>Nada de arestas: máscara ou
+        gradiente até #000 do lado do texto.
+      </li>
+      <li class="z-surface">
+        <b>O drama vem da luz.</b>Raios, clarões e a luz do cursor; a interface
+        por cima fica calma e legível.
+      </li>
+      <li class="z-surface">
+        <b>Fotossensibilidade.</b>No máximo três clarões por segundo e nenhum
+        com movimento reduzido.
+      </li>
+      <li class="z-surface">
+        <b>Movimento reduzido.</b>Sem ciclos, inclinações nem Ken Burns; imagens
+        estáticas e fades curtos.
+      </li>
+    </ul>
+  </section>
+</div>
+<p class="g-foot z-foot"><a class="z-wordmark" href="/portal">ZEUS</a></p>

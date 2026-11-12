@@ -1,37 +1,33 @@
-import { Art, Page } from "../components/Layout";
+import { useEffect, useRef } from "react";
+import { Page } from "../components/Layout";
+import markup from "./guide-markup.html?raw";
+import { mountGuide } from "./guide-effects.js";
+import "./guide.css";
+// The approved local specimen is inert markup; interactions are mounted with lifecycle cleanup.
 export default function Guide() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!root.current) return;
+    const el = root.current;
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+      cleanup = mountGuide(el);
+    else
+      void import("three").then((THREE) => {
+        if (cancelled) return;
+        Object.assign(window, { THREE });
+        cleanup = mountGuide(el);
+      });
+    return () => {
+      cancelled = true;
+      cleanup?.();
+      el.innerHTML = markup;
+    };
+  }, []);
   return (
-    <Page>
-      <Art
-        image="olimpo"
-        title="Uma linguagem. Um universo."
-        eyebrow="O desenho do Zeus"
-      >
-        <p>
-          Arte clássica, luz em movimento e espaço para as histórias respirarem.
-        </p>
-      </Art>
-      <div className="app-content">
-        <div className="surface">
-          <h2>Direção aprovada</h2>
-          <p>
-            Apple TV escuro, organização Netflix, figuras da mitologia e
-            movimentos subtis. Todas as animações respeitam a preferência de
-            movimento reduzido do dispositivo.
-          </p>
-          <div className="button-row">
-            <a href="/cinema" className="z-btn z-btn--primary">
-              Cinema
-            </a>
-            <a href="/tv" className="z-btn z-btn--secondary">
-              TV
-            </a>
-            <a href="/art/img/CREDITOS.md" className="z-btn z-btn--ghost">
-              Créditos das obras
-            </a>
-          </div>
-        </div>
-      </div>
+    <Page className="guide-page">
+      <div id="top" ref={root} dangerouslySetInnerHTML={{ __html: markup }} />
     </Page>
   );
 }
