@@ -330,6 +330,35 @@ try {
       () => document.querySelector("video")?.videoWidth === 320,
     );
     await settleTV(page);
+    const viewport = page.viewportSize();
+    for (const selector of [
+      ".tv-modal-full-viewport",
+      ".tv-player-modal",
+      ".tv-player",
+      ".tv-player video",
+    ])
+      assert.deepEqual(
+        await page.locator(selector).boundingBox(),
+        { x: 0, y: 0, ...viewport },
+        `${selector} decoded playback fills the viewport`,
+      );
+    const scrollPosition = await page.evaluate(() => ({
+      x: scrollX,
+      y: scrollY,
+    }));
+    await page.mouse.move(width - 5, 200);
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(150);
+    assert.deepEqual(
+      await page.evaluate(() => ({ x: scrollX, y: scrollY })),
+      scrollPosition,
+      "decoded playback keeps the underlying page still",
+    );
+    assert.equal(
+      await page.evaluate(() => document.documentElement.clientWidth),
+      width,
+      "no document scrollbar strip beside decoded playback",
+    );
     await page.screenshot({ path: `${directory}/player-${width}.png` });
     assert.equal(
       await page.locator(".tv-live-dot").count(),
@@ -710,6 +739,11 @@ try {
     assert.equal(await page.getByRole("dialog").count(), 0);
     await page.evaluate(() => {
       document.body.style.overflow = "auto";
+      document.documentElement.style.setProperty(
+        "overflow-y",
+        "scroll",
+        "important",
+      );
     });
     await first.focus();
     await page.keyboard.press("Enter");
@@ -743,6 +777,13 @@ try {
       await page.evaluate(() => document.body.style.overflow),
       "hidden",
     );
+    assert.equal(
+      await page.evaluate(
+        () => getComputedStyle(document.documentElement).overflowY,
+      ),
+      "hidden",
+      "closing a stacked dialog keeps the document locked for playback",
+    );
     await playerButton.click();
     await page
       .getByRole("dialog")
@@ -755,6 +796,18 @@ try {
     assert.equal(
       await page.evaluate(() => document.body.style.overflow),
       "auto",
+    );
+    assert.deepEqual(
+      await page.evaluate(() => ({
+        value: document.documentElement.style.getPropertyValue("overflow-y"),
+        priority:
+          document.documentElement.style.getPropertyPriority("overflow-y"),
+      })),
+      { value: "scroll", priority: "important" },
+      "last modal restores the original html scroll axis and priority",
+    );
+    await page.evaluate(() =>
+      document.documentElement.style.removeProperty("overflow-y"),
     );
     assert.ok(await first.evaluate((e) => e === document.activeElement));
   }

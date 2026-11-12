@@ -9,7 +9,30 @@ import {
 import { createPortal } from "react-dom";
 import type { TVChannel, Programme } from "../models/types";
 const modalStack: HTMLElement[] = [];
-let originalOverflow = "";
+let restoreDocumentOverflow = () => {};
+function lockDocumentScroll() {
+  // html remains the viewport scroller when global styles set overflow-x: clip.
+  // Preserve each axis (including inline priorities) rather than a lossy shorthand.
+  const snapshots = [document.documentElement, document.body].map(
+    (element) => ({
+      element,
+      axes: ["overflow-x", "overflow-y"].map((property) => ({
+        property,
+        value: element.style.getPropertyValue(property),
+        priority: element.style.getPropertyPriority(property),
+      })),
+    }),
+  );
+  for (const { element } of snapshots) element.style.overflow = "hidden";
+  return () => {
+    for (const { element, axes } of snapshots) {
+      for (const { property, value, priority } of axes) {
+        if (value) element.style.setProperty(property, value, priority);
+        else element.style.removeProperty(property);
+      }
+    }
+  };
+}
 let originalFocus: HTMLElement | null = null;
 export function ownsModalInteraction(element: HTMLElement | null) {
   return !!element && !!modalStack.at(-1)?.contains(element);
@@ -36,11 +59,10 @@ export function Modal({
     const previous = previousFocus.current;
     const element = root.current!;
     if (!modalStack.length) {
-      originalOverflow = document.body.style.overflow;
+      restoreDocumentOverflow = lockDocumentScroll();
       originalFocus = previous;
     }
     modalStack.push(element);
-    document.body.style.overflow = "hidden";
     (
       root.current?.querySelector<HTMLElement>("input,select") ||
       root.current?.querySelector<HTMLElement>("button")
@@ -78,7 +100,7 @@ export function Modal({
     return () => {
       const wasTop = modalStack.at(-1) === element;
       modalStack.splice(modalStack.indexOf(element), 1);
-      if (!modalStack.length) document.body.style.overflow = originalOverflow;
+      if (!modalStack.length) restoreDocumentOverflow();
       document.removeEventListener("keydown", handler);
       if (wasTop && previous?.isConnected) previous.focus();
       else if (!modalStack.length && originalFocus?.isConnected)
