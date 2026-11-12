@@ -188,7 +188,9 @@ export function ChannelCard({
   favorite,
   onPlay,
   onFavorite,
+  layout = "card",
 }: {
+  layout?: "card" | "row";
   channel: TVChannel;
   now?: Programme;
   next?: Programme;
@@ -203,7 +205,9 @@ export function ChannelCard({
       )
     : 0;
   return (
-    <article className="tv-channel">
+    <article
+      className={"tv-channel" + (layout === "row" ? " tv-channel--row" : "")}
+    >
       <button className="tv-channel-main" onClick={onPlay}>
         <span className="tv-logo">
           {channel.logo ? (
@@ -226,9 +230,11 @@ export function ChannelCard({
           {now ? `${Math.round(ratio * 100)}%` : "—"}
         </span>
         <strong>{channel.name}</strong>
-        <span>{now?.title || "Sem guia"}</span>
+        <span className="tv-channel-programme" title={now?.title}>
+          {now?.title || "Sem guia"}
+        </span>
         {next && (
-          <small>
+          <small className="tv-channel-next" title={next.title}>
             {new Date(next.start).toLocaleTimeString("pt-PT", {
               hour: "2-digit",
               minute: "2-digit",

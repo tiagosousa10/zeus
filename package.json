@@ -33,7 +33,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "test:tv-layouts": "node tests/tv-layouts.mjs"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.21",
