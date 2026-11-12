@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
-import type { Account, Upstream } from "../src/modules/iptv/account.js";
+import type {
+  Account,
+  Upstream,
+} from "../src/modules/iptv/services/account.js";
 import {
   addResource,
   clearSessions,
@@ -8,9 +11,13 @@ import {
   endSession,
   findSession,
   setSessionClock,
-} from "../src/modules/iptv/sessions.js";
+} from "../src/modules/iptv/services/sessions.js";
 
-const up: Upstream = { url: "https://cdn.test/a.m3u8", kind: "hls", container: "m3u8" };
+const up: Upstream = {
+  url: "https://cdn.test/a.m3u8",
+  kind: "hls",
+  container: "m3u8",
+};
 const acc: Account = { formats: ["m3u8"] };
 let now = 0;
 
@@ -46,7 +53,8 @@ test("resource map is capped at 2000 entries and ids are sequential", () => {
   const second = addResource(s, "https://cdn.test/1.ts");
   assert.notEqual(first, second);
   let last = "";
-  for (let i = 2; i < 2100; i++) last = addResource(s, `https://cdn.test/${i}.ts`);
+  for (let i = 2; i < 2100; i++)
+    last = addResource(s, `https://cdn.test/${i}.ts`);
   assert.equal(s.resources.size, 2000);
   assert.equal(s.resources.has(first), false);
   assert.equal(s.resources.get(last), "https://cdn.test/2099.ts");

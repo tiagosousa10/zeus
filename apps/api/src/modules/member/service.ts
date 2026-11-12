@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { memberState } from "../../db/schema.js";
 import { db } from "../../db/client.js";
 import { encrypt, decrypt } from "../../lib/crypto.js";
-import { mergeLists } from "./public-state.js";
+import { removeListCache } from "../iptv/services/cache.js";
+import { mergeLists } from "./models.js";
 export const emptyState = () => ({
   preferences: {},
   library: [],
@@ -24,7 +25,8 @@ export async function patchState(
   patch: Record<string, unknown>,
   publicListUpdates = false,
 ) {
-  return db.transaction(async (tx) => {
+  const invalidated: string[] = [];
+  const state = await db.transaction(async (tx) => {
     const [row] = await tx
       .select()
       .from(memberState)
@@ -37,6 +39,15 @@ export async function patchState(
     };
     if (publicListUpdates && patch.iptv !== undefined)
       state.iptv = mergeLists(previous.iptv ?? [], patch.iptv);
+    if (patch.iptv !== undefined) {
+      for (const old of previous.iptv ?? []) {
+        const current = state.iptv.find(
+          (list: { id: string }) => list.id === old.id,
+        );
+        if (!current || JSON.stringify(current) !== JSON.stringify(old))
+          invalidated.push(old.id);
+      }
+    }
     const ciphertext = encrypt(state);
     await tx
       .insert(memberState)
@@ -47,4 +58,6 @@ export async function patchState(
       });
     return state;
   });
+  for (const listId of invalidated) await removeListCache(userId, listId);
+  return state;
 }

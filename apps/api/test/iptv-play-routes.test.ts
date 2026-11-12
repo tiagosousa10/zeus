@@ -2,27 +2,32 @@ import test from "node:test";
 import { execFileSync } from "node:child_process";
 import ffmpeg from "ffmpeg-static";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { fakeFetch, xtreamRoutes } from "./fixtures/xtream.js";
 import { fakeUpstream, type FakeResource } from "./fixtures/upstream.js";
-import { normalizeM3U } from "../src/modules/iptv/m3u.js";
+import { normalizeM3U } from "../src/modules/iptv/services/m3u.js";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
 process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-iptv-play-"));
 delete process.env.DATABASE_URL;
-process.env.ZEUS_DATABASE_PATH = join(process.env.ZEUS_DATA_DIR!, "test.sqlite");
+process.env.ZEUS_DATABASE_PATH = join(
+  process.env.ZEUS_DATA_DIR!,
+  "test.sqlite",
+);
 process.env.ZEUS_WEB_ORIGIN = "http://127.0.0.1:5174";
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:5174";
-const { db, query, closeDatabase } = await import("../src/db/client.js");
+const { closeDatabase } = await import("../src/db/client.js");
 const { app } = await import("../src/app.js");
-const { setProviderFetch } = await import("../src/modules/iptv/provider.js");
+const { setProviderFetch } =
+  await import("../src/modules/iptv/services/provider.js");
 const { findSession, setSessionClock } =
-  await import("../src/modules/iptv/sessions.js");
-const { setUpstreamFetch } = await import("../src/modules/iptv/play-routes.js");
+  await import("../src/modules/iptv/services/sessions.js");
+const { setUpstreamFetch } =
+  await import("../src/modules/iptv/services/playback.js");
 function totp(secret: string) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let bits = "";
@@ -530,6 +535,33 @@ test("playback starts through the API and HLS never reveals the provider", async
   upstream["https://tv.example.test/movie/u/segredo-123/202.mkv"] = {
     body: mkvBytes,
   };
+  // A second request must be rejected while the first converter is still waiting
+  // for media, not merely once it has sent response headers.
+  const pendingAbort = new AbortController();
+  const repeatAbort = new AbortController();
+  const mediaUrl = "https://tv.example.test/movie/u/segredo-123/202.mkv";
+  upstream[mediaUrl] = { body: new Uint8Array(), open: true };
+  const pending = a.raw(mkv.body.url.slice(4), { signal: pendingAbort.signal });
+  try {
+    for (
+      let i = 0;
+      i < 100 && !fake.calls.some((call) => call.url === mediaUrl);
+      i++
+    )
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    const repeat = a.raw(mkv.body.url.slice(4), { signal: repeatAbort.signal });
+    const timer = setTimeout(() => repeatAbort.abort(), 2000);
+    try {
+      assert.equal((await repeat).status, 429);
+    } finally {
+      clearTimeout(timer);
+    }
+  } finally {
+    pendingAbort.abort();
+    repeatAbort.abort();
+    await pending;
+    upstream[mediaUrl] = { body: mkvBytes };
+  }
   for (const status of [509, 500]) {
     upstream["https://tv.example.test/movie/u/segredo-123/202.mkv"].status =
       status;

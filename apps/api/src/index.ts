@@ -1,5 +1,5 @@
 import { closeDatabase } from "./db/client.js";
-import { clearSessions } from "./modules/iptv/sessions.js";
+import { clearSessions } from "./modules/iptv/services/sessions.js";
 import { serve } from "@hono/node-server";
 import { app } from "./app.js";
 import { serveStatic } from "@hono/node-server/serve-static";

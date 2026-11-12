@@ -5,22 +5,19 @@ import { db } from "../../db/client.js";
 import * as schema from "../../db/schema.js";
 import { sendTransactionalEmail } from "../email/service.js";
 import { hashToken } from "../../lib/crypto.js";
-import { config } from "../../lib/config.js";
+import { config, trustedOrigins } from "../../lib/config.js";
 
 export function createAuth(database: any = db) {
   return betterAuth({
     appName: "Zeus",
     baseURL: config.apiUrl,
     secret: config.authSecret,
-    trustedOrigins: [
-      config.origin,
-      "http://127.0.0.1:5174",
-      "http://localhost:5174",
-    ],
+    trustedOrigins,
     database: drizzleAdapter(database, { provider: "sqlite", schema }),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 12,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendTransactionalEmail({
           to: user.email,
