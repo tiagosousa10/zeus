@@ -17,3 +17,7 @@ React + Vite, TanStack Router/Query, Tailwind, GSAP e Three.js; Electron no desk
 ## Implementação
 
 Um frontend em apps/web, API em apps/api e Motor original conservado. Docker PostgreSQL local em porta dedicada. Os desenhos aprovados são a especificação visual. O primeiro Administrador é criado no arranque inicial; os seguintes entram por Convite. Credenciais de Resend/Turnstile não disponíveis não devem bloquear o arranque local nem ser inventadas: comunicar limitações e impedir falsas confirmações.
+
+## Fidelidade confirmada em 12 de Novembro
+
+O utilizador pediu corrigir todos os pormenores para coincidir com a proposta original em `/zeus`. Os HTML em `prototipos/estilo/zeus` são a referência visual canónica, não apenas inspiração. Não substituir por heros genéricos, tipografia serifada, outro texto promocional, outras dimensões de navegação ou novos rodapés. Transportar composição, enquadramento da arte, controlos, espaçamento, mobile e efeitos para a implementação real. Alterar texto apenas quando necessário para representar dados/estado reais ou capacidades disponíveis. Guardar preferências antes de navegar.

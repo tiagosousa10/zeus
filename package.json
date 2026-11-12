@@ -20,7 +20,8 @@
     "build": "npm run build:web && npm run build:api",
     "build:api": "node scripts/build-api.mjs",
     "db:setup": "node --env-file-if-exists=.env --import tsx apps/api/src/db/setup.ts",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs",
+    "test:visual": "node tests/visual-fidelity.mjs"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.21",

@@ -60,14 +60,18 @@ npm run typecheck
 npm test
 npm run build
 npm run test:browser
+npm run test:visual
 ```
 
-Os testes API e browser criam schemas PostgreSQL temporários e removem-nos ao terminar. Não usam contas da base principal. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `node tests/desktop.mjs` verifica o Electron com o build local e pressupõe uma base principal ainda sem Membros; não usar esse teste após configurar a tua conta.
+Os testes API e browser criam schemas PostgreSQL temporários e removem-nos ao terminar. Não usam contas da base principal. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `node tests/desktop.mjs` verifica a Entrada no Electron (primeiro arranque ou login), sem criar contas; usa o servidor de desenvolvimento se já estiver activo, ou o build local.
+
+`test:visual` inicia servidores isolados nas portas 5181/5182, usa fixtures apenas no browser e compara medidas com os HTML aprovados. Verifica navegação, TV/guia por teclado, favoritos por toque, persistência das listas e estados. Capturas e medidas ficam em `/tmp/zeus-fidelity`. Requer Google Chrome instalado; não altera a base de dados.
 
 ## Referências guardadas
 
 - Escolhas definitivas: `docs/superpowers/specs/2026-11-11-zeus-approved.md`.
 - Plano e validação: `docs/superpowers/plans/2026-11-11-zeus-screens.md`.
 - Protótipos aprovados: `prototipos/estilo/zeus/`.
+- Revisão de fidelidade: `docs/2026-11-12-zeus-fidelity.md`.
 - Créditos: `apps/web/public/art/img/CREDITOS.md`.
 - API: `apps/api/README.md`.
