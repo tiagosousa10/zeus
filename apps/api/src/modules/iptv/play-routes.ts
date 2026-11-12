@@ -116,28 +116,42 @@ async function readCapped(r: Response): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-// URLs the rewriter saw as playlists (variants, renditions), so they are never relayed raw.
-const playlistUrls = new WeakMap<PlaySession, Set<string>>();
-const playlistsOf = (s: PlaySession) => playlistUrls.get(s) ?? playlistUrls.set(s, new Set()).get(s)!;
-
 async function playlist(c: Context, s: PlaySession, r: Response): Promise<Response> {
-  const text = rewritePlaylist(await readCapped(r), r.url, (u, isPlaylist) => {
-    if (isPlaylist) playlistsOf(s).add(u);
-    return `/api/iptv/play/${s.token}/r/${addResource(s, u)}`;
-  });
+  const text = rewritePlaylist(
+    await readCapped(r),
+    r.url,
+    (u, isPlaylist) => `/api/iptv/play/${s.token}/r/${addResource(s, u, isPlaylist)}`,
+  );
   return c.body(text, 200, { "content-type": "application/vnd.apple.mpegurl", "cache-control": "no-store" });
 }
 
-// Reads the first chunk to spot a playlist served with an odd path or content-type; the body stays intact.
+// Reads until "#EXTM3U" could show (BOM and whitespace skipped) to spot a playlist with an odd path or
+// content-type; the body stays intact for relaying.
 async function peek(r: Response): Promise<{ playlist: boolean; response: Response }> {
   if (!r.body) return { playlist: false, response: r };
   const reader = r.body.getReader();
-  const first = await reader.read();
-  const head = first.done ? new Uint8Array() : first.value;
+  const head: Uint8Array[] = [];
+  let bytes = 0;
+  let done = false;
+  let start = "";
+  while (start.length < 7) {
+    const next = await reader.read();
+    if (next.done) {
+      done = true;
+      break;
+    }
+    head.push(next.value);
+    bytes += next.value.byteLength;
+    if (bytes > MAX_PLAYLIST) {
+      await reader.cancel().catch(() => {});
+      throw new Error("no content");
+    }
+    start = Buffer.concat(head).toString("utf8").trimStart();
+  }
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
-      if (head.byteLength) controller.enqueue(head);
-      if (first.done) controller.close();
+      for (const chunk of head) controller.enqueue(chunk);
+      if (done) controller.close();
     },
     async pull(controller) {
       const next = await reader.read();
@@ -150,7 +164,7 @@ async function peek(r: Response): Promise<{ playlist: boolean; response: Respons
   });
   const response = new Response(body, { status: r.status, headers: r.headers });
   Object.defineProperty(response, "url", { value: r.url });
-  return { playlist: Buffer.from(head).toString("utf8").trimStart().startsWith("#EXTM3U"), response };
+  return { playlist: start.startsWith("#EXTM3U"), response };
 }
 
 // Keeps the session alive while a long body is still flowing to the browser.
@@ -187,17 +201,22 @@ playRoutes.get("/play/:token/r/:id", (c) =>
   withSession(c, async (s) => {
     const url = s.resources.get(c.req.param("id") ?? "");
     if (!url) return c.json({ error: NOT_AVAILABLE }, 404);
-    const known = isPlaylistPath(url) || playlistsOf(s).has(url);
+    const known = isPlaylistPath(url) || s.playlists.has(url);
     const range = known ? undefined : c.req.header("range");
     let r = await open(c, s, url, range ? { range } : undefined);
-    if (!known && !/mpegurl/i.test(r.headers.get("content-type") ?? "")) {
+    const type = r.headers.get("content-type") ?? "";
+    // A partial text body may be the middle of a playlist, past "#EXTM3U", so it can be neither relayed nor rewritten.
+    if (!known && r.status === 206 && (!type || /^text\/|mpegurl/i.test(type))) {
+      await r.body?.cancel().catch(() => {});
+      throw new Error("partial playlist");
+    }
+    if (!known && !/mpegurl/i.test(type)) {
       const peeked = await peek(r);
       if (!peeked.playlist) return relay(s, peeked.response);
       r = peeked.response;
     }
-    playlistsOf(s).add(url);
     // Re-adding keeps a long-lived playlist (live variant) from being evicted by the resource cap.
-    addResource(s, url);
+    addResource(s, url, true);
     return playlist(c, s, r);
   }),
 );

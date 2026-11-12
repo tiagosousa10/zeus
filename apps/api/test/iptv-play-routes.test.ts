@@ -86,12 +86,24 @@ const upstream: Record<string, FakeResource> = {
     headers: { "content-type": "text/plain" },
     body: "#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/v1.ts\n",
   },
+  [`${EDGE}/low/split`]: {
+    headers: { "content-type": "text/plain" },
+    body: ["#EXT", "M3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/split1.ts\n"],
+  },
+  [`${EDGE}/low/blank`]: {
+    body: ["\uFEFF \n", "#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/blank1.ts\n"],
+  },
+  [`${EDGE}/low/ranged`]: {
+    status: 206,
+    headers: { "content-type": "text/plain", "content-range": "bytes 1-60/61" },
+    body: "EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/ranged1.ts\n",
+  },
   [`${EDGE}/low/odd`]: {
     headers: { "content-type": "text/plain" },
     body: "\uFEFF \n#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/odd1.ts\n",
   },
   [`${EDGE}/low/index.m3u8`]: {
-    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n",
+    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n",
   },
   [`${EDGE}/low/seg1.ts`]: { headers: { "content-type": "video/mp2t" }, body: "SEGMENT-1", open: true },
   [`${ORIGIN}/102.m3u8`]: { status: 509, body: "max connections https://tv.example.test" },
@@ -149,11 +161,17 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(media.status, 200, media.text);
   assert.equal(media.type, "application/vnd.apple.mpegurl");
   assert.ok(!leaks(media.text), media.text);
-  assert.equal(links(media.text).length, 3);
-  const sniffed = await a(links(media.text)[2].slice(4));
-  assert.equal(sniffed.type, "application/vnd.apple.mpegurl");
-  assert.equal(links(sniffed.text).length, 1);
-  assert.ok(!leaks(sniffed.text), sniffed.text);
+  assert.equal(links(media.text).length, 6);
+  for (const i of [2, 3, 4]) {
+    const sniffed = await a(links(media.text)[i].slice(4));
+    assert.equal(sniffed.type, "application/vnd.apple.mpegurl", `link ${i}: ${sniffed.text}`);
+    assert.equal(links(sniffed.text).length, 1);
+    assert.ok(!leaks(sniffed.text), sniffed.text);
+  }
+  const ranged = await a.raw(links(media.text)[5].slice(4), { headers: { range: "bytes=1-" } });
+  const rangedText = await ranged.text();
+  assert.deepEqual([ranged.status, JSON.parse(rangedText).error], [502, "O fornecedor não respondeu. Tenta de novo."]);
+  assert.ok(!leaks(rangedText));
 
   const segment = await a.raw(links(media.text)[0].slice(4), { headers: { range: "bytes=0-" } });
   assert.equal(segment.status, 200);

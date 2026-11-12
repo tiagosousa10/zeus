@@ -98,3 +98,12 @@ test("the same URL keeps its resource id, also after the cap evicts others", () 
   assert.equal(s.resources.get(again), "https://cdn.test/0.ts");
   assert.equal(s.resources.size, 2000);
 });
+
+test("playlist marks follow their resource and leave with the cap", () => {
+  const s = createSession("u1", "l5", up, acc);
+  addResource(s, "https://cdn.test/v.m3u8", true);
+  addResource(s, "https://cdn.test/seg.ts");
+  assert.deepEqual([...s.playlists], ["https://cdn.test/v.m3u8"]);
+  for (let i = 0; i < 2000; i++) addResource(s, `https://cdn.test/${i}.ts`);
+  assert.equal(s.playlists.size, 0);
+});

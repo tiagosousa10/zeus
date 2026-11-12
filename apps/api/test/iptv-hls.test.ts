@@ -58,3 +58,39 @@ s1`;
   rewritePlaylist(text, "https://e.test/", (u, playlist) => (marks.push(`${u.slice(15)}:${playlist}`), "/r"));
   assert.deepEqual(marks, ["v1:true", "a1:true", "i1:true", "r1:true", "k1:false", "m1:false", "s1:false"]);
 });
+
+test("protocol- and root-relative values, steering, session data and asset lists are dropped", () => {
+  const text = `#EXTM3U
+#EXT-X-CONTENT-STEERING:SERVER-URI="steer.json"
+#EXT-X-SESSION-DATA:DATA-ID="x",URI="data.json"
+#EXT-X-DATERANGE:ID="ad",START-DATE="2026-11-12T00:00:00Z",X-ASSET-LIST="//cdn.test/u/pass/list.json"
+#EXT-X-DATERANGE:ID="ad2",START-DATE="2026-11-12T00:00:00Z",X-ASSET-URI="asset.m3u8"
+#EXT-X-SESSION-KEY:METHOD=AES-128,URI="k",VALUE="/hls/u/pass/x"
+#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z
+#EXTINF:6,//cdn.test/u/pass
+s1.ts
+#EXTINF:6,
+http://[bad
+#EXTINF:6,
+s2.ts`;
+  const seen: string[] = [];
+  const out = rewritePlaylist(text, "https://e.test/", (u) => (seen.push(u), `/r/${seen.length}`));
+  assert.deepEqual(seen, ["https://e.test/s1.ts", "https://e.test/s2.ts"]);
+  assert.ok(!/cdn\.test|pass|steer|data\.json|asset|\/\//.test(out), out);
+  assert.equal(
+    out,
+    "#EXTM3U\n#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z\n#EXTINF:6,\n/r/1\n#EXTINF:6,\n#EXTINF:6,\n/r/2",
+  );
+});
+
+test("a dropped variant tag also drops its URI line", () => {
+  const text = `#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=1,X-HOME="//cdn.test/pass"
+hidden.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=2
+shown.m3u8`;
+  const marks: string[] = [];
+  const out = rewritePlaylist(text, "https://e.test/", (u, playlist) => (marks.push(`${u}:${playlist}`), "/r/0"));
+  assert.deepEqual(marks, ["https://e.test/shown.m3u8:true"]);
+  assert.equal(out, "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=2\n/r/0");
+});

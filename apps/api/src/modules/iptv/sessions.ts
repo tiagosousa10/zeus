@@ -10,6 +10,7 @@ export interface PlaySession {
   signal: AbortSignal;
   ended: boolean;
   resources: Map<string, string>;
+  playlists: Set<string>;
   onEnd: Set<() => void>;
 }
 
@@ -73,6 +74,7 @@ export function createSession(userId: string, listId: string, upstream: Upstream
     signal: controller.signal,
     ended: false,
     resources: new Map(),
+    playlists: new Set(),
     onEnd: new Set(),
   };
   entries.set(session.token, { session, controller, lastSeen: clock(), nextResource: 0, resourceIds: new Map() });
@@ -94,8 +96,9 @@ export function endSession(s: PlaySession): void {
 }
 
 // A known URL keeps its id and moves to the newest end, so the cap evicts what is no longer used.
-export function addResource(s: PlaySession, url: string): string {
+export function addResource(s: PlaySession, url: string, playlist = false): string {
   const e = entries.get(s.token);
+  if (playlist) s.playlists.add(url);
   const known = e?.resourceIds.get(url);
   if (known !== undefined) {
     s.resources.delete(known);
@@ -109,6 +112,7 @@ export function addResource(s: PlaySession, url: string): string {
     const [oldId, oldUrl] = s.resources.entries().next().value as [string, string];
     s.resources.delete(oldId);
     e?.resourceIds.delete(oldUrl);
+    s.playlists.delete(oldUrl);
   }
   return id;
 }

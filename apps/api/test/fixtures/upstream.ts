@@ -1,7 +1,7 @@
 import type { safeStream } from "../../src/lib/safe-fetch.js";
 
-// `url` simulates the final URL after redirects; `open` keeps the body streaming until the signal aborts.
-export type FakeResource = { status?: number; headers?: Record<string, string>; body?: string; url?: string; open?: boolean };
+// `url` simulates the final URL after redirects; an array body is sent as separate chunks; `open` keeps it streaming until abort.
+export type FakeResource = { status?: number; headers?: Record<string, string>; body?: string | string[]; url?: string; open?: boolean };
 export type UpstreamCall = { url: string; headers?: Record<string, string>; signal?: AbortSignal };
 
 export function fakeUpstream(routes: Record<string, FakeResource>): typeof safeStream & { calls: UpstreamCall[] } {
@@ -11,10 +11,10 @@ export function fakeUpstream(routes: Record<string, FakeResource>): typeof safeS
     if (options.signal?.aborted) throw new Error("Pedido cancelado.");
     const route = routes[input];
     if (!route) return new Response(null, { status: 404 });
-    const bytes = new TextEncoder().encode(route.body ?? "");
+    const chunks = [route.body ?? ""].flat().map((c) => new TextEncoder().encode(c));
     const body = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(bytes);
+        for (const chunk of chunks) controller.enqueue(chunk);
         if (!route.open) return controller.close();
         options.signal?.addEventListener("abort", () => controller.error(new Error("Pedido cancelado.")), { once: true });
       },
