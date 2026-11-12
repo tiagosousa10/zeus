@@ -14,17 +14,29 @@ export async function api<T = any>(
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");
-  const response = await fetch(`/api${path}`, {
-    ...init,
-    headers,
-    credentials: "include",
-  });
-  const body = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new ApiError(
-      body?.message || body?.error || "Não foi possível concluir o pedido.",
-      response.status,
-      body?.code,
-    );
-  return body as T;
+  const foreground =
+    /^(POST|PATCH|PUT|DELETE)$/i.test(init.method || "") &&
+    !path.endsWith("/stop") &&
+    !path.endsWith("/play") &&
+    !(path === "/state" && document.querySelector("video"));
+  if (foreground)
+    window.dispatchEvent(new CustomEvent("zeus:request", { detail: 1 }));
+  try {
+    const response = await fetch(`/api${path}`, {
+      ...init,
+      headers,
+      credentials: "include",
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok)
+      throw new ApiError(
+        body?.message || body?.error || "Não foi possível concluir o pedido.",
+        response.status,
+        body?.code,
+      );
+    return body as T;
+  } finally {
+    if (foreground)
+      window.dispatchEvent(new CustomEvent("zeus:request", { detail: -1 }));
+  }
 }
