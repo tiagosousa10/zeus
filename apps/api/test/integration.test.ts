@@ -186,6 +186,12 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
     ),
   );
   assert.equal((await a("/state", { addons: [] }, "PATCH")).status, 200);
+  assert.equal(
+    (await a("/subtitles/file?url=https://example.com/x.srt&sig=forged"))
+      .status,
+    403,
+    "The subtitle proxy only serves links the API signed",
+  );
   const invitation = await a("/admin/invites", {
     email: "member@example.test",
   });

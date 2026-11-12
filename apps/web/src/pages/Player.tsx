@@ -122,16 +122,11 @@ export default function Player() {
     idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const resumeDone = useRef(false),
     autoplayDone = useRef(false);
-  // O proxy converte SRT em WebVTT e evita bloqueios de CORS no <track>.
+  // A API devolve ligações assinadas para o seu proxy, que converte SRT em WebVTT.
   const tracks = [
     ...(source?.subtitles ?? []),
     ...(addonSubtitles.data?.subtitles ?? []),
-  ]
-    .filter((track) => safeMediaURL(track.url))
-    .map((track) => ({
-      ...track,
-      url: `/api/subtitles/file?${new URLSearchParams({ url: track.url })}`,
-    }));
+  ].filter((track) => track.url.startsWith("/api/subtitles/file?"));
   const episodes = (meta.data?.videos ?? [])
     .filter((item) => item.season > 0)
     .sort((a, b) => a.season - b.season || a.episode - b.episode);

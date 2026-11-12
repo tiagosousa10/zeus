@@ -3,9 +3,10 @@ import { z } from "zod";
 import { requireMember } from "../auth/middleware.js";
 import { safeFetch } from "../../lib/safe-fetch.js";
 import { installedAddons, installedEndpoint } from "./streams.js";
+import { subtitleLink, validSubtitleSignature } from "./subtitle-link.js";
 
 export function srtToVtt(text: string) {
-  const clean = text.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  const clean = text.replace(/^\ufeff/, "").replace(/\r\n?/g, "\n");
   if (clean.startsWith("WEBVTT")) return clean;
   return (
     "WEBVTT\n\n" +
@@ -60,7 +61,7 @@ subtitleRoutes.get("/", async (c) => {
               )
               .map((t: any, i: number) => ({
                 id: `${a.id}:${t.id ?? i}`,
-                url: t.url,
+                url: subtitleLink(t.url),
                 lang: t.lang,
                 addonName: a.name,
               })),
@@ -79,9 +80,11 @@ subtitleRoutes.get("/", async (c) => {
   });
 });
 subtitleRoutes.get("/file", async (c) => {
-  const { url } = z
-    .object({ url: z.url().regex(/^https?:\/\//) })
+  const { url, sig } = z
+    .object({ url: z.url().regex(/^https?:\/\//), sig: z.string().max(100) })
     .parse(c.req.query());
+  if (!validSubtitleSignature(url, sig))
+    return c.json({ error: "Legenda não reconhecida." }, 403);
   try {
     const response = await safeFetch(url, {
       timeout: 15000,

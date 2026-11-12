@@ -7,6 +7,7 @@ import { requireMember } from "../auth/middleware.js";
 import { getState } from "../member/service.js";
 import { configFields, validateConfig, type ConfigField } from "./config.js";
 import { safeFetch } from "../../lib/safe-fetch.js";
+import { subtitleLink } from "./subtitle-link.js";
 
 export function streamEndpoint(
   manifestUrl: string,
@@ -192,7 +193,7 @@ streamRoutes.get("/", async (c) => {
                     )
                     .map((t: any, i: number) => ({
                       id: String(t.id || i),
-                      url: t.url,
+                      url: subtitleLink(t.url),
                       lang: t.lang,
                     }))
                 : [],
