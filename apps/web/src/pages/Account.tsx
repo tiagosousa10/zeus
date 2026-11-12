@@ -1,9 +1,11 @@
+import { loadThree } from "../lib/graphics";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Page } from "../components/Layout";
 import { api } from "../lib/api";
 import { useSession, useMemberState } from "../lib/session";
 import "./management.css";
 import "./conta-fidelity.css";
+import "./management-hero.css";
 import gsap from "gsap";
 type Session = {
   id: string;
@@ -94,32 +96,28 @@ export default function Account() {
   useEffect(() => {
     let disposed = false,
       painting: any;
-    Promise.all([import("three"), import("../lib/fx.js")]).then(
-      ([three, fx]) => {
-        if (disposed || !paintingRef.current) return;
-        Object.assign(window, { THREE: three, gsap });
-        painting = (fx.livingPainting as any)(
-          paintingRef.current,
-          "/art/img/atena.webp",
-          {
-            focus: { x: 0.33, y: 0.3 },
-            anchor: { x: 0.3, y: 0.4 },
-            anchorNarrow: { x: 0.5, y: 0.27 },
-            figure: [
-              [0.33, 0.3, 0.12, 0.2],
-              [0.3, 0.78, 0.3, 0.25],
-              [0.15, 0.22, 0.08, 0.2],
-            ],
-            size: (w: number, h: number) =>
-              w < 700
-                ? Math.max(h * 0.95, w * 1.5)
-                : Math.max(h * 1.45, w * 0.64),
-            kenBurns: 0.035,
-            parallax: [12, 8],
-          },
-        );
-      },
-    );
+    Promise.all([loadThree(), import("../lib/fx.js")]).then(([three, fx]) => {
+      if (disposed || !paintingRef.current) return;
+      Object.assign(window, { THREE: three, gsap });
+      painting = (fx.livingPainting as any)(
+        paintingRef.current,
+        "/art/img/atena.webp",
+        {
+          focus: { x: 0.33, y: 0.3 },
+          anchor: { x: 0.75, y: 0.45 },
+          anchorNarrow: { x: 0.64, y: 0.25 },
+          figure: [
+            [0.33, 0.3, 0.12, 0.2],
+            [0.3, 0.78, 0.3, 0.25],
+            [0.15, 0.22, 0.08, 0.2],
+          ],
+          size: (w: number, h: number) =>
+            w < 700 ? Math.max(480, w * 1.45) : Math.max(h * 1.2, w * 0.68),
+          kenBurns: 0.035,
+          parallax: [12, 8],
+        },
+      );
+    });
     return () => {
       disposed = true;
       painting?.destroy();
@@ -135,9 +133,12 @@ export default function Account() {
   return (
     <Page>
       <div className="account-fidelity">
-        <section className="at-hero" aria-labelledby="account-title">
+        <section
+          className="at-hero management-hero"
+          aria-labelledby="account-title"
+        >
           <div ref={paintingRef} aria-hidden="true" />
-          <div className="at-copy">
+          <div className="at-copy management-hero-copy">
             <h1 className="z-display" id="account-title">
               Conta
             </h1>

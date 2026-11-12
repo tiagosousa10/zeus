@@ -7,7 +7,6 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const WebTorrent = require('webtorrent');
 
 const TRACKERS = [
   'udp://tracker.opentrackr.org:1337/announce', 'udp://open.stealth.si:80/announce', 'udp://tracker.torrent.eu.org:451/announce',
@@ -20,7 +19,10 @@ const UP_AC = 2 * 1024 * 1024, UP_BATTERY = 512 * 1024;
 const VIDEO_RE = /\.(mp4|m4v|webm|mov|mkv|avi|ogv|ts|m2ts)$/i;
 const MIME = { mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mkv: 'video/x-matroska', avi: 'video/x-msvideo', ogv: 'video/ogg', ts: 'video/mp2t', m2ts: 'video/mp2t' };
 
-function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null } = {}) {
+function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null, createClient = (options) => {
+  const WebTorrent = require('webtorrent');
+  return new WebTorrent(options);
+} } = {}) {
   const DL_DIR = cacheDir || path.join(os.tmpdir(), 'zeus-cache');
   try { fs.rmSync(DL_DIR, { recursive: true, force: true }); } catch (e) {}
   fs.mkdirSync(DL_DIR, { recursive: true });
@@ -29,10 +31,52 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
   let batteryMode = false;
   function getClient() {
     if (!client) {
-      client = new WebTorrent({ maxConns: 50, uploadLimit: batteryMode ? UP_BATTERY : UP_AC });
+      client = createClient({ maxConns: 50, uploadLimit: batteryMode ? UP_BATTERY : UP_AC });
       client.on('error', (e) => console.error('[engine] erro WebTorrent:', e && e.message));
     }
     return client;
+  }
+
+  const probes = new Set();
+  function spawnProbe(...args) {
+    const process = spawn(...args);
+    probes.add(process);
+    process.once('close', () => probes.delete(process));
+    return process;
+  }
+  function releaseClient() {
+    const previous = client;
+    client = null;
+    for (const process of probes) { try { process.kill('SIGKILL'); } catch {} }
+    probes.clear();
+    for (const key of Object.keys(tracksCache)) delete tracksCache[key];
+    if (!previous) return;
+    for (const torrent of [...previous.torrents]) {
+      try { torrent.destroy({ destroyStore: true }); } catch {}
+    }
+    try { previous.destroy(); } catch {}
+  }
+  function waitForMetadata(torrent, milliseconds, message) {
+    if (torrent.destroyed) return Promise.reject(new Error('Reprodução cancelada.'));
+    if (torrent.ready) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        torrent.removeListener('ready', ready);
+        torrent.removeListener('error', failed);
+        torrent.removeListener('close', closed);
+      };
+      const ready = () => { cleanup(); resolve(); };
+      const failed = error => { cleanup(); reject(error); };
+      const closed = () => failed(new Error('Reprodução cancelada.'));
+      const timer = setTimeout(() => {
+        failed(new Error(message));
+        try { torrent.destroy({ destroyStore: true }); } catch {}
+      }, milliseconds);
+      torrent.once('ready', ready);
+      torrent.once('error', failed);
+      torrent.once('close', closed);
+    });
   }
 
   function cors(res) {
@@ -57,6 +101,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     const c = getClient();
     let torrent = c.get(magnet);
     if (torrent && typeof torrent.then === 'function') torrent = await torrent;
+    if (c !== client) throw new Error('Reprodução cancelada.');
 
     // Só um torrent ativo de cada vez: poupa disco, RAM e largura de banda
     for (const t of [...c.torrents]) {
@@ -64,13 +109,8 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     }
     if (!torrent) torrent = c.add(magnet, { path: DL_DIR, announce: TRACKERS });
 
-    if (!torrent.ready) {
-      await new Promise((resolve, reject) => {
-        const to = setTimeout(() => reject(new Error('Sem metadados ao fim de 90 s — o torrent não tem peers ativos.')), 90000);
-        torrent.once('ready', () => { clearTimeout(to); resolve(); });
-        torrent.once('error', (e) => { clearTimeout(to); reject(e); });
-      });
-    }
+    await waitForMetadata(torrent, 90000, 'Sem metadados ao fim de 90 s — o torrent não tem peers ativos.');
+    if (c !== client || torrent.destroyed) throw new Error('Reprodução cancelada.');
 
     const file = pickFile(torrent, fileIdx);
     if (!file) throw new Error('O torrent não tem ficheiros.');
@@ -87,14 +127,11 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     const c = getClient();
     let torrent = c.get(magnet);
     if (torrent && typeof torrent.then === 'function') torrent = await torrent;
+    if (c !== client) throw new Error('Reprodução cancelada.');
     if (!torrent) torrent = c.add(magnet, { path: DL_DIR, announce: TRACKERS });
-    if (!torrent.ready) {
-      await new Promise((resolve, reject) => {
-        const to = setTimeout(() => reject(new Error('timeout')), 60000);
-        torrent.once('ready', () => { clearTimeout(to); resolve(); });
-        torrent.once('error', (e) => { clearTimeout(to); reject(e); });
-      });
-    }
+    await waitForMetadata(torrent, 60000, 'timeout');
+    if (c !== client || torrent.destroyed) throw new Error('Reprodução cancelada.');
+
     const file = pickFile(torrent, fileIdx);
     if (!file) return;
     try {
@@ -114,7 +151,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     return new Promise((resolve) => {
       if (!ffmpegPath) return resolve({ ok: false, error: 'ffmpeg não disponível.' });
       let err = '';
-      const ff = spawn(ffmpegPath, ['-hide_banner', ...(token ? ['-headers', `X-Zeus-Motor-Token: ${token}\r\n`] : []), '-i', `http://127.0.0.1:${port}/stream/${hash}/${idx}`], { stdio: ['ignore', 'ignore', 'pipe'] });
+      const ff = spawnProbe(ffmpegPath, ['-hide_banner', ...(token ? ['-headers', `X-Zeus-Motor-Token: ${token}\r\n`] : []), '-i', `http://127.0.0.1:${port}/stream/${hash}/${idx}`], { stdio: ['ignore', 'ignore', 'pipe'] });
       const to = setTimeout(() => { try { ff.kill('SIGKILL'); } catch (e) {} }, 30000);
       ff.stderr.on('data', d => { err += d; if (err.length > 80000) { try { ff.kill('SIGKILL'); } catch (e) {} } });
       ff.on('error', () => { clearTimeout(to); resolve({ ok: false }); });
@@ -135,7 +172,10 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
           }
         });
         const out = { ok: duration > 0 || audio.length > 0, duration, audio, video };
-        if (out.ok) tracksCache[key] = out;
+        if (out.ok && findFile(hash, idx)) {
+          if (Object.keys(tracksCache).length >= 32) delete tracksCache[Object.keys(tracksCache)[0]];
+          tracksCache[key] = out;
+        }
         resolve(out);
       });
     });
@@ -201,7 +241,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
   function probeKeyframe(hash, idx, startSec) {
     return new Promise((resolve) => {
       if (!ffmpegPath || !(startSec > 0)) return resolve(startSec > 0 ? startSec : 0);
-      const ff = spawn(ffmpegPath, ['-hide_banner', '-loglevel', 'debug', '-debug_ts', '-ss', String(startSec), '-noaccurate_seek',
+      const ff = spawnProbe(ffmpegPath, ['-hide_banner', '-loglevel', 'debug', '-debug_ts', '-ss', String(startSec), '-noaccurate_seek',
         ...(token ? ['-headers', `X-Zeus-Motor-Token: ${token}\r\n`] : []), '-i', `http://127.0.0.1:${port}/stream/${hash}/${idx}`, '-map', '0:v:0', '-c', 'copy', '-frames:v', '1', '-f', 'null', '-'],
         { stdio: ['ignore', 'ignore', 'pipe'] });
       let buf = '', done = false;
@@ -228,7 +268,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     args.push(...(token ? ['-headers', `X-Zeus-Motor-Token: ${token}\r\n`] : []), '-i', `http://127.0.0.1:${port}/stream/${hash}/${idx}`,
       '-map', '0:v:0', '-map', `0:a:${audioN || 0}?`, '-c:v', 'copy', '-avoid_negative_ts', 'make_zero', '-c:a', 'aac', '-b:a', '192k', '-ac', '2',
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof', '-f', 'mp4', 'pipe:1');
-    const ff = spawn(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const ff = spawnProbe(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     ff.stderr.on('data', d => console.error('[ffmpeg]', String(d).trim()));
     ff.on('error', (e) => { console.error('[ffmpeg] falhou:', e.message); try { res.destroy(); } catch (x) {} });
     ff.stdout.pipe(res);
@@ -276,7 +316,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     }
 
     if (parts[0] === 'stop') {
-      if (client) for (const t of [...client.torrents]) { try { t.destroy({ destroyStore: true }); } catch (e) {} }
+      releaseClient();
       return json(res, 200, { ok: true });
     }
 
@@ -298,7 +338,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     }
 
     if (parts[0] === 'clear') {
-      if (client) for (const t of [...client.torrents]) { try { t.destroy({ destroyStore: true }); } catch (e) {} }
+      releaseClient();
       try { fs.rmSync(DL_DIR, { recursive: true, force: true }); fs.mkdirSync(DL_DIR, { recursive: true }); } catch (e) {}
       return json(res, 200, { ok: true });
     }
@@ -326,7 +366,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
   });
 
   server.on('error', (e) => console.error('[engine] servidor:', e.message));
-  server.listen(port, '127.0.0.1');
+  server.listen(port, '127.0.0.1', () => { port = server.address().port; });
 
   return {
     port,
@@ -334,7 +374,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
     setBattery(on) { batteryMode = !!on; if (client) { try { client.throttleUpload(batteryMode ? UP_BATTERY : UP_AC); } catch (e) {} } },
     stop() {
       try { server.close(); } catch (e) {}
-      if (client) { try { client.destroy(); } catch (e) {} client = null; }
+      releaseClient();
       try { fs.rmSync(DL_DIR, { recursive: true, force: true }); } catch (e) {}
     }
   };

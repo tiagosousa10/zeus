@@ -1,17 +1,20 @@
 # Zeus API
 
-Hono em `127.0.0.1:4310`, PostgreSQL/Drizzle, Better Auth 1.7 com TOTP obrigatório. `apps/web` encaminha `/api` para esta porta. As rotas HTTP são os controladores; os serviços concentram autenticação e estado, e `db/schema.ts` define os modelos.
+Hono em `127.0.0.1:4310`, SQLite/Drizzle, Better Auth 1.7 com TOTP obrigatório. `apps/web` encaminha `/api` para esta porta. As rotas HTTP são os controladores; os serviços concentram autenticação e estado, e `db/schema.ts` define os modelos.
 
 Da raiz:
 
 ```sh
-node --env-file=.env --import tsx apps/api/src/db/setup.ts
-node --env-file=.env --import tsx apps/api/src/index.ts
+node --env-file-if-exists=.env --import tsx apps/api/src/db/setup.ts
+node --env-file-if-exists=.env --import tsx apps/api/src/index.ts
 npx tsc -p apps/api/tsconfig.json
 npx tsx --test apps/api/test/integration.test.ts
 ```
 
-O teste cria e remove apenas um schema PostgreSQL `test_<aleatório>`; não cria Membros na aplicação. Testa concorrência no primeiro arranque, Convites de uso único, TOTP/códigos de recuperação, bloqueio de sessões anteriores à configuração TOTP, isolamento, cifragem e autorização.
+A API cria/migra o SQLite e instala o catálogo inicial automaticamente. Os testes usam ficheiros SQLite temporários, sem Docker ou dados do perfil real. Testam concorrência no primeiro arranque, transacções com rollback, Convites de uso único, TOTP/códigos de recuperação, bloqueio de sessões anteriores à configuração TOTP, isolamento, cifragem e autorização.
+
+`db/local.ts` usa `node:sqlite` e o adaptador assíncrono SQLite do Drizzle. Uma fila por ligação isola a duração inteira das transacções assíncronas; pedidos concorrentes não podem entrar na transacção de outro pedido. `db/migrations.ts` mantém o schema versionado por `PRAGMA user_version`, com foreign keys e WAL. A API corre num processo separado da janela Electron.
+
 
 ## Contratos
 
@@ -26,10 +29,12 @@ O teste cria e remove apenas um schema PostgreSQL `test_<aleatório>`; não cria
 
 ## Configuração
 
-`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ZEUS_ENCRYPTION_KEY` (64 caracteres hexadecimais), `ZEUS_WEB_ORIGIN`, `BETTER_AUTH_URL`. Para desenvolvimento sem chaves de ambiente, chaves aleatórias são guardadas em `~/Library/Application Support/Zeus/` no Mac com permissões 0600. Preservar estas chaves junto do backup; mudar a chave de cifragem impede ler o estado existente.
+`ZEUS_DATA_DIR`, `ZEUS_DATABASE_PATH`, `BETTER_AUTH_SECRET`, `ZEUS_ENCRYPTION_KEY` (64 caracteres hexadecimais), `ZEUS_WEB_ORIGIN`, `BETTER_AUTH_URL`. Para desenvolvimento sem chaves de ambiente, chaves aleatórias são guardadas em `~/Library/Application Support/Zeus/` no Mac com permissões 0600. Preservar estas chaves junto do backup; mudar a chave de cifragem impede ler o estado existente.
 
 `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` ativam verificação; `RESEND_API_KEY` + `RESEND_FROM` permitem recuperação de password. Convites usam Resend quando configurado, com idempotência e tentativas limitadas em falhas transitórias. Devolvem sempre o link para copiar e `emailSent`; em falha, `deliveryError` explica o resultado. Sem configuração, `emailSent:false` e partilha manual explícita. Sem Resend, recuperação devolve 503.
 
 O catálogo comunitário importado é o arquivo público `https://stremio-community.github.io/stremio-addons-list/catalog.json`. A API tentada do novo diretório não devolveu JSON; o arquivo pode incluir serviços entretanto indisponíveis. Entradas novas ficam sempre pendentes. A aprovação valida o manifesto atual por fetch com DNS fixado. `configFields` declara os campos genéricos do SDK (text, number, password, checkbox, select); a API valida valores e gera o segmento JSON codificado exigido pelo SDK. Add-ons sem campos declarados usam os valores por omissão; configurações que exigem adaptadores adicionais falham explicitamente.
 
 Documentação usada: [Better Auth TOTP](https://better-auth.com/docs/plugins/2fa), [Drizzle adapter](https://better-auth.com/docs/adapters/drizzle). Os dois fatores são verificados também por sessão na API, para impedir que uma sessão aberta antes da adesão a TOTP passe a ter acesso quando outra sessão conclui a adesão.
+
+Instalações PostgreSQL anteriores usam `npm run db:migrate`; ver [migração desktop](../../docs/desktop-distribution.md). A origem é lida numa transacção consistente e não é modificada.

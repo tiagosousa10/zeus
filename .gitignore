@@ -21,3 +21,6 @@ apps/api/dist/
 !/build/icon.png
 
 .superpowers/
+
+# Local design context and generated drafts.
+.superdesign/

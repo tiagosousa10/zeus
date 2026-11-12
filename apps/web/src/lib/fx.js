@@ -1,11 +1,19 @@
-// Efeitos partilhados do Zeus. GSAP e THREE (r128) são globais carregados por cada página.
+// Efeitos decorativos partilhados. O runtime gráfico é carregado apenas quando necessário.
 const RMQ = matchMedia("(prefers-reduced-motion: reduce)");
 const root = document.documentElement;
 export const prefersReducedMotion = () => RMQ.matches;
 root.classList.toggle("z-rm", RMQ.matches);
-RMQ.addEventListener?.("change", (e) =>
-  root.classList.toggle("z-rm", e.matches),
-);
+RMQ.addEventListener?.("change", (e) => {
+  root.classList.toggle("z-rm", e.matches);
+  loops.forEach((l) => l.sync());
+});
+// Background art does not need a full-resolution Retina render target.
+const decorativeRatio = (w, h) =>
+  Math.min(
+    devicePixelRatio || 1,
+    1.5,
+    Math.sqrt(2_000_000 / Math.max(1, w * h)),
+  );
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -34,12 +42,14 @@ function loop(el, fn) {
   const l = { el, fn, seen: true, on: true, raf: 0, last: 0 };
   const step = (now) => {
     l.raf = requestAnimationFrame(step);
-    const dt = Math.min(now - (l.last || now), 50);
+    const elapsed = now - (l.last || now);
+    if (l.last && elapsed < 1000 / 30 - 0.5) return;
+    const dt = Math.min(elapsed, 100);
     l.last = now;
     fn(now, dt);
   };
   l.sync = () => {
-    const run = l.on && l.seen && !document.hidden;
+    const run = l.on && l.seen && !document.hidden && !prefersReducedMotion();
     if (run && !l.raf) {
       l.last = 0;
       l.raf = requestAnimationFrame(step);
@@ -170,15 +180,20 @@ export function lightning(canvas, opts = {}) {
   let nextAt = performance.now() + rand(...o.first);
   const size = () => {
     const r = canvas.getBoundingClientRect(),
-      dpr = Math.min(devicePixelRatio || 1, 2);
+      dpr = decorativeRatio(r.width, r.height);
     W = r.width || 1;
     H = r.height || 1;
+    if (prefersReducedMotion()) {
+      canvas.width = canvas.height = 1;
+      return;
+    }
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   const ro = new ResizeObserver(size);
   ro.observe(canvas);
+  RMQ.addEventListener("change", size);
   size();
 
   // target: {x,y} em px do canvas, ou um elemento (atinge o topo dele).
@@ -295,7 +310,9 @@ export function lightning(canvas, opts = {}) {
     destroy() {
       lp.destroy();
       ro.disconnect();
+      RMQ.removeEventListener("change", size);
       ctx.clearRect(0, 0, W, H);
+      canvas.width = canvas.height = 1;
     },
   };
 }
@@ -396,7 +413,7 @@ export function livingPainting(container, imgUrl, opts = {}) {
         canvas,
         antialias: false,
         alpha: false,
-        powerPreference: "high-performance",
+        powerPreference: "low-power",
       });
       const u = {
         uTex: { value: null },
@@ -446,6 +463,14 @@ export function livingPainting(container, imgUrl, opts = {}) {
         },
         undefined,
         () => {
+          if (gl) {
+            gl.scene.traverse((obj) => {
+              obj.geometry?.dispose();
+              obj.material?.dispose();
+            });
+            gl.renderer.dispose();
+            gl.renderer.forceContextLoss();
+          }
           gl = null;
           canvas.remove();
         },
@@ -458,7 +483,7 @@ export function livingPainting(container, imgUrl, opts = {}) {
 
   function layout() {
     const r = container.getBoundingClientRect(),
-      dpr = Math.min(devicePixelRatio || 1, 2);
+      dpr = decorativeRatio(r.width, r.height);
     W = r.width || 1;
     H = r.height || 1;
     S = o.size(W, H);
@@ -569,6 +594,7 @@ export function livingPainting(container, imgUrl, opts = {}) {
           obj.material?.dispose();
         });
         gl.renderer.dispose();
+        gl.renderer.forceContextLoss();
         gl = null;
       }
       container.replaceChildren();
@@ -724,7 +750,7 @@ export function clouds(canvas, opts = {}) {
   };
   const RM = prefersReducedMotion();
   const noop = { set() {}, destroy() {} };
-  if (!window.THREE) return noop;
+  if (RM || !window.THREE) return noop;
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
@@ -736,7 +762,9 @@ export function clouds(canvas, opts = {}) {
   } catch {
     return noop;
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(
+    decorativeRatio(canvas.clientWidth, canvas.clientHeight),
+  );
   const scene = new THREE.Scene(),
     cam = new THREE.PerspectiveCamera(55, 1, 0.1, 200),
     Hh = o.height;
@@ -804,6 +832,7 @@ export function clouds(canvas, opts = {}) {
   const size = () => {
     const w = canvas.clientWidth || 1,
       h = canvas.clientHeight || 1;
+    renderer.setPixelRatio(decorativeRatio(w, h));
     renderer.setSize(w, h, false);
     cam.aspect = w / h;
     cam.updateProjectionMatrix();
@@ -838,6 +867,7 @@ export function clouds(canvas, opts = {}) {
       sprites.forEach((sp) => sp.material.dispose());
       tex.forEach((texture) => texture.dispose());
       renderer.dispose();
+      renderer.forceContextLoss();
     },
   };
 }

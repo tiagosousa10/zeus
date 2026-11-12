@@ -1,0 +1,112 @@
+{
+  "measuredAt": "2026-11-12T18:52:36.525Z",
+  "environment": "Headless Chrome, production build, local synthetic API, 1440x900 DPR2; CPU/heap are diagnostic samples, not device-wide guarantees.",
+  "screens": [
+    {
+      "path": "/tv",
+      "motion": "reduce",
+      "jsBytes": 481559,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-CZUBj_48.js": 333998,
+        "/assets/TV-BTXVmcJn.js": 146835
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 0,
+      "taskMilliseconds": 5,
+      "jsHeapBytes": 4780824,
+      "errors": []
+    },
+    {
+      "path": "/tv#section=movie",
+      "motion": "reduce",
+      "jsBytes": 481559,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-CZUBj_48.js": 333998,
+        "/assets/TV-BTXVmcJn.js": 146835
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 0,
+      "taskMilliseconds": 1,
+      "jsHeapBytes": 4990904,
+      "errors": []
+    },
+    {
+      "path": "/portal",
+      "motion": "reduce",
+      "jsBytes": 436139,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-CZUBj_48.js": 333998,
+        "/assets/graphics-Bc56ajDT.js": 183,
+        "/assets/Portal-CzWDFBEs.js": 6175,
+        "/assets/motor-status-C-QGGhg6.js": 279,
+        "/assets/gsap-Dm7UF3sG.js": 69976,
+        "/assets/fx-D_-pC3JB.js": 24802
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 1,
+      "taskMilliseconds": 1,
+      "jsHeapBytes": 4347944,
+      "errors": []
+    },
+    {
+      "path": "/portal",
+      "motion": "no-preference",
+      "jsBytes": 972383,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-CZUBj_48.js": 333998,
+        "/assets/graphics-Bc56ajDT.js": 183,
+        "/assets/motor-status-C-QGGhg6.js": 279,
+        "/assets/Portal-CzWDFBEs.js": 6175,
+        "/assets/gsap-Dm7UF3sG.js": 69976,
+        "/assets/fx-D_-pC3JB.js": 24802,
+        "/assets/three-runtime-znxcEKgo.js": 536244
+      },
+      "drawsPerSecond": 30.5,
+      "canvasPixels": 3999086,
+      "taskMilliseconds": 54,
+      "jsHeapBytes": 6800932,
+      "errors": []
+    }
+  ],
+  "motor": [
+    {
+      "milliseconds": 6.559624999999997,
+      "rss": 50413568,
+      "heap": 5556568,
+      "modules": 1,
+      "torrentLoaded": false
+    },
+    {
+      "milliseconds": 5.390499999999999,
+      "rss": 50069504,
+      "heap": 5556568,
+      "modules": 1,
+      "torrentLoaded": false
+    },
+    {
+      "milliseconds": 5.300166999999998,
+      "rss": 50102272,
+      "heap": 5556640,
+      "modules": 1,
+      "torrentLoaded": false
+    },
+    {
+      "milliseconds": 4.498375000000001,
+      "rss": 50102272,
+      "heap": 5556568,
+      "modules": 1,
+      "torrentLoaded": false
+    },
+    {
+      "milliseconds": 4.684917,
+      "rss": 50053120,
+      "heap": 5556568,
+      "modules": 1,
+      "torrentLoaded": false
+    }
+  ]
+}

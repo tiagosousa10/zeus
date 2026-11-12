@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useMemberState } from "../lib/session";
 import "./management.css";
 import "./addons-fidelity.css";
+import "./management-hero.css";
 type ConfigField = {
   key: string;
   title?: string;
@@ -379,7 +380,10 @@ export default function Addons() {
   return (
     <Page>
       <div className="addons-fidelity">
-        <section className="fg-hero" aria-labelledby="addons-title">
+        <section
+          className="fg-hero management-hero"
+          aria-labelledby="addons-title"
+        >
           <div className="fg-art" aria-hidden="true">
             <div className="fg-pan">
               <img
@@ -393,7 +397,7 @@ export default function Addons() {
             </div>
           </div>
           <canvas className="fg-embers" ref={embers} aria-hidden="true" />
-          <div className="fg-copy">
+          <div className="fg-copy management-hero-copy">
             <h1 className="z-display" id="addons-title">
               Add-ons
             </h1>

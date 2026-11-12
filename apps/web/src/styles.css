@@ -86,3 +86,184 @@ input[type="checkbox"] {
   font: 48px Georgia;
   color: var(--gold);
 }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8796a538 transparent;
+}
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: #8796a538;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #8796a56b;
+}
+.zeus-loader {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: #b7c5d0;
+  font: 11px/1.5 var(--font, system-ui);
+  letter-spacing: 0.04em;
+}
+.zeus-loader.is-compact {
+  min-height: 0;
+  flex-direction: row;
+  gap: 10px;
+  padding: 12px;
+}
+.zeus-loader-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.zeus-loader-mark svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.zeus-loader-mark circle {
+  stroke: #b3cfdb;
+  stroke-width: 0.7;
+  stroke-dasharray: 32 12;
+  transform-origin: center;
+  animation: zeus-orbit 3s linear infinite;
+  opacity: 0.55;
+}
+.zeus-loader-mark path {
+  fill: #d8c593;
+  filter: drop-shadow(0 0 4px #e8c17755);
+  animation: zeus-pulse 1.6s ease-in-out infinite;
+}
+.zeus-loader.is-compact .zeus-loader-mark {
+  width: 26px;
+  height: 26px;
+}
+.zeus-activity {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.zeus-activity .zeus-loader {
+  background: #090e17e8;
+  border: 1px solid #9ebccb24;
+  border-radius: 12px;
+  padding: 14px 22px;
+  box-shadow: 0 6px 36px #0007;
+}
+/* Page/player feedback takes precedence over the global fallback. CSS updates
+   in the same frame and removes the duplicate from the accessibility tree too. */
+body:has(.zeus-loader[data-loading-scope="local"]) .zeus-activity {
+  display: none;
+}
+.page-loading {
+  letter-spacing: normal;
+}
+.global-search-trigger {
+  width: auto !important;
+  gap: 10px !important;
+  padding: 8px 13px !important;
+  height: 38px !important;
+  border-radius: 9px !important;
+  display: flex !important;
+}
+.global-search-trigger svg {
+  width: 17px !important;
+  height: 17px !important;
+}
+.global-search-trigger span {
+  font-size: 12px;
+}
+.global-search-trigger kbd {
+  font: 10px monospace;
+  color: #9aa8b3;
+}
+.player-menu-toggle {
+  position: fixed;
+  z-index: 30;
+  right: 24px;
+  top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0b121ddd;
+  border: 1px solid #acc7df29;
+  border-radius: 8px;
+  color: #c5d5df;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.player-menu-toggle span {
+  font-size: 11px;
+}
+.player-menu-toggle:hover,
+.player-menu-toggle:focus-visible {
+  border-color: #a2d7df;
+}
+.zeus-player .p-top {
+  padding-right: 150px;
+}
+.title-sources {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  width: calc(100% - 48px) !important;
+}
+.title-sources .sources-head,
+.title-sources .t-section-head {
+  align-items: center !important;
+  gap: 16px;
+}
+.player-loading .zeus-loader {
+  min-height: 0;
+}
+.player-loading > .zeus-loader > span {
+  width: auto;
+  height: auto;
+  border: 0;
+  animation: none;
+}
+@keyframes zeus-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes zeus-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zeus-loader-mark * {
+    animation: none !important;
+  }
+}
+@media (max-width: 650px) {
+  .global-search-trigger span,
+  .global-search-trigger kbd {
+    display: none;
+  }
+  .title-sources {
+    width: calc(100% - 28px) !important;
+  }
+  .player-menu-toggle {
+    right: 14px;
+    top: 14px;
+  }
+}

@@ -1,14 +1,16 @@
 import { createHash } from "node:crypto";
 import { channelTags, cleanFolderName, detectCountry, isAdult } from "./names.js";
-import type { Section, SectionData, TVCatalog, TVCategory, TVChannel, TVMovie, TVSeries } from "./types.js";
+import type { Section, SectionData, TVCatalog, TVCategory, TVChannel, TVEpisode, TVMovie, TVSeries } from "./types.js";
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 
 interface Entry { section: Section; group: string; name: string; logo?: string; epgId?: string; url: string; categoryId: string; id: string }
 
 function sectionOf(path: string, group: string): Section {
+  if (path.includes("/live/")) return "live";
   if (path.includes("/movie/")) return "movie";
   if (path.includes("/series/")) return "series";
+  if (/\.(m3u8|ts)$/i.test(path)) return "live";
   const words = cleanFolderName(group).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().split(/[^a-z0-9]+/);
   if (words.some((w) => ["filmes", "filme", "movies", "movie", "vod"].includes(w))) return "movie";
   if (words.some((w) => ["series", "serie"].includes(w))) return "series";
@@ -88,7 +90,14 @@ export function normalizeM3U(text: string, base: string, now: number): TVCatalog
   for (const e of of("series")) {
     const name = e.name.replace(/\s*S\d+\s*E\d+.*$/i, "").trim() || e.name;
     const id = hash(`series${e.categoryId}${name}`);
-    if (!series.has(id)) series.set(id, { id, categoryId: e.categoryId, name, poster: e.logo, adult: isAdult(name) });
+    let s = series.get(id);
+    if (!s) series.set(id, (s = { id, categoryId: e.categoryId, name, poster: e.logo, adult: isAdult(name), episodes: [] }));
+    const sxe = e.name.match(/S(\d+)\s*E(\d+)/i);
+    const ext = new URL(e.url).pathname.match(/\.([a-z0-9]+)$/i)?.[1];
+    s.episodes!.push({
+      id: hash(`${id}|${e.url}`), season: sxe ? Number(sxe[1]) : 1, number: sxe ? Number(sxe[2]) : s.episodes!.length + 1,
+      title: e.name, container: ext?.toLowerCase() ?? "mp4", source: e.url,
+    });
   }
 
   return {

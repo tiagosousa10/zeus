@@ -1,7 +1,8 @@
+import { loadThree } from "../lib/graphics";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useMemberState } from "../lib/session";
 import gsap from "gsap";
-import { api } from "../lib/api";
+import { useMotorStatus } from "../lib/motor-status";
 import "./portal.css";
 type PortalEffects = {
   setMood: (value: number) => void;
@@ -9,7 +10,7 @@ type PortalEffects = {
   strike: (target: Element, options?: object) => boolean;
 };
 export default function Portal() {
-  const [motor, setMotor] = useState<boolean | null>(null);
+  const motor = useMotorStatus();
   const { state, save, loading, error: stateError } = useMemberState();
   const [hover, setHover] = useState("");
   const [leaving, setLeaving] = useState("");
@@ -22,27 +23,10 @@ export default function Portal() {
   active.current = hover;
   const leavingRef = useRef(false);
   useEffect(() => {
-    let live = true;
-    const check = () =>
-      api<{ ok: boolean }>("/motor/status")
-        .then((r) => {
-          if (live) setMotor(r.ok);
-        })
-        .catch(() => {
-          if (live) setMotor(false);
-        });
-    void check();
-    const timer = setInterval(check, 15000);
-    return () => {
-      live = false;
-      clearInterval(timer);
-    };
-  }, []);
-  useEffect(() => {
     document.title = "Zeus — O teu universo";
     let cancelled = false,
       destroy = () => {};
-    Promise.all([import("three"), import("../lib/fx.js")])
+    Promise.all([loadThree(), import("../lib/fx.js")])
       .then(([THREE, fx]) => {
         if (cancelled || !painting.current || !bolts.current) return;
         Object.assign(window, { THREE, gsap });

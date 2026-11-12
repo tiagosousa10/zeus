@@ -1,7 +1,8 @@
 import { safeFetch } from "../../lib/safe-fetch.js";
 import { normalizeM3U } from "./m3u.js";
 import { normalizeSeriesInfo, normalizeVodInfo, normalizeXtreamCatalog, xtreamUrl } from "./xtream.js";
-import type { IPTVList, TVCatalog, TVMovie, TVMovieDetail, TVSeries, TVSeriesDetail } from "./types.js";
+import type { Account } from "./account.js";
+import type { IPTVList, TVCatalog, TVEpisode, TVMovie, TVMovieDetail, TVSeries, TVSeriesDetail } from "./types.js";
 
 const REFUSED = "A lista recusou o utilizador ou a palavra-passe.";
 const UNAVAILABLE = "O fornecedor da lista não respondeu. Tenta de novo.";
@@ -72,7 +73,43 @@ export async function fetchMovie(list: IPTVList, base: TVMovie): Promise<TVMovie
   return guard(async () => normalizeVodInfo(await xtream(list, "get_vod_info", { vod_id: base.id }), base));
 }
 
+function m3uSeasons(episodes: TVEpisode[]): TVSeriesDetail["seasons"] {
+  const sorted = [...episodes].sort((a, b) => a.season - b.season || a.number - b.number);
+  const seasons = new Map<number, TVEpisode[]>();
+  for (const e of sorted) seasons.set(e.season, [...(seasons.get(e.season) ?? []), e]);
+  return [...seasons].map(([number, eps]) => ({ number, name: `Temporada ${number}`, episodes: eps }));
+}
+
 export async function fetchSeries(list: IPTVList, base: TVSeries): Promise<TVSeriesDetail> {
-  if (list.type === "m3u") return { ...base, cast: [], seasons: [] };
+  if (list.type === "m3u") return { ...base, cast: [], seasons: m3uSeasons(base.episodes ?? []) };
   return guard(async () => normalizeSeriesInfo(await xtream(list, "get_series_info", { series_id: base.id }), base));
+}
+
+const count = (v: unknown): number | undefined => {
+  if (typeof v !== "number" && typeof v !== "string") return undefined;
+  const n = Number(v);
+  return v === "" || !Number.isFinite(n) ? undefined : n;
+};
+const positive = (v: unknown): number | undefined => {
+  const n = count(v);
+  return n !== undefined && n > 0 ? n : undefined;
+};
+
+export function fetchAccount(list: IPTVList): Promise<Account> {
+  if (list.type === "m3u") return Promise.resolve({ formats: [] });
+  return guard(async () => {
+    const v = (await xtream(list, "")) as { user_info?: Record<string, unknown> } | null;
+    if (refused(v)) throw new ProviderError(REFUSED);
+    const info = v?.user_info ?? {};
+    const formats = (Array.isArray(info.allowed_output_formats) ? info.allowed_output_formats : [])
+      .map((f) => String(f).toLowerCase())
+      .filter((f): f is "m3u8" | "ts" => f === "m3u8" || f === "ts");
+    const exp = positive(info.exp_date);
+    return {
+      formats,
+      maxConnections: positive(info.max_connections),
+      activeConnections: count(info.active_cons),
+      expiresAt: exp === undefined ? undefined : exp * 1000,
+    };
+  });
 }

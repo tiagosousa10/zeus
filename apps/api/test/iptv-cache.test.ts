@@ -9,7 +9,7 @@ import type { IPTVList } from "../src/modules/iptv/types.js";
 process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-iptv-cache-"));
 const { config } = await import("../src/lib/config.js");
 const { setProviderFetch } = await import("../src/modules/iptv/provider.js");
-const { getCatalog, getMovie, getSeries, setClock, clearMemoryCache } = await import("../src/modules/iptv/cache.js");
+const { getAccount, getCatalog, getMovie, getSeries, setClock, clearMemoryCache } = await import("../src/modules/iptv/cache.js");
 const dataDir = config.dataDir;
 
 const list: IPTVList = { id: "l1", name: "Casa", type: "xtream", url: "https://tv.example.test/", username: "u", password: "segredo-123" };
@@ -72,6 +72,15 @@ test("M3U details come from the catalog without extra requests", async () => {
   assert.deepEqual(await getMovie("u8", m3u, base.id), { ...base, cast: [] });
   assert.equal(f.calls.length, 1);
 });
+test("M3U series seasons come sorted from the catalog without extra requests", async () => {
+  const m3u = { id: "l4", name: "M3U", type: "m3u" as const, url: "https://tv.example.test/list.m3u" };
+  const text = '#EXTM3U\n#EXTINF:-1 group-title="Séries",Tróia S01 E04\nhttps://tv.example.test/series/u/p/4.mp4\n#EXTINF:-1 group-title="Séries",Tróia S01E02\nhttps://tv.example.test/series/u/p/2.mp4\n';
+  const f = fakeFetch(() => new Response(text)); setProviderFetch(f);
+  const catalog = await getCatalog("u9", m3u);
+  const detail = await getSeries("u9", m3u, catalog.series.items[0].id);
+  assert.deepEqual(detail!.seasons.map((s) => [s.number, s.name, s.episodes.map((e) => e.number)]), [[1, "Temporada 1", [2, 4]]]);
+  assert.equal(f.calls.length, 1);
+});
 const REFUSED = /recusou o utilizador ou a palavra-passe/;
 const UNAVAILABLE = /O fornecedor da lista não respondeu/;
 test("auth \"0\" and HTTP 401 are credential errors", async () => {
@@ -108,4 +117,16 @@ test("disk files from an older cache format are ignored", async () => {
   const f = fakeFetch(xtreamRoutes); setProviderFetch(f);
   assert.equal((await getCatalog("u14", list)).live.items.length, 4);
   assert.equal(f.calls.length, 6);
+});
+
+test("account is cached for 1 h in memory only", async () => {
+  let t = 0; setClock(() => t); clearMemoryCache();
+  const f = fakeFetch(xtreamRoutes); setProviderFetch(f);
+  const files = () => readdirSync(join(dataDir, "iptv-cache"), { recursive: true }).length;
+  const before = files();
+  await getAccount("acct-user", list); await getAccount("acct-user", list);
+  assert.equal(f.calls.length, 1);
+  t += 3600_000 - 1; await getAccount("acct-user", list); assert.equal(f.calls.length, 1);
+  t += 2; await getAccount("acct-user", list); assert.equal(f.calls.length, 2);
+  assert.equal(files(), before);
 });

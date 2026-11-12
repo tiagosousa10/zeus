@@ -12,6 +12,8 @@
 
 **Sequência:** Plano 1 (este, dados) → Plano 2 (reprodução pela API e guia EPG) → Plano 3 (os 9 ecrãs). Cada plano termina com software testável.
 
+> Estado verificado em 12/11/2026: módulos, rotas e testes deste plano já existem em HEAD; suite actual 134/134, typecheck e build completos passaram na QA final. Commits de implementação existentes: `f5764a3`, `1fe33fe`, `0b9650a`, `36b54c5`, `6031081`; estes commits não foram criados nesta QA. As caixas históricas de RED não são prova de execução e mantêm-se sem confirmação histórica. Os passos de implementação e verificação actual abaixo foram reconciliados com os ficheiros/testes; não se alega ter repetido os RED antigos.
+
 ## Global Constraints
 
 - Mensagens visíveis em PT-PT; identificadores em inglês.
@@ -63,7 +65,7 @@
 **Interfaces:**
 - Produces: `cleanFolderName(raw: string): string`, `detectCountry(name: string): string | undefined` (código ISO 3166-1 alfa-2 em maiúsculas), `isAdult(name: string): boolean`, `channelTags(name: string): ChannelTag[]` com `type ChannelTag = "HD" | "FHD/4K" | "Notícias" | "Desporto" | "Infantis"`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { test } from "node:test";
@@ -105,19 +107,19 @@ test("channel tags derive from channel names", () => {
 Run: `npx tsx --test apps/api/test/iptv-names.test.ts`
 Expected: FAIL com «Cannot find module .../names.js».
 
-- [ ] **Step 3: Implement `names.ts`**
+- [x] **Step 3: Implement `names.ts`**
 
 - `cleanFolderName`: tira dos extremos tudo o que não seja letra, dígito, `+` ou `(`/`)`; junta espaços; se o nome inteiro estiver em maiúsculas, palavras com mais de 3 letras passam a «Capitalizada» e as de 3 ou menos ficam como estão. Se a limpeza deixar o nome vazio, devolve o original sem espaços nos extremos.
 - `detectCountry`: mapa de sinónimos sem acentos e em minúsculas (no mínimo os 11 do teste, mais os usuais da lista real: UK/Reino Unido, Itália/Italy, Alemanha/Germany, EUA/USA, Canadá, Polónia, Roménia, Turquia, Árabe não conta como país); procura por palavra inteira.
 - `isAdult`: regex por palavra inteira, sem distinguir maiúsculas: `adult(s|os)?`, `for adults`, `xxx`, `porn\w*`, `18\+`, `\+18`. «Adultério» não pode coincidir.
 - `channelTags`: ordem fixa `HD`, `FHD/4K`, `Notícias`, `Desporto`, `Infantis`; `HD` só quando não há `FHD`/`4K`/`UHD`. Termos: notícias/news/cnn/informação; sport/desporto/deportes/eleven/dazn/eurosport; kids/infantil/panda/cartoon/disney junior/nick jr.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx tsx --test apps/api/test/iptv-names.test.ts`
 Expected: PASS (4 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/names.ts apps/api/test/iptv-names.test.ts
@@ -154,7 +156,7 @@ export interface TVCatalog { fetchedAt: number; live: SectionData<TVChannel>; mo
 - Produces (`xtream.ts`): `xtreamUrl(list: { url: string; username?: string; password?: string }, action: string, params?: Record<string, string>): string`; `normalizeXtreamCatalog(raw: { liveCategories: unknown; live: unknown; vodCategories: unknown; vod: unknown; seriesCategories: unknown; series: unknown }, now: number): TVCatalog`; `normalizeVodInfo(raw: unknown, base: TVMovie): TVMovieDetail`; `normalizeSeriesInfo(raw: unknown, base: TVSeries): TVSeriesDetail`.
 - Produces (fixture): `xtreamFixture` (objecto com as 6 respostas de catálogo + `vodInfo` + `seriesInfo`) e `fakeFetch(routes: (url: URL) => unknown | Response): typeof safeFetch` que devolve JSON com 200 e conta chamadas em `fakeFetch.calls: URL[]`.
 
-- [ ] **Step 1: Write the fixture and the failing test**
+- [x] **Step 1: Write the fixture and the failing test**
 
 A fixture tem: 3 categorias ao vivo (`"1": "★●· PORTUGAL ●·★"`, `"2": "ADULTOS"`, `"3": "Exclusivos"`); 4 canais (RTP1 HD em 1 com `stream_id: 101`, `epg_channel_id: "rtp1.pt"` e `num: 1`; SIC em 1; «XXX Gold» em 3; «Canal 18» em 2); 1 categoria de filmes com 2 filmes (um com `rating: ""` e `added: "1700000000"`, outro com `rating: "7.6"`, `container_extension: "mkv"`); 1 categoria de séries com 1 série; `vodInfo` com `backdrop_path` como **string**; `seriesInfo` com `episodes` como **objecto** `{"1": [...], "2": [...]}`, episódio 2 da T1 sem `info`.
 
@@ -198,16 +200,16 @@ test("garbage payloads produce empty sections, not exceptions", () => {
 Run: `npx tsx --test apps/api/test/iptv-xtream.test.ts`
 Expected: FAIL (módulo em falta).
 
-- [ ] **Step 3: Implement `types.ts` and `xtream.ts`**
+- [x] **Step 3: Implement `types.ts` and `xtream.ts`**
 
 Ids sempre `String(...)`. Números com helper `num(v)` → `undefined` se `NaN` ou vazio. `container` por omissão `"mp4"`. `count` = número de itens normalizados nessa categoria; categorias referidas por itens mas ausentes da lista de categorias são criadas com o nome «Outros». Itens sem nome ou sem id são descartados. `year` a partir de `releaseDate`/`releasedate`/`year`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx tsx --test apps/api/test/iptv-xtream.test.ts`
 Expected: PASS (4 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/types.ts apps/api/src/modules/iptv/xtream.ts apps/api/test/fixtures/xtream.ts apps/api/test/iptv-xtream.test.ts
@@ -226,7 +228,7 @@ git commit -m "feat(api): normalize Xtream live, movie and series payloads"
 - Consumes: Task 1, Task 2 (`TVCatalog`).
 - Produces: `normalizeM3U(text: string, base: string, now: number): TVCatalog`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 const text = `#EXTM3U
@@ -257,16 +259,16 @@ test("ids are stable across reloads", () => {
 Run: `npx tsx --test apps/api/test/iptv-m3u.test.ts`
 Expected: FAIL (módulo em falta).
 
-- [ ] **Step 3: Implement `normalizeM3U`**
+- [x] **Step 3: Implement `normalizeM3U`**
 
 Reaproveita o parsing de atributos de `apps/web/src/lib/iptv.ts:parseM3U` (só `http:`/`https:`). Secção: caminho com `/movie/` → `movie`, `/series/` → `series`, senão `live`. Id do item = primeiros 16 caracteres hex de `sha256(url)`; id da categoria = `sha256(secção + group-title)` (16 hex). Filmes: `(AAAA)` no fim do nome vira `year` e sai do nome. Séries M3U: nesta versão, cada entrada é uma série com o nome sem o sufixo `SxxExx`, agrupando episódios com o mesmo nome (o detalhe de série M3U fica para o Plano 2 se a lista real o exigir).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx tsx --test apps/api/test/iptv-m3u.test.ts`
 Expected: PASS (2 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/m3u.ts apps/api/test/iptv-m3u.test.ts
@@ -291,7 +293,7 @@ git commit -m "feat(api): build IPTV sections from M3U lists on the server"
   - `fetchCatalog(list: IPTVList, now: number): Promise<TVCatalog>`; `fetchMovie(list, base: TVMovie): Promise<TVMovieDetail>`; `fetchSeries(list, base: TVSeries): Promise<TVSeriesDetail>`.
   - `getCatalog(userId: string, list: IPTVList, opts?: { force?: boolean }): Promise<TVCatalog>`; `getMovie(userId, list, id: string)`, `getSeries(userId, list, id: string)` (devolvem `undefined` se o id não existir no catálogo); `setClock(f: () => number): void` (só testes).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 O teste define `process.env.ZEUS_DATA_DIR` para uma pasta temporária **antes** de importar os módulos (import dinâmico), e usa `fakeFetch` com a fixture da Task 2.
 
@@ -340,19 +342,19 @@ test("provider failure messages never contain the list URL or password", async (
 Run: `npx tsx --test apps/api/test/iptv-cache.test.ts`
 Expected: FAIL (módulos em falta).
 
-- [ ] **Step 3: Implement `provider.ts` and `cache.ts`**
+- [x] **Step 3: Implement `provider.ts` and `cache.ts`**
 
 - Xtream: 6 pedidos **em sequência** (`get_live_categories`, `get_live_streams`, `get_vod_categories`, `get_vod_streams`, `get_series_categories`, `get_series`), `safeFetch` com `timeout: 60000`, `maxBytes: 64 MiB`. Antes do catálogo, se a resposta de `get_live_categories` for um objecto com `user_info.auth === 0`, lança o erro de credenciais. Qualquer outra falha vira `ProviderError` com a mensagem genérica (a original não se propaga).
 - M3U: um pedido a `list.url`, depois `normalizeM3U`.
 - Chave da cache: `sha256(userId|list.id|list.type|list.url|username|password)` em hex. Memória: `Map<key, { value, expires }>`; em curso: `Map<key, Promise>`. Disco: `config.dataDir/iptv-cache/<key>.bin` com `encrypt({ value, expires })`, permissões `0o600`; ficheiro ilegível é ignorado.
 - Detalhes: chave `key + ":movie:" + id` / `":series:" + id`, TTL 12 h, mesmo mecanismo.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx tsx --test apps/api/test/iptv-cache.test.ts`
 Expected: PASS (6 testes).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/provider.ts apps/api/src/modules/iptv/cache.ts apps/api/src/modules/iptv/types.ts apps/api/src/lib/config.ts apps/api/test/iptv-cache.test.ts
@@ -391,7 +393,7 @@ export function adultItemsVisible(section: Section, p: TVListPrefs): boolean; //
 export function orderCategories(cs: TVCategory[], p: TVListPrefs): (TVCategory & { pinned: boolean; hidden: boolean })[];
 ```
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 const cats = [cat("1", "Portugal"), cat("2", "For Adults", true), cat("3", "Brasil"), cat("4", "Espanha")];
@@ -428,16 +430,16 @@ test("prefsFor fills in missing parts", () => {
 Run: `npx tsx --test apps/api/test/iptv-prefs.test.ts`
 Expected: FAIL (módulo em falta).
 
-- [ ] **Step 3: Implement `prefs.ts` and wire `tv` into the member state**
+- [x] **Step 3: Implement `prefs.ts` and wire `tv` into the member state**
 
 Em `member/routes.ts`, acrescentar `tv: tvPrefs.optional()` ao `patch`. Em `service.ts`, `emptyState()` ganha `tv: {}`. Listas de ids com máx. 10 000 entradas; `progress` com máx. 5 000 chaves.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx tsx --test apps/api/test/iptv-prefs.test.ts && npm test && npm run typecheck`
 Expected: PASS em tudo (o teste de integração existente continua verde).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/prefs.ts apps/api/src/modules/member/routes.ts apps/api/src/modules/member/service.ts apps/api/test/iptv-prefs.test.ts
@@ -477,7 +479,7 @@ export function publicItem<T extends { source?: string }>(item: T): Omit<T, "sou
   - `ProviderError` → 502 com a mensagem dela; `section` inválida → 400.
   - Todas as respostas passam itens por `publicItem`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 const c = normalizeXtreamCatalog(xtreamFixture.catalog, 0);
@@ -513,11 +515,11 @@ test("public items never carry the M3U source", () => {
 Run: `npx tsx --test apps/api/test/iptv-views.test.ts`
 Expected: FAIL (módulo em falta).
 
-- [ ] **Step 3: Implement `views.ts` and the routes**
+- [x] **Step 3: Implement `views.ts` and the routes**
 
 `total` e `count` de cada `CategoryView` contam só itens visíveis (sem adultos quando `adultItemsVisible` é falso). `hiddenCount` = número de pastas escondidas na secção. O índice de pesquisa usa `c` = nome limpo da pasta. Validar `page`/`size` com zod (`z.coerce.number().int()`).
 
-- [ ] **Step 4: Run the whole suite**
+- [x] **Step 4: Run the whole suite**
 
 Run: `npx tsx --test apps/api/test/iptv-views.test.ts && npm test && npm run typecheck`
 Expected: PASS em tudo.
@@ -526,7 +528,7 @@ Expected: PASS em tudo.
 
 Com `npm run dev` a correr e sessão iniciada no browser, abrir `http://127.0.0.1:5174/api/iptv/lists/<id da lista>` e confirmar: 3 secções; ~16 pastas Ao vivo com nomes limpos; 1 pasta adulta escondida; segundo pedido instantâneo (cache). Anotar só contagens, nunca URLs.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/api/src/modules/iptv/views.ts apps/api/src/modules/iptv/routes.ts apps/api/test/iptv-views.test.ts

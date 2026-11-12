@@ -29,9 +29,7 @@ function localSecret(name: string) {
 }
 export const config = {
   dataDir: dir,
-  databaseUrl:
-    process.env.DATABASE_URL ||
-    "postgres://zeus:zeus_local@127.0.0.1:55439/zeus",
+  databasePath: process.env.ZEUS_DATABASE_PATH || join(dir, "zeus.sqlite"),
   authSecret: process.env.BETTER_AUTH_SECRET || localSecret("auth-secret"),
   encryptionKey:
     process.env.ZEUS_ENCRYPTION_KEY || localSecret("encryption-key"),

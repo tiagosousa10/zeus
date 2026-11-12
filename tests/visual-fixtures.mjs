@@ -20,13 +20,38 @@ export async function mockMember(page, overrides = {}) {
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user: member } }),
   );
+  const patches = [];
+  const publicState = () => ({
+    ...state,
+    iptv: state.iptv.map(
+      ({ id, name, type, url, username, password, epgUrl, configured }) => ({
+        id,
+        name,
+        type,
+        configured: {
+          url: !!url || !!configured?.url,
+          username: !!username || !!configured?.username,
+          password: !!password || !!configured?.password,
+          epgUrl: epgUrl !== undefined ? !!epgUrl : !!configured?.epgUrl,
+        },
+      }),
+    ),
+  });
   await page.route("**/api/state", (r) => {
-    if (r.request().method() === "PATCH")
-      state = { ...state, ...r.request().postDataJSON() };
-    return r.fulfill({ json: state });
+    if (r.request().method() === "PATCH") {
+      const patch = r.request().postDataJSON();
+      patches.push(structuredClone(patch));
+      if (patch.iptv)
+        patch.iptv = patch.iptv.map(({ configured: _, ...entry }) => ({
+          ...state.iptv.find((l) => l.id === entry.id),
+          ...entry,
+        }));
+      state = { ...state, ...patch };
+    }
+    return r.fulfill({ json: publicState() });
   });
   await page.route("**/api/motor/status", (r) =>
     r.fulfill({ json: { ok: true, active: false } }),
   );
-  return { getState: () => structuredClone(state) };
+  return { getState: () => structuredClone(state), patches };
 }

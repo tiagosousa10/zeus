@@ -1,6 +1,7 @@
+import { ZeusLoader } from "../components/ZeusLoader";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 import { api } from "../lib/api";
 import { useMemberState } from "../lib/session";
 import {
@@ -328,29 +329,40 @@ export default function Player() {
     const native = (element as NativeAudioVideo).audioTracks;
     native?.addEventListener("addtrack", applyAudio);
     element.addEventListener("loadedmetadata", applyAudio);
-    if (
-      /\.m3u8(?:$|\?)/i.test(mediaURL) &&
-      !element.canPlayType("application/vnd.apple.mpegurl") &&
-      Hls.isSupported()
-    ) {
-      hls = new Hls();
-      hlsPlayer.current = hls;
-      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, applyAudio);
-      hls.loadSource(mediaURL);
-      hls.attachMedia(element);
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          setWaiting(false);
-          setError(
-            "A Fonte HLS deixou de responder ou usa um formato incompatível. Tenta novamente ou escolhe outra Fonte.",
-          );
+    let cancelled = false;
+    async function attach() {
+      if (
+        /\.m3u8(?:$|\?)/i.test(mediaURL) &&
+        !element!.canPlayType("application/vnd.apple.mpegurl")
+      ) {
+        const { default: Hls } = await import("hls.js");
+        if (cancelled) return;
+        if (Hls.isSupported()) {
+          hls = new Hls();
+          hlsPlayer.current = hls;
+          hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, applyAudio);
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal && !cancelled) {
+              setWaiting(false);
+              setError(
+                "A Fonte HLS deixou de responder ou usa um formato incompatível. Tenta novamente ou escolhe outra Fonte.",
+              );
+            }
+          });
+          hls.loadSource(mediaURL);
+          hls.attachMedia(element!);
+          return;
         }
-      });
-    } else {
-      element.src = mediaURL;
-      element.load();
+      }
+      element!.src = mediaURL;
+      element!.load();
     }
+    void attach().catch(() => {
+      if (!cancelled)
+        setError("Não foi possível carregar o leitor. Tenta novamente.");
+    });
     return () => {
+      cancelled = true;
       native?.removeEventListener("addtrack", applyAudio);
       element.removeEventListener("loadedmetadata", applyAudio);
       hls?.destroy();
@@ -532,11 +544,20 @@ export default function Player() {
               : "none",
         } as React.CSSProperties
       }
-      onPointerMove={wake}
-      onPointerDown={wake}
       onFocus={wake}
       aria-label="Leitor de vídeo"
     >
+      <button
+        className="player-menu-toggle"
+        aria-label="Controlos do leitor"
+        aria-expanded={showControls}
+        onClick={() => {
+          setIdle(showControls);
+          setMenu(null);
+        }}
+      >
+        ☷ <span>Controlos</span>
+      </button>
       <video
         ref={video}
         playsInline
@@ -661,8 +682,7 @@ export default function Player() {
       </header>
       {(status || waiting) && !error && (
         <div className="player-loading" role="status">
-          <span />
-          <p>{status || "A carregar vídeo…"}</p>
+          <ZeusLoader label={status || "A carregar vídeo…"} />
         </div>
       )}
       {error && (

@@ -75,5 +75,11 @@ export function xtreamRoutes(url: URL): unknown {
     get_vod_info: vodInfo,
     get_series_info: seriesInfo,
   };
+  if (!url.searchParams.has("action")) {
+    return {
+      user_info: { auth: 1, status: "Active", max_connections: "1", active_cons: "0", allowed_output_formats: ["m3u8", "ts"], exp_date: "1800000000" },
+      server_info: { url: "tv.example.test", port: "80", https_port: "443", server_protocol: "https" },
+    };
+  }
   return routes[url.searchParams.get("action") ?? ""] ?? [];
 }

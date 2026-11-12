@@ -1,9 +1,11 @@
+import { loadThree } from "../lib/graphics";
 import { useEffect, useRef, useState } from "react";
 import { Page } from "../components/Layout";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import "./management.css";
 import "./admin-fidelity.css";
+import "./management-hero.css";
 import gsap from "gsap";
 type Member = {
   id: string;
@@ -36,30 +38,29 @@ export default function Admin() {
   useEffect(() => {
     let disposed = false,
       painting: any;
-    Promise.all([import("three"), import("../lib/fx.js")]).then(
-      ([three, fx]) => {
-        if (disposed || !paintingRef.current) return;
-        Object.assign(window, { THREE: three, gsap });
-        painting = (fx.livingPainting as any)(
-          paintingRef.current,
-          "/art/img/conselho.webp",
-          {
-            focus: { x: 0.83, y: 0.2 },
-            anchor: { x: 0.67, y: 0.44 },
-            anchorNarrow: { x: 0.5, y: 0.27 },
-            figure: [
-              [0.78, 0.62, 0.2, 0.38],
-              [0.83, 0.2, 0.08, 0.13],
-              [0.95, 0.65, 0.06, 0.3],
-            ],
-            size: (w: number, h: number) => Math.max(w * 1.04, h * 1.6),
-            kenBurns: 0.025,
-            parallax: [8, 5],
-          },
-        );
-        painting.state.exposure = 0.88;
-      },
-    );
+    Promise.all([loadThree(), import("../lib/fx.js")]).then(([three, fx]) => {
+      if (disposed || !paintingRef.current) return;
+      Object.assign(window, { THREE: three, gsap });
+      painting = (fx.livingPainting as any)(
+        paintingRef.current,
+        "/art/img/conselho.webp",
+        {
+          focus: { x: 0.83, y: 0.2 },
+          anchor: { x: 0.78, y: 0.42 },
+          anchorNarrow: { x: 0.68, y: 0.23 },
+          figure: [
+            [0.78, 0.62, 0.2, 0.38],
+            [0.83, 0.2, 0.08, 0.13],
+            [0.95, 0.65, 0.06, 0.3],
+          ],
+          size: (w: number, h: number) =>
+            w < 700 ? Math.max(700, w * 1.8) : Math.max(w * 0.95, h * 1.4),
+          kenBurns: 0.025,
+          parallax: [8, 5],
+        },
+      );
+      painting.state.exposure = 0.88;
+    });
     return () => {
       disposed = true;
       painting?.destroy();
@@ -146,9 +147,12 @@ export default function Admin() {
   return (
     <Page>
       <div className="admin-fidelity">
-        <section className="council" aria-labelledby="admin-title">
+        <section
+          className="council management-hero"
+          aria-labelledby="admin-title"
+        >
           <div ref={paintingRef} aria-hidden="true" />
-          <div className="council-copy">
+          <div className="council-copy management-hero-copy">
             <div className="sigil" aria-hidden="true">
               Ζ
             </div>

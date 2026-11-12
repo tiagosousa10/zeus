@@ -2,6 +2,8 @@ import { lookup } from "node:dns/promises";
 import { isIP, BlockList } from "node:net";
 import http from "node:http";
 import https from "node:https";
+import type { IncomingMessage } from "node:http";
+import { Readable } from "node:stream";
 const denied = new BlockList();
 for (const [ip, prefix] of [
   ["0.0.0.0", 8],
@@ -29,14 +31,34 @@ export function isPublicAddress(address: string): boolean {
         !/^200[12]:/i.test(address) &&
         !/^2001:db8:/i.test(address);
 }
+type Handler = (
+  res: IncomingMessage,
+  status: number,
+  resolve: (r: Response) => void,
+  reject: (e: unknown) => void,
+  clearDeadline: () => void,
+) => void;
+
+let addressCheck = isPublicAddress;
+/** Test-only: lets tests reach a loopback server; returns a restore function. */
+export function setAddressCheck(fn: (address: string) => boolean): () => void {
+  addressCheck = fn;
+  return () => {
+    addressCheck = isPublicAddress;
+  };
+}
+
+const nullBodyStatuses = new Set([204, 205, 304]);
+
 /** Resolve every redirect, reject private networks and pin the checked IP to prevent DNS rebinding. */
-export async function safeFetch(
+async function guardedGet(
   input: string,
   options: {
     timeout?: number;
-    maxBytes?: number;
     headers?: Record<string, string>;
-  } = {},
+    signal?: AbortSignal;
+  },
+  onResponse: Handler,
 ): Promise<Response> {
   let url = new URL(input);
   for (let redirects = 0; redirects < 5; redirects++) {
@@ -50,21 +72,34 @@ export async function safeFetch(
     const addresses = isIP(host)
       ? [{ address: host, family: isIP(host) }]
       : await lookup(host, { all: true });
-    if (!addresses.length || addresses.some((a) => !isPublicAddress(a.address)))
+    if (!addresses.length || addresses.some((a) => !addressCheck(a.address)))
       throw new Error("Endereço privado ou reservado não permitido.");
     const chosen = addresses[0];
     const response = await new Promise<Response>((resolve, reject) => {
+      const { signal } = options;
+      if (signal?.aborted) {
+        reject(new Error("Pedido cancelado."));
+        return;
+      }
+      let incoming: IncomingMessage | undefined;
       const request = (url.protocol === "https:" ? https : http).request(
         url,
         {
           method: "GET",
-          headers: { "accept-encoding": "identity", ...options.headers },
+          // Some IPTV servers return 404 for anonymous HTTP clients.
+          // Headers normalizes casing so an explicit caller agent always wins.
+          headers: Object.fromEntries(new Headers({
+            "accept-encoding": "identity",
+            "user-agent": "Zeus/1.1.3",
+            ...Object.fromEntries(new Headers(options.headers)),
+          })),
           lookup: ((_host: any, opts: any, cb: any) =>
             opts.all
               ? cb(null, [chosen])
               : cb(null, chosen.address, chosen.family)) as any,
         },
         (res) => {
+          incoming = res;
           const status = res.statusCode || 502;
           if (status >= 300 && status < 400 && res.headers.location) {
             res.resume();
@@ -76,42 +111,25 @@ export async function safeFetch(
             );
             return;
           }
-          const chunks: Buffer[] = [];
-          let bytes = 0;
-          res.on("data", (chunk: Buffer) => {
-            bytes += chunk.length;
-            if (bytes > (options.maxBytes || 32 * 1024 * 1024)) {
-              res.destroy(new Error("Resposta demasiado grande."));
-              return;
-            }
-            chunks.push(chunk);
-          });
-          res.on("error", reject);
-          res.on("end", () => {
-            const headers = new Headers();
-            for (const k of [
-              "content-type",
-              "content-range",
-              "accept-ranges",
-            ]) {
-              const v = res.headers[k];
-              if (typeof v === "string") headers.set(k, v);
-            }
-            resolve(
-              new Response(
-                status === 204 ? null : new Uint8Array(Buffer.concat(chunks)),
-                { status, headers },
-              ),
-            );
-          });
+          onResponse(res, status, resolve, reject, () => clearTimeout(deadline));
         },
       );
       const deadline = setTimeout(
         () => request.destroy(new Error("O fornecedor não respondeu a tempo.")),
         options.timeout || 15000,
       );
+      const abort = () => {
+        const error = new Error("Pedido cancelado.");
+        request.destroy(error);
+        incoming?.destroy();
+        reject(error);
+      };
+      signal?.addEventListener("abort", abort, { once: true });
       request.on("error", reject);
-      request.on("close", () => clearTimeout(deadline));
+      request.on("close", () => {
+        clearTimeout(deadline);
+        signal?.removeEventListener("abort", abort);
+      });
       request.end();
     });
     if (
@@ -122,7 +140,94 @@ export async function safeFetch(
       url = new URL(response.headers.get("location")!, url);
       continue;
     }
+    // Callers resolve relative links (HLS) against where the body actually came from.
+    Object.defineProperty(response, "url", { value: url.href });
     return response;
   }
   throw new Error("Demasiados redireccionamentos.");
+}
+
+function copyHeaders(res: IncomingMessage, names: string[]): Headers {
+  const headers = new Headers();
+  for (const k of names) {
+    const v = res.headers[k];
+    if (typeof v === "string") headers.set(k, v);
+  }
+  return headers;
+}
+
+export function safeFetch(
+  input: string,
+  options: {
+    timeout?: number;
+    maxBytes?: number;
+    headers?: Record<string, string>;
+  } = {},
+): Promise<Response> {
+  return guardedGet(input, options, (res, status, resolve, reject) => {
+    if (nullBodyStatuses.has(status)) res.resume();
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+    res.on("data", (chunk: Buffer) => {
+      bytes += chunk.length;
+      if (bytes > (options.maxBytes || 32 * 1024 * 1024)) {
+        res.destroy(new Error("Resposta demasiado grande."));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    res.on("error", reject);
+    res.on("end", () => {
+      const headers = copyHeaders(res, [
+        "content-type",
+        "content-range",
+        "accept-ranges",
+      ]);
+      try {
+        resolve(
+          new Response(
+            nullBodyStatuses.has(status)
+              ? null
+              : new Uint8Array(Buffer.concat(chunks)),
+            { status, headers },
+          ),
+        );
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+/** Same guards as safeFetch, but the body is streamed unbuffered; the timeout only covers the headers. */
+export function safeStream(
+  input: string,
+  options: {
+    headers?: Record<string, string>;
+    signal?: AbortSignal;
+    timeout?: number;
+  } = {},
+): Promise<Response> {
+  return guardedGet(input, options, (res, status, resolve, reject, clearDeadline) => {
+    clearDeadline();
+    const headers = copyHeaders(res, [
+      "content-type",
+      "content-length",
+      "content-range",
+      "accept-ranges",
+    ]);
+    const nullBody = nullBodyStatuses.has(status);
+    if (nullBody) res.resume();
+    try {
+      resolve(
+        new Response(nullBody ? null : (Readable.toWeb(res) as ReadableStream), {
+          status,
+          headers,
+        }),
+      );
+    } catch (e) {
+      res.destroy();
+      reject(e);
+    }
+  });
 }

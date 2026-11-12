@@ -44,25 +44,12 @@ export default function Cinema() {
         gsap.set(curtain.current, { autoAlpha: 0 });
         return;
       }
-      gsap
-        .timeline()
-        .to(".curtain__bolt", {
-          opacity: 0.8,
-          duration: 0.2,
-          delay: 0.4,
-        })
-        .to(
-          ".curtain__left",
-          { xPercent: -62, duration: 1.8, ease: "power3.inOut" },
-          0.65,
-        )
-        .to(
-          ".curtain__right",
-          { xPercent: 62, duration: 1.8, ease: "power3.inOut" },
-          0.65,
-        )
-        .to(".curtain__bolt", { opacity: 0, duration: 0.4 }, 0.8)
-        .set(curtain.current, { autoAlpha: 0 });
+      gsap.to(curtain.current, {
+        autoAlpha: 0,
+        duration: 1,
+        delay: 0.7,
+        ease: "power2.inOut",
+      });
     }, curtain);
     return () => context.revert();
   }, [hero?.id]);
@@ -145,10 +132,10 @@ export default function Cinema() {
         )}
         <div className="curtain" ref={curtain} aria-hidden="true">
           <div className="curtain__half curtain__left">
-            <img src="/art/img/aquiles.webp" alt="" />
+            <img src="/art/img/zeus-cinema.webp" alt="" />
           </div>
           <div className="curtain__half curtain__right">
-            <img src="/art/img/aquiles.webp" alt="" />
+            <img src="/art/img/zeus-cinema.webp" alt="" />
           </div>
           <svg
             className="curtain__bolt"
@@ -356,7 +343,15 @@ export default function Cinema() {
         {notice}
       </p>
       <footer className="cine-foot">
-        Catálogo: Cinemeta.
+        <img
+          className="cine-signature"
+          src="/art/img/tiago-sousa.webp"
+          alt="Tiago Sousa"
+          width="384"
+          height="384"
+          loading="lazy"
+          decoding="async"
+        />
       </footer>
     </Page>
   );

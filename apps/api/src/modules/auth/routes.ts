@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { eq, sql as dsql } from "drizzle-orm";
-import { db, sql } from "../../db/client.js";
-import { user, invite } from "../../db/schema.js";
+import { eq } from "drizzle-orm";
+import { db } from "../../db/client.js";
+import { user, invite, verifiedSession } from "../../db/schema.js";
 import { auth, createAuth } from "./service.js";
 import { hashToken } from "../../lib/crypto.js";
 import { verifyTurnstile } from "../../lib/turnstile.js";
@@ -31,7 +31,6 @@ authRoutes.post("/bootstrap", async (c) => {
   if (!b.email) throw new HTTPException(400, { message: "Email obrigatório." });
   await verifyTurnstile(b.turnstileToken);
   return db.transaction(async (tx) => {
-    await tx.execute(dsql`select pg_advisory_xact_lock(929341)`);
     if ((await tx.select().from(user).limit(1)).length)
       throw new HTTPException(409, {
         message: "O Administrador inicial já existe.",
@@ -58,8 +57,7 @@ authRoutes.post("/invites/accept", async (c) => {
     const [i] = await tx
       .select()
       .from(invite)
-      .where(eq(invite.tokenHash, hashToken(b.token!)))
-      .for("update");
+      .where(eq(invite.tokenHash, hashToken(b.token!)));
     if (!i || i.usedAt || i.expiresAt < new Date())
       throw new HTTPException(400, {
         message: "Convite inválido ou expirado.",
@@ -80,8 +78,10 @@ authRoutes.post("/invites/accept", async (c) => {
 authRoutes.get("/session", async (c) => {
   const s = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!s?.user.active) return c.json({ user: null });
-  const verified =
-    await sql`select 1 from verified_session where session_id=${s.session.id}`;
+  const verified = await db
+    .select()
+    .from(verifiedSession)
+    .where(eq(verifiedSession.sessionId, s.session.id));
   return c.json({
     user: {
       ...s.user,
@@ -107,8 +107,10 @@ authRoutes.all("/auth/*", async (c) => {
   if (!enrollmentPaths.has(path)) {
     const s = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!s?.user.active) return c.json({ error: "Sessão necessária." }, 401);
-    const verified =
-      await sql`select 1 from verified_session where session_id=${s.session.id}`;
+    const verified = await db
+      .select()
+      .from(verifiedSession)
+      .where(eq(verifiedSession.sessionId, s.session.id));
     if (!s.user.twoFactorEnabled || !verified.length)
       return c.json(
         {
@@ -152,7 +154,10 @@ authRoutes.all("/auth/*", async (c) => {
     if (cookie) headers.set("cookie", cookie);
     const session = await auth.api.getSession({ headers });
     if (session?.user.twoFactorEnabled)
-      await sql`insert into verified_session(session_id) values(${session.session.id}) on conflict do nothing`;
+      await db
+        .insert(verifiedSession)
+        .values({ sessionId: session.session.id })
+        .onConflictDoNothing();
   }
   return response;
 });
