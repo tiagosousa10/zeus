@@ -35,3 +35,9 @@ test("garbage payloads produce empty sections, not exceptions", () => {
   const c = normalizeXtreamCatalog({ liveCategories: null, live: {}, vodCategories: "x", vod: [null, 1], seriesCategories: [], series: [{}] }, 0);
   assert.deepEqual([c.live.items.length, c.movie.items.length, c.series.items.length], [0, 0, 0]);
 });
+test("episodes as a list of season lists are flattened by season", () => {
+  const c = normalizeXtreamCatalog(xtreamFixture.catalog, 0);
+  const raw = { episodes: [[{ id: 1, episode_num: 1, title: "A" }], [{ id: 2, episode_num: 1, title: "B" }]] };
+  const s = normalizeSeriesInfo(raw, c.series.items[0]);
+  assert.deepEqual(s.seasons.map((x) => [x.number, x.episodes.length]), [[1, 1], [2, 1]]);
+});

@@ -156,8 +156,12 @@ export function normalizeSeriesInfo(raw: unknown, base: TVSeries): TVSeriesDetai
     };
     bySeason.set(season, [...(bySeason.get(season) ?? []), ep]);
   };
-  if (Array.isArray(r.episodes)) for (const e of list(r.episodes)) push(num(e.season), e);
-  else for (const [k, v] of Object.entries(rec(r.episodes))) for (const e of list(v)) push(num(k), e);
+  if (Array.isArray(r.episodes)) {
+    r.episodes.forEach((v, i) => {
+      if (Array.isArray(v)) for (const e of list(v)) push(num(e.season) ?? i + 1, e);
+      else for (const e of list([v])) push(num(e.season), e);
+    });
+  } else for (const [k, v] of Object.entries(rec(r.episodes))) for (const e of list(v)) push(num(k), e);
   const seasons = [...bySeason.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([number, episodes]) => ({
