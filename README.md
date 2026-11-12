@@ -27,7 +27,7 @@ O comando prepara a base de dados e os builds antes de abrir a aplicação. `ini
 - Onboarding com subida ao Olimpo, idiomas, chave TMDB, Add-ons e IPTV.
 - Portal Cinema/TV com pintura viva e raios, com último módulo persistido.
 - Cinema, pesquisa, detalhe/episódios, Fontes e leitor HTTP/HLS/torrents; lista e progresso por Membro. Fontes reais de Add-ons aprovados; sem vídeo de demonstração.
-- TV com listas M3U/Xtream privadas, grupos, pesquisa, favoritos, reprodução e guia XMLTV quando fornecido.
+- TV com listas M3U/Xtream privadas, portais por país, filmes/séries e episódios, pastas visíveis/fixadas, pesquisa compacta, favoritos e progresso por lista/Membro. Guia XMLTV paginado quando fornecido.
 - Add-ons com ordem, activação e configuração: formulário do SDK quando declarado, adaptador Torrentio, ou URL do manifesto configurado na página do Add-on (guardado cifrado por Membro).
 - Catálogo de 358 Add-ons de filmes, séries e legendas, aprovado à partida e carregado por `npm run db:setup` a partir de `apps/api/src/db/addons-seed.json` (varredura dos registos públicos do Stremio a 2026-11-12).
 - Legendas dos Add-ons instalados no leitor, convertidas de SRT para WebVTT pela API.
@@ -48,11 +48,11 @@ Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperaç�
 ## Limites desta versão local
 
 - O Motor legado suporta uma reprodução torrent de cada vez; uma segunda conta recebe um aviso de ocupado. O Motor funciona apenas neste Mac.
-- A TV reproduz os endereços do fornecedor no leitor. Fornecedores que bloqueiem CORS, formatos incompatíveis, DRM ou limites da subscrição podem impedir a emissão; não há promessa de compatibilidade com todos os fornecedores.
+- A TV reproduz exclusivamente através de URLs privados `/api/iptv/play/...`, com proxy HLS/ficheiro/MPEG-TS e remux quando necessário. Uma reprodução por lista. Formatos/codecs incompatíveis, DRM ou limites da subscrição podem impedir a emissão; não há promessa de compatibilidade universal.
 - Os Add-ons do catálogo são serviços de terceiros e podem deixar de responder; os que exigem chave só funcionam com o URL configurado. Os importados pela sincronização comunitária continuam a precisar de aprovação.
 - Não há DVR, multiview nem aplicação Android nesta fase.
 - Não há importação de dados do MacStream; a interface antiga e o seu perfil foram removidos. Do MacStream ficaram apenas o Motor de torrents e a sua lista de trackers públicos.
-- Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A validação de reprodução usou um vídeo local de teste, sem iniciar torrents externos nem consumir listas IPTV privadas.
+- Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A QA isolada usa media H.264/AAC gerada localmente e API simulada; a validação separada do backend com fornecedor privado está documentada em [Plano 2, estado verificado](docs/superpowers/plans/2026-11-12-tv-iptv-2-reproducao.md), sem credenciais nos resultados. Não foram iniciados torrents externos.
 - Não foi criado instalador assinado nem publicada uma versão num servidor. Os tickets no Linear continuam por sincronizar. Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
 
 ## Verificação
@@ -63,11 +63,12 @@ npm test
 npm run build
 npm run test:browser
 npm run test:visual
+npm run test:tv
 ```
 
 Os testes API e browser criam schemas PostgreSQL temporários e removem-nos ao terminar. Não usam contas da base principal. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `node tests/desktop.mjs` verifica a Entrada no Electron (primeiro arranque ou login), sem criar contas; usa o servidor de desenvolvimento se já estiver activo, ou o build local.
 
-`test:visual` inicia servidores isolados nas portas 5181/5182, usa fixtures apenas no browser e compara medidas com os HTML aprovados. Verifica navegação, TV/guia por teclado, favoritos por toque, persistência das listas e estados. Capturas e medidas ficam em `/tmp/zeus-fidelity`. Requer Google Chrome instalado; não altera a base de dados.
+`test:visual` inicia servidores isolados nas portas 5181/5182: valida estrutura/cores/overflow do novo portal TV e preserva a comparação exacta de geometria e navegação dos Estados com o HTML aprovado. Capturas e medidas ficam em `/tmp/zeus-fidelity`. `test:tv` usa Vite isolado na porta 5187 e API/Membro simulados: nove ecrãs e portal de entrada a 1440/375, pesquisa compacta de 50 mil itens (90 resultados por página), mudanças de lista, visibilidade, favoritos, episódios, gravações concorrentes, erros/retry e cancelamento. Gera H.264/AAC temporário e confirma frames e avanço de tempo em MP4, HLS, MPEG-TS e MP4 fragmentado local (contrato remux); o remux real da API tem cobertura nos testes API e na validação separada do Plano 2. Capturas ficam em `/tmp/zeus-tv-browser`. Ambos requerem Google Chrome e não alteram a base de dados.
 
 ## Referências guardadas
 

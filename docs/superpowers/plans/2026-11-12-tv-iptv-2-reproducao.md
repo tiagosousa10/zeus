@@ -12,6 +12,18 @@
 
 **Base:** ramo `feat/tv-iptv-playback`, criado a partir de `feat/tv-iptv` (plano 1).
 
+## Estado após retoma — 12 de Novembro de 2026
+
+- Tarefas 1–9 implementadas. A retoma fechou a revisão HLS pendente e implementou MPEG-TS/Range, remux e guia; estas alterações ainda não têm commit.
+- Validação final: `npm test` **115/115**, `npm run typecheck` e `git diff --check` sem erros.
+- Revisão adicional: sessões isoladas por Membro + lista; limpeza aborta streams; segmentos binários mal classificados recebem MIME seguro; ffmpeg recusa playlists disfarçadas; erros iniciais do remux preservam o estado 502 e a mensagem de ligações.
+- Testes incluem Range 206, remux real com ffmpeg e seek, cancelamento, 181 minutos simulados de emissão, visibilidade e isolamento do guia. XMLTV sintético de cerca de 49 MB / 200 000 programas indexado em aproximadamente 0,5–0,7 s.
+- Tarefa 10 concluída após diagnosticar os falsos 404: o fornecedor recusa pedidos sem `User-Agent`. `safeFetch`/`safeStream` enviam agora `Zeus/1.1.3`, preservando valores explícitos do chamador; regressão local passou de 404 a 200.
+- Lista real: conta activa (0/1 ligações antes dos testes); vídeo H.264 descodificado pelo ffmpeg (exit 0); trocar sessão responde 410 no token antigo; MP4 responde 206 / 100 bytes; MKV responde MP4 200 com assinatura `ftyp`.
+- XMLTV real: HTTP 200, 1 087 canais indexados; pasta Portugal com 207 canais, 205 com programa actual; carga 8 058 ms, cache 1 ms. Os testes de vídeo respeitaram a libertação da ligação única entre pedidos.
+- A verificação real usou servidor temporário em loopback com identidade injectada, sem alterar o estado do Membro; autenticação está coberta pelos testes de rotas. URLs e credenciais não foram registados.
+- Próximo passo: concluir os nove ecrãs e os testes do plano 3.
+
 ## Global Constraints
 
 - Mensagens visíveis em PT-PT; identificadores em inglês.
@@ -63,7 +75,7 @@
 - Produces: `safeStream(input: string, options?: { headers?: Record<string, string>; signal?: AbortSignal; timeout?: number }): Promise<Response>`. Mesmas validações, resolução DNS, IP fixado e redireccionamentos (máx. 5) que `safeFetch`; corpo em `ReadableStream` sem limite de tamanho; cabeçalhos copiados: `content-type`, `content-length`, `content-range`, `accept-ranges`; `timeout` (omissão 15 s) só até chegarem os cabeçalhos; `signal` aborta o pedido em qualquer momento e destrói a ligação.
 - A lógica comum (validação, DNS, pedido com IP fixado) passa a uma função interna partilhada pelos dois; `safeFetch` mantém o comportamento.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 test("safeStream refuses private addresses and non-http schemes", async () => {
@@ -76,10 +88,10 @@ test("safeFetch keeps refusing private addresses", async () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx tsx --test apps/api/test/safe-stream.test.ts` → FAIL (`safeStream` não exportado).
-- [ ] **Step 3: Implement** a função partilhada e `safeStream` (corpo via `Readable.toWeb(res)`; `signal` → `request.destroy()`; ao abortar depois da resposta, `res.destroy()`).
-- [ ] **Step 4: Run** o teste, `npm test` e `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): stream upstream responses with the same network guards`
+- [x] **Step 2: Run** `npx tsx --test apps/api/test/safe-stream.test.ts` → FAIL (`safeStream` não exportado).
+- [x] **Step 3: Implement** a função partilhada e `safeStream` (corpo via `Readable.toWeb(res)`; `signal` → `request.destroy()`; ao abortar depois da resposta, `res.destroy()`).
+- [x] **Step 4: Run** o teste, `npm test` e `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): stream upstream responses with the same network guards`
 
 ---
 
@@ -97,7 +109,7 @@ test("safeFetch keeps refusing private addresses", async () => {
 - `CACHE_VERSION = 2`.
 - `views.ts`: `publicSeriesDetail(d: TVSeriesDetail): TVSeriesDetail` tira `source` dos episódios e `episodes` da série; a rota de detalhe de série usa-a; `publicItem` passa a tirar também `episodes`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 test("M3U series keep their episodes for playback", () => {
@@ -125,10 +137,10 @@ test("series detail sent to the browser has no sources", () => {
 
 Mais: em `iptv-cache.test.ts`, `fetchSeries` M3U devolve as temporadas ordenadas (T1 E2 antes de T1 E4) sem chamar `fakeFetch`.
 
-- [ ] **Step 2: Run** os testes focados → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** os testes focados, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): keep M3U episodes and prefer live URLs when classifying`
+- [x] **Step 2: Run** os testes focados → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** os testes focados, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): keep M3U episodes and prefer live URLs when classifying`
 
 ---
 
@@ -152,11 +164,11 @@ Mais: em `iptv-cache.test.ts`, `fetchSeries` M3U devolve as temporadas ordenadas
   - `origin` = `new URL(list.url).origin`; utilizador e palavra-passe com `encodeURIComponent`.
   - Item inexistente → `undefined`.
 
-- [ ] **Step 1: Write the failing test** — para a lista da fixture: canal `101` → `https://tv.example.test/live/u/segredo-123/101.m3u8` e `kind: "hls"`; com `formats: ["ts"]` → `.ts` e `kind: "ts"`; filme mkv → `kind: "file"`, `container: "mkv"`; episódio → caminho `/series/`; M3U ao vivo `.ts` → `kind: "ts"`; `fetchAccount` com `{"user_info":{"auth":1,"max_connections":"1","active_cons":"0","allowed_output_formats":["m3u8","ts"],"exp_date":"1800000000"}}` → `{ formats: ["m3u8","ts"], maxConnections: 1, activeConnections: 0, expiresAt: 1800000000000 }`; `auth: "0"` → rejeita com «recusou o utilizador ou a palavra-passe».
-- [ ] **Step 2: Run** `npx tsx --test apps/api/test/iptv-account.test.ts` → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): read Xtream account limits and build upstream stream URLs`
+- [x] **Step 1: Write the failing test** — para a lista da fixture: canal `101` → `https://tv.example.test/live/u/segredo-123/101.m3u8` e `kind: "hls"`; com `formats: ["ts"]` → `.ts` e `kind: "ts"`; filme mkv → `kind: "file"`, `container: "mkv"`; episódio → caminho `/series/`; M3U ao vivo `.ts` → `kind: "ts"`; `fetchAccount` com `{"user_info":{"auth":1,"max_connections":"1","active_cons":"0","allowed_output_formats":["m3u8","ts"],"exp_date":"1800000000"}}` → `{ formats: ["m3u8","ts"], maxConnections: 1, activeConnections: 0, expiresAt: 1800000000000 }`; `auth: "0"` → rejeita com «recusou o utilizador ou a palavra-passe».
+- [x] **Step 2: Run** `npx tsx --test apps/api/test/iptv-account.test.ts` → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): read Xtream account limits and build upstream stream URLs`
 
 ---
 
@@ -174,7 +186,7 @@ Mais: em `iptv-cache.test.ts`, `fetchSeries` M3U devolve as temporadas ordenadas
 - `addResource(s: PlaySession, url: string): string` → id curto sequencial; o mapa guarda no máximo 2 000 entradas (as mais antigas saem).
 - Sessões sem pedidos há 2 h terminam (verificado ao criar ou procurar; relógio injectável `setSessionClock`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 test("a new session on the same list ends the previous one first", () => {
@@ -199,10 +211,10 @@ test("resource map is capped at 2000 entries", () => {
 test("idle sessions end after 2 h", () => { /* setSessionClock: criar, avançar 2 h + 1 ms, findSession → "ended" */ });
 ```
 
-- [ ] **Step 2: Run** `npx tsx --test apps/api/test/iptv-sessions.test.ts` → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** o teste → PASS.
-- [ ] **Step 5: Commit** `feat(api): one IPTV playback session per list with private tokens`
+- [x] **Step 2: Run** `npx tsx --test apps/api/test/iptv-sessions.test.ts` → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** o teste → PASS.
+- [x] **Step 5: Commit** `feat(api): one IPTV playback session per list with private tokens`
 
 ---
 
@@ -222,7 +234,7 @@ test("idle sessions end after 2 h", () => { /* setSessionClock: criar, avançar 
   - `GET /api/iptv/play/:token/r/:id` → se o recurso for outra lista (`.m3u8` no caminho ou `content-type` mpegurl), reescreve igual; senão `safeStream` com o `Range` do pedido e o `signal` da sessão combinado com o do pedido.
   - Erros do fornecedor: 401/403/429/458/509, ou 404 em `index.m3u8` com `account.activeConnections >= account.maxConnections` → 502 com a mensagem de ligações dos Global Constraints; outros → 502 «O fornecedor não respondeu. Tenta de novo.»; sessão terminada → 410 «Esta reprodução terminou.»; token desconhecido → 404.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `iptv-hls.test.ts`:
 
@@ -257,10 +269,10 @@ test("every URI is rewritten and nothing upstream is left", () => {
 - Pasta adulta escondida: `POST /play` de «Canal 18» → 404.
 - `GET /api/iptv/resource` com o fornecedor a falhar → 502 «Não foi possível carregar a lista.» (sem a mensagem original).
 
-- [ ] **Step 2: Run** os dois testes → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): start IPTV playback and proxy rewritten HLS through the API`
+- [x] **Step 2: Run** os dois testes → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): start IPTV playback and proxy rewritten HLS through the API`
 
 ---
 
@@ -275,11 +287,11 @@ test("every URI is rewritten and nothing upstream is left", () => {
 - `GET /api/iptv/play/:token/file` → `safeStream` com o `Range` do pedido; devolve o estado (200/206) e `content-type`, `content-length`, `content-range`, `accept-ranges` do fornecedor; se o fornecedor não mandar `content-type`, usa o do `container` (`video/mp4`, `video/webm`, `video/quicktime`).
 - Os dois abortam o pedido ao fornecedor quando o browser fecha (`c.req.raw.signal`) ou quando a sessão termina.
 
-- [ ] **Step 1: Write the failing tests** — `Range: bytes=0-99` num filme mp4 → 206, `content-range: bytes 0-99/1000`, 100 bytes; fechar o pedido do browser a meio de `live.ts` (abortar o `AbortController` do `app.request`) → o `signal` visto pelo fornecedor falso fica `aborted`; `live.ts` depois de nova sessão na mesma lista → 410.
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): stream live MPEG-TS and range requests for IPTV files`
+- [x] **Step 1: Write the failing tests** — `Range: bytes=0-99` num filme mp4 → 206, `content-range: bytes 0-99/1000`, 100 bytes; fechar o pedido do browser a meio de `live.ts` (abortar o `AbortController` do `app.request`) → o `signal` visto pelo fornecedor falso fica `aborted`; `live.ts` depois de nova sessão na mesma lista → 410.
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): stream live MPEG-TS and range requests for IPTV files`
 
 ---
 
@@ -295,11 +307,11 @@ test("every URI is rewritten and nothing upstream is left", () => {
 - `remux(input: string, startSec: number, signal: AbortSignal): ReadableStream<Uint8Array>` — `ffmpeg-static` com `-hide_banner -loglevel error`, `-ss <t> -noaccurate_seek` quando `t > 0`, `-i <input>`, `-map 0:v:0 -map 0:a:0? -c:v copy -c:a aac -b:a 192k -ac 2 -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov+default_base_moof -f mp4 pipe:1` (os mesmos argumentos que `engine.js` usa no Motor); `signal` mata o processo (`SIGKILL`).
 - `GET /api/iptv/play/:token/remux.mp4?t=<segundos>` → `video/mp4`, `cache-control: no-store`, sem `Range`; o pedido do browser fechado mata o ffmpeg.
 
-- [ ] **Step 1: Write the failing test** — gerar no teste um mkv de 2 s com o próprio `ffmpeg-static` (`-f lavfi -i testsrc=duration=2:size=160x120:rate=10 -f lavfi -i sine=duration=2 -c:v mpeg4 -c:a ac3 out.mkv`), servi-lo pelo `open` falso, chamar `remux` e verificar que os bytes 4–8 da saída são `ftyp`; com `t=1` também sai `ftyp`; abortar a meio → o processo ffmpeg termina (exit em menos de 2 s) e a ponte fecha quando a sessão termina (pedido ao URL local falha).
-- [ ] **Step 2: Run** `npx tsx --test apps/api/test/iptv-remux.test.ts` → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): remux IPTV mkv and avi files to fragmented MP4`
+- [x] **Step 1: Write the failing test** — gerar no teste um mkv de 2 s com o próprio `ffmpeg-static` (`-f lavfi -i testsrc=duration=2:size=160x120:rate=10 -f lavfi -i sine=duration=2 -c:v mpeg4 -c:a ac3 out.mkv`), servi-lo pelo `open` falso, chamar `remux` e verificar que os bytes 4–8 da saída são `ftyp`; com `t=1` também sai `ftyp`; abortar a meio → o processo ffmpeg termina (exit em menos de 2 s) e a ponte fecha quando a sessão termina (pedido ao URL local falha).
+- [x] **Step 2: Run** `npx tsx --test apps/api/test/iptv-remux.test.ts` → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): remux IPTV mkv and avi files to fragmented MP4`
 
 ---
 
@@ -320,7 +332,7 @@ test("every URI is rewritten and nothing upstream is left", () => {
 - `programmesBetween(index: GuideIndex, epgId: string | undefined, from: number, to: number): Programme[]`.
 - `fetchShortEpg(list: IPTVList, streamId: string): Promise<Programme[]>` — Xtream `get_short_epg&stream_id=…&limit=10`; `title`/`description` vêm em base64 e são descodificados; `start_timestamp`/`stop_timestamp` em segundos; M3U → `[]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 const xml = `<?xml version="1.0"?><tv>
@@ -346,10 +358,10 @@ test("now and next", () => {
 test("short EPG titles are base64", async () => { /* fakeFetch com {epg_listings:[{title:"VGVsZWpvcm5hbA==",description:"",start_timestamp:"1794510000",stop_timestamp:"1794513600"}]} → title "Telejornal" */ });
 ```
 
-- [ ] **Step 2: Run** `npx tsx --test apps/api/test/iptv-epg.test.ts` → FAIL.
-- [ ] **Step 3: Implement** — percorrer o texto com uma regex global por `<programme …>…</programme>` (sem DOM); um ficheiro de 42 MB tem de ser indexado em menos de 3 s (medir no Step 4 com um XMLTV sintético de 200 000 programas gerado no teste).
-- [ ] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): index XMLTV guides on the server`
+- [x] **Step 2: Run** `npx tsx --test apps/api/test/iptv-epg.test.ts` → FAIL.
+- [x] **Step 3: Implement** — percorrer o texto com uma regex global por `<programme …>…</programme>` (sem DOM); um ficheiro de 42 MB tem de ser indexado em menos de 3 s (medir no Step 4 com um XMLTV sintético de 200 000 programas gerado no teste).
+- [x] **Step 4: Run** o teste, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): index XMLTV guides on the server`
 
 ---
 
@@ -366,15 +378,15 @@ test("short EPG titles are base64", async () => { /* fakeFetch com {epg_listings
 - `GET /api/iptv/lists/:listId/epg/channel/:id?from&to` → `Programme[]`; se o índice não tiver o canal, usa `fetchShortEpg` (Xtream).
 - Sem guia na lista (M3U sem `epgUrl`) → respostas vazias, não erro. Erros do fornecedor → 502 com a mensagem do `ProviderError`.
 
-- [ ] **Step 1: Write the failing tests** — com o harness das rotas e um XMLTV falso servido por `fakeFetch` para `xmltv.php`: `now` da pasta Portugal devolve agora/seguinte de `101` (RTP1, `epg_channel_id: "rtp1.pt"`) e nada para SIC; `grid` com janela de 25 h → 400; `grid` com `favorites=1` sem favoritos → `channels: []`; canal sem correspondência → resultado de `get_short_epg`; canal adulto escondido → 404 em `epg/channel/:id`; a resposta nunca contém `segredo-123`.
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
-- [ ] **Step 5: Commit** `feat(api): serve now/next, guide grid and channel guide`
+- [x] **Step 1: Write the failing tests** — com o harness das rotas e um XMLTV falso servido por `fakeFetch` para `xmltv.php`: `now` da pasta Portugal devolve agora/seguinte de `101` (RTP1, `epg_channel_id: "rtp1.pt"`) e nada para SIC; `grid` com janela de 25 h → 400; `grid` com `favorites=1` sem favoritos → `channels: []`; canal sem correspondência → resultado de `get_short_epg`; canal adulto escondido → 404 em `epg/channel/:id`; a resposta nunca contém `segredo-123`.
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** os testes, `npm test`, `npm run typecheck` → PASS.
+- [x] **Step 5: Commit** `feat(api): serve now/next, guide grid and channel guide`
 
 ---
 
 ### Task 10: Verificação com a lista real (controlador)
 
-- [ ] Com a lista real, por script (só contagens e estados, nunca URLs): `POST /play` de um canal de Portugal → `ffprobe` ao `index.m3u8` servido pela API num servidor local mostra vídeo h264; um filme mp4 → 206 com `Range`; um filme mkv → `remux.mp4` começa por `ftyp`; segundo canal fecha o primeiro (410); guia: número de canais com programa agora na pasta Portugal e tempo de indexação do `xmltv.php`.
-- [ ] Registar os resultados no ledger; problemas reais voltam como tarefas de correcção.
+- [x] Com a lista real, por script (só contagens e estados, nunca URLs): `POST /play` de um canal de Portugal → `ffprobe` ao `index.m3u8` servido pela API num servidor local mostra vídeo h264; um filme mp4 → 206 com `Range`; um filme mkv → `remux.mp4` começa por `ftyp`; segundo canal fecha o primeiro (410); guia: número de canais com programa agora na pasta Portugal e tempo de indexação do `xmltv.php`.
+- [x] Registar os resultados no ledger; problemas reais voltam como tarefas de correcção.
