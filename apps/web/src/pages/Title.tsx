@@ -1,3 +1,4 @@
+import { ZeusLoader } from "../components/ZeusLoader";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "../components/Layout";
@@ -468,11 +469,7 @@ export default function Title() {
               />
             </div>
           </div>
-          {sources.isFetching && (
-            <p className="cinema-empty" role="status">
-              A perguntar aos teus Add-ons…
-            </p>
-          )}
+          {sources.isFetching && <ZeusLoader label="A procurar Fontes…" />}
           {sources.isError && (
             <div className="cinema-message" role="alert">
               <p>{sources.error.message}</p>
