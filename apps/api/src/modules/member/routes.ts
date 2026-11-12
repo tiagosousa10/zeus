@@ -7,12 +7,14 @@ import { addon } from "../../db/schema.js";
 import { configFields, validateConfig } from "../addons/config.js";
 import { streamEndpoint } from "../addons/streams.js";
 import { eq } from "drizzle-orm";
+import { tvPrefs } from "../iptv/prefs.js";
 const json = z.record(z.string(), z.unknown());
 const patch = z
   .object({
     preferences: json.optional(),
     library: z.array(json).max(10000).optional(),
     progress: json.optional(),
+    tv: tvPrefs.optional(),
     iptv: z
       .array(
         z
