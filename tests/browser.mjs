@@ -20,8 +20,9 @@ const env = {
   BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
   ZEUS_ENCRYPTION_KEY: randomBytes(32).toString("hex"),
   PORT: "4311",
-  TURNSTILE_SECRET_KEY: "",
-  TURNSTILE_SITE_KEY: "",
+  // Chaves de teste oficiais da Cloudflare: o widget e o siteverify passam sempre.
+  TURNSTILE_SECRET_KEY: "1x0000000000000000000000000000000AA",
+  TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
   RESEND_API_KEY: "",
   RESEND_FROM: "",
 };

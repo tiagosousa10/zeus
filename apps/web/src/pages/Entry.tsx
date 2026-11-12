@@ -17,6 +17,7 @@ export default function Entry() {
     [inviteValue, setInviteValue] = useState("");
 
   const turnstileBox = useRef<HTMLDivElement>(null);
+  const turnstileWidget = useRef<string | undefined>(undefined);
   const [siteKey, setSiteKey] = useState<string | null>(null),
     [turnstileToken, setTurnstileToken] = useState(""),
     [recovery, setRecovery] = useState(false);
@@ -127,11 +128,10 @@ export default function Entry() {
   }, []);
   useEffect(() => {
     if (!siteKey || !["login", "forgot"].includes(stage)) return;
-    let widget: string | undefined;
     const win = window as any;
     const render = () => {
       if (turnstileBox.current)
-        widget = win.turnstile.render(turnstileBox.current, {
+        turnstileWidget.current = win.turnstile.render(turnstileBox.current, {
           sitekey: siteKey,
           theme: "dark",
           callback: setTurnstileToken,
@@ -159,7 +159,9 @@ export default function Entry() {
     }
     return () => {
       script?.removeEventListener("load", render);
-      if (widget !== undefined) win.turnstile?.remove(widget);
+      if (turnstileWidget.current !== undefined)
+        win.turnstile?.remove(turnstileWidget.current);
+      turnstileWidget.current = undefined;
     };
   }, [siteKey, stage]);
   useEffect(() => {
@@ -291,9 +293,10 @@ export default function Entry() {
       }
     } finally {
       setBusy(false);
-      if (["login", "forgot"].includes(stage)) {
+      // O widget já foi removido se a entrada avançou para outro passo.
+      if (turnstileWidget.current !== undefined) {
         setTurnstileToken("");
-        (window as any).turnstile?.reset();
+        (window as any).turnstile?.reset(turnstileWidget.current);
       }
     }
   };
