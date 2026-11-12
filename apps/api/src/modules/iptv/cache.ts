@@ -1,12 +1,24 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdir, readFile, writeFile, rename, unlink } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { BoundedCache, estimateSize } from "../../lib/bounded-cache.js";
 import { join } from "node:path";
 import { config } from "../../lib/config.js";
 import { decrypt, encrypt } from "../../lib/crypto.js";
 import { fetchGuide, type GuideIndex } from "./epg.js";
 import type { Account } from "./account.js";
-import { fetchAccount, fetchCatalog, fetchMovie, fetchSeries } from "./provider.js";
-import type { IPTVList, TVCatalog, TVMovieDetail, TVSeriesDetail } from "./types.js";
+import {
+  fetchAccount,
+  fetchCatalog,
+  fetchMovie,
+  fetchSeries,
+} from "./provider.js";
+import type {
+  IPTVList,
+  TVCatalog,
+  TVMovieDetail,
+  TVSeriesDetail,
+} from "./types.js";
 
 const CATALOG_TTL = 6 * 3600_000;
 const ACCOUNT_TTL = 3600_000;
@@ -16,9 +28,14 @@ const CACHE_VERSION = 2;
 const dir = join(config.dataDir, "iptv-cache");
 
 type Entry = { value: unknown; expires: number };
-const memory = new Map<string, Entry>();
+const memory = new BoundedCache<Entry>(128, 64 * 1024 * 1024);
 const inFlight = new Map<string, Promise<unknown>>();
 let clock = () => Date.now();
+setInterval(() => memory.prune(clock()), 60_000).unref();
+
+function remember(key: string, entry: Entry) {
+  memory.set(key, entry, entry.expires, estimateSize(entry));
+}
 
 export function setClock(f: () => number): void {
   clock = f;
@@ -29,21 +46,35 @@ export function clearMemoryCache(): void {
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const listKey = (userId: string, list: IPTVList) =>
-  sha256([CACHE_VERSION, userId, list.id, list.type, list.url, list.username ?? "", list.password ?? ""].join("|"));
+  sha256(
+    [
+      CACHE_VERSION,
+      userId,
+      list.id,
+      list.type,
+      list.url,
+      list.username ?? "",
+      list.password ?? "",
+    ].join("|"),
+  );
 
-function readDisk(key: string): Entry | undefined {
+async function readDisk(key: string): Promise<Entry | undefined> {
   try {
-    return decrypt(readFileSync(join(dir, `${key}.bin`), "utf8")) as Entry;
+    return decrypt(await readFile(join(dir, `${key}.bin`), "utf8")) as Entry;
   } catch {
     return undefined;
   }
 }
 
-function writeDisk(key: string, entry: Entry): void {
+async function writeDisk(key: string, entry: Entry): Promise<void> {
+  const temporary = join(dir, `${key}.${randomUUID()}.tmp`);
   try {
-    mkdirSync(dir, { recursive: true, mode: 0o700 });
-    writeFileSync(join(dir, `${key}.bin`), encrypt(entry), { mode: 0o600 });
-  } catch {}
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+    await writeFile(temporary, encrypt(entry), { mode: 0o600 });
+    await rename(temporary, join(dir, `${key}.bin`));
+  } catch {
+    await unlink(temporary).catch(() => {});
+  }
 }
 
 async function cached<T>(
@@ -54,46 +85,92 @@ async function cached<T>(
   disk = true,
 ): Promise<T> {
   if (!force) {
-    const hit = memory.get(key) ?? (disk ? readDisk(key) : undefined);
-    if (hit && hit.expires > clock()) {
-      memory.set(key, hit);
-      return hit.value as T;
-    }
+    const hit = memory.get(key, clock());
+    if (hit) return hit.value as T;
   }
   const pending = inFlight.get(key);
   if (pending) return pending as Promise<T>;
+  // Coalesce disk reads as well as provider requests.
   const promise = (async () => {
+    if (!force && disk) {
+      const hit = await readDisk(key);
+      if (hit && hit.expires > clock()) {
+        remember(key, hit);
+        return hit.value as T;
+      }
+    }
     const now = clock();
     const value = await load(now);
     const entry = { value, expires: now + ttl };
-    memory.set(key, entry);
-    if (disk) writeDisk(key, entry);
+    remember(key, entry);
+    if (disk) await writeDisk(key, entry);
     return value;
   })().finally(() => inFlight.delete(key));
   inFlight.set(key, promise);
   return promise;
 }
 
-export function getCatalog(userId: string, list: IPTVList, opts: { force?: boolean } = {}): Promise<TVCatalog> {
-  return cached(listKey(userId, list), CATALOG_TTL, (now) => fetchCatalog(list, now), opts.force);
+export function getCatalog(
+  userId: string,
+  list: IPTVList,
+  opts: { force?: boolean } = {},
+): Promise<TVCatalog> {
+  return cached(
+    listKey(userId, list),
+    CATALOG_TTL,
+    (now) => fetchCatalog(list, now),
+    opts.force,
+  );
 }
 
-export async function getMovie(userId: string, list: IPTVList, id: string): Promise<TVMovieDetail | undefined> {
-  const base = (await getCatalog(userId, list)).movie.items.find((m) => m.id === id);
+export async function getMovie(
+  userId: string,
+  list: IPTVList,
+  id: string,
+): Promise<TVMovieDetail | undefined> {
+  const base = (await getCatalog(userId, list)).movie.items.find(
+    (m) => m.id === id,
+  );
   if (!base) return undefined;
-  return cached(sha256(`${listKey(userId, list)}:movie:${id}`), DETAIL_TTL, () => fetchMovie(list, base));
+  return cached(
+    sha256(`${listKey(userId, list)}:movie:${id}`),
+    DETAIL_TTL,
+    () => fetchMovie(list, base),
+  );
 }
 
-export async function getSeries(userId: string, list: IPTVList, id: string): Promise<TVSeriesDetail | undefined> {
-  const base = (await getCatalog(userId, list)).series.items.find((s) => s.id === id);
+export async function getSeries(
+  userId: string,
+  list: IPTVList,
+  id: string,
+): Promise<TVSeriesDetail | undefined> {
+  const base = (await getCatalog(userId, list)).series.items.find(
+    (s) => s.id === id,
+  );
   if (!base) return undefined;
-  return cached(sha256(`${listKey(userId, list)}:series:${id}`), DETAIL_TTL, () => fetchSeries(list, base));
+  return cached(
+    sha256(`${listKey(userId, list)}:series:${id}`),
+    DETAIL_TTL,
+    () => fetchSeries(list, base),
+  );
 }
 
 export function getAccount(userId: string, list: IPTVList): Promise<Account> {
-  return cached(sha256(`${listKey(userId, list)}:account`), ACCOUNT_TTL, () => fetchAccount(list), false, false);
+  return cached(
+    sha256(`${listKey(userId, list)}:account`),
+    ACCOUNT_TTL,
+    () => fetchAccount(list),
+    false,
+    false,
+  );
 }
 
 export function getGuide(userId: string, list: IPTVList): Promise<GuideIndex> {
-  return cached(sha256(JSON.stringify([listKey(userId, list), "guide", list.epgUrl ?? ""])), 3600_000, (now) => fetchGuide(list, now), false, false);
+  return cached(
+    sha256(JSON.stringify([listKey(userId, list), "guide", list.epgUrl ?? ""])),
+    3600_000,
+    (now) => fetchGuide(list, now),
+    false,
+    false,
+  );
 }
