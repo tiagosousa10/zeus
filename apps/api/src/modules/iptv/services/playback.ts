@@ -317,7 +317,21 @@ export const startPlayback = async (
         ? await getSeries(userId, found.list, target.id)
         : undefined;
     const upstream = upstreamFor(found.list, catalog, detail, account, target);
-    if (!upstream) return json({ error: NOT_AVAILABLE }, 404);
+    const compatible =
+      target.section === "live" && target.compatibility === true;
+    if (!upstream)
+      return compatible
+        ? json(
+            { error: "Este canal não disponibiliza um formato compatível." },
+            422,
+          )
+        : json({ error: NOT_AVAILABLE }, 404);
+    const compatibilityAvailable =
+      target.section === "live" &&
+      !!upstreamFor(found.list, catalog, detail, account, {
+        ...target,
+        compatibility: true,
+      });
     if (starts.get(key) !== generation || c.signal.aborted)
       return json({ error: ENDED }, 409);
     const s = createSession(
@@ -327,9 +341,14 @@ export const startPlayback = async (
       account,
       secretsFor(found.list, upstream),
     );
-    const { type, path, remux } = playback(upstream);
+    if (compatible) s.compatibility = true;
+    const { type, path, remux } = compatible
+      ? { type: "mp4", path: "remux.mp4", remux: true }
+      : playback(upstream);
     return json({
       token: s.token,
+      compatible,
+      compatibilityAvailable,
       type,
       url: `/api/iptv/play/${s.token}/${path}`,
       remux,
@@ -427,11 +446,15 @@ export const playFile = (c: PlaybackRequest) =>
 
 export const playRemux = async (c: PlaybackRequest, time: number) => {
   return withSession(c, async (s) => {
+    const compatibleLive = s.compatibility === true && s.upstream.kind === "ts";
     if (
-      s.upstream.kind !== "file" ||
-      DIRECT.has(s.upstream.container.toLowerCase())
+      !compatibleLive &&
+      (s.upstream.kind !== "file" ||
+        DIRECT.has(s.upstream.container.toLowerCase()))
     )
       return json({ error: NOT_AVAILABLE }, 404);
+    if (compatibleLive && time !== 0)
+      return json({ error: "Pedido inválido." }, 400);
     const lifetime = new AbortController();
     const signal = AbortSignal.any([s.signal, c.signal, lifetime.signal]);
     try {
@@ -454,6 +477,7 @@ export const playRemux = async (c: PlaybackRequest, time: number) => {
             throw error;
           }
         },
+        { transcodeVideo: compatibleLive },
       );
       const reader = output.getReader();
       // Wait for real media before committing HTTP headers, so provider refusals retain their message.

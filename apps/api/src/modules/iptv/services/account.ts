@@ -11,7 +11,7 @@ export interface Account {
   expiresAt?: number;
 }
 export type Target =
-  | { section: "live"; id: string }
+  | { section: "live"; id: string; compatibility?: boolean }
   | { section: "movie"; id: string }
   | { section: "series"; id: string; episodeId: string };
 export type Upstream = {
@@ -57,9 +57,19 @@ export function upstreamFor(
   if (target.section === "live") {
     const channel = catalog.live.items.find((c) => c.id === target.id);
     if (!channel) return undefined;
-    if (m3u) return m3uUpstream(target, channel.source, undefined);
+    if (m3u) {
+      const source = m3uUpstream(target, channel.source, undefined);
+      return target.compatibility && source?.kind !== "ts" ? undefined : source;
+    }
+    if (
+      target.compatibility &&
+      account.formats.length &&
+      !account.formats.includes("ts")
+    )
+      return undefined;
     const hls =
-      account.formats.length === 0 || account.formats.includes("m3u8");
+      !target.compatibility &&
+      (account.formats.length === 0 || account.formats.includes("m3u8"));
     const ext = hls ? "m3u8" : "ts";
     return {
       url: `${origin}/live/${user}/${pass}/${target.id}.${ext}`,

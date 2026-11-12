@@ -121,21 +121,8 @@
   margin: auto;
   padding: 0 3%;
 }
-.tv-listbar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+.tv-toolbar.tv-view-switch {
   margin: 4px 0 22px;
-}
-.tv-listbar select {
-  border: 1px solid #ffffff24;
-  border-radius: 20px;
-  background: #171c20;
-  padding: 9px 14px;
-  max-width: 200px;
-}
-.tv-listbar > button {
-  font-size: 12px;
 }
 .tv-live {
   position: relative;
@@ -1428,6 +1415,8 @@
 
 /* Playback and programme guide */
 .tv-modal.tv-modal-full-viewport {
+  overflow: hidden;
+  overscroll-behavior: none;
   padding: 0;
   background: #000;
   backdrop-filter: none;
@@ -1778,32 +1767,20 @@
 .tv-header a:not(.tv-brand) {
   font-size: 13px;
 }
-.tv-listbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
+.tv-list-selection {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
 }
-.tv-listbar > label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.tv-list-label {
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: #8f9ca4;
-}
-.tv-listbar select,
-.tv-listbar button {
-  height: 36px;
-  padding: 6px 14px;
-  font-size: 12px;
-  border-radius: 9px;
-}
-.tv-listbar .tv-toolbar {
-  margin: 0;
-  align-items: center;
+.tv-list-selection select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #ffffff24;
+  border-radius: 12px;
+  background: #171c20;
+  color: inherit;
+  padding: 12px 14px;
+  font: inherit;
 }
 .tv-portals {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

@@ -153,6 +153,12 @@ try {
     await page.locator(".tv-app").waitFor();
     await settleTV(page);
   };
+  const accountMenu = page.getByRole("button", { name: /^Menu da conta/ });
+  const openTVSettings = async () => {
+    await accountMenu.click();
+    await page.getByRole("menuitem", { name: "Configuração da TV" }).click();
+    await page.getByRole("dialog", { name: "Configuração da TV" }).waitFor();
+  };
   const noOverflow = async (label) =>
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth),
@@ -219,6 +225,14 @@ try {
         await page.locator(".tv-guide-row").first().waitFor();
       await settleTV(page);
       assert.equal(
+        await page
+          .locator(".tv-main")
+          .getByRole("combobox", { name: /Lista IPTV/ })
+          .count(),
+        0,
+        `${name}: list selection belongs in settings`,
+      );
+      assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth),
         width,
         `${name} overflow`,
@@ -238,6 +252,26 @@ try {
       }
     }
     await goto("");
+    await openTVSettings();
+    await noOverflow("TV settings");
+    await modalBoundaryTrap();
+    await page.screenshot({ path: `${directory}/settings-${width}.png` });
+    await page.keyboard.press("Escape");
+    assert.ok(
+      await accountMenu.evaluate((e) => e === document.activeElement),
+      "settings Esc restores the visible account menu button",
+    );
+    for (const listId of ["other", "fixture"]) {
+      await openTVSettings();
+      await page
+        .getByRole("combobox", { name: "Lista IPTV ativa" })
+        .selectOption(listId);
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      await page.waitForFunction(
+        (id) => window.__tvFixture.listId === id,
+        listId,
+      );
+    }
     const foldersOpener = page.getByRole("button", {
       name: "Gerir pastas",
       exact: true,
@@ -263,6 +297,7 @@ try {
       .getByRole("combobox", { name: "Procurar canais, séries e filmes" })
       .waitFor();
     await settleTV(page);
+    await page.locator(".tv-result").first().waitFor();
     assert.equal(await page.locator(".tv-result").count(), 90);
     await noOverflow("search");
     await modalBoundaryTrap();
@@ -295,6 +330,35 @@ try {
       () => document.querySelector("video")?.videoWidth === 320,
     );
     await settleTV(page);
+    const viewport = page.viewportSize();
+    for (const selector of [
+      ".tv-modal-full-viewport",
+      ".tv-player-modal",
+      ".tv-player",
+      ".tv-player video",
+    ])
+      assert.deepEqual(
+        await page.locator(selector).boundingBox(),
+        { x: 0, y: 0, ...viewport },
+        `${selector} decoded playback fills the viewport`,
+      );
+    const scrollPosition = await page.evaluate(() => ({
+      x: scrollX,
+      y: scrollY,
+    }));
+    await page.mouse.move(width - 5, 200);
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(150);
+    assert.deepEqual(
+      await page.evaluate(() => ({ x: scrollX, y: scrollY })),
+      scrollPosition,
+      "decoded playback keeps the underlying page still",
+    );
+    assert.equal(
+      await page.evaluate(() => document.documentElement.clientWidth),
+      width,
+      "no document scrollbar strip beside decoded playback",
+    );
     await page.screenshot({ path: `${directory}/player-${width}.png` });
     assert.equal(
       await page.locator(".tv-live-dot").count(),
@@ -312,8 +376,9 @@ try {
   const pendingCategory = fixture.holdNextCategory();
   await page.goto("http://127.0.0.1:5187/tv?race=1#section=live&category=pt");
   await pendingCategory.started;
+  await openTVSettings();
   await page
-    .getByRole("combobox", { name: "Lista IPTV" })
+    .getByRole("combobox", { name: "Lista IPTV ativa" })
     .selectOption("other");
   await page.locator(".tv-portal").filter({ hasText: "Portugal" }).click();
   await page
@@ -330,8 +395,9 @@ try {
     0,
   );
   fixture.setDelay(0);
+  await openTVSettings();
   await page
-    .getByRole("combobox", { name: "Lista IPTV" })
+    .getByRole("combobox", { name: "Lista IPTV ativa" })
     .selectOption("fixture");
   await page.locator(".tv-portal").filter({ hasText: "Portugal" }).click();
   await page.locator(".tv-channel").first().waitFor();
@@ -673,6 +739,11 @@ try {
     assert.equal(await page.getByRole("dialog").count(), 0);
     await page.evaluate(() => {
       document.body.style.overflow = "auto";
+      document.documentElement.style.setProperty(
+        "overflow-y",
+        "scroll",
+        "important",
+      );
     });
     await first.focus();
     await page.keyboard.press("Enter");
@@ -706,6 +777,13 @@ try {
       await page.evaluate(() => document.body.style.overflow),
       "hidden",
     );
+    assert.equal(
+      await page.evaluate(
+        () => getComputedStyle(document.documentElement).overflowY,
+      ),
+      "hidden",
+      "closing a stacked dialog keeps the document locked for playback",
+    );
     await playerButton.click();
     await page
       .getByRole("dialog")
@@ -718,6 +796,18 @@ try {
     assert.equal(
       await page.evaluate(() => document.body.style.overflow),
       "auto",
+    );
+    assert.deepEqual(
+      await page.evaluate(() => ({
+        value: document.documentElement.style.getPropertyValue("overflow-y"),
+        priority:
+          document.documentElement.style.getPropertyPriority("overflow-y"),
+      })),
+      { value: "scroll", priority: "important" },
+      "last modal restores the original html scroll axis and priority",
+    );
+    await page.evaluate(() =>
+      document.documentElement.style.removeProperty("overflow-y"),
     );
     assert.ok(await first.evaluate((e) => e === document.activeElement));
   }
@@ -791,7 +881,7 @@ try {
       }),
   );
   // Public list editor never hydrates stored secrets; blank replacements preserve them.
-  await page.getByRole("button", { name: "Listas IPTV", exact: true }).click();
+  await openTVSettings();
   await page
     .getByRole("button", { name: "Editar", exact: true })
     .first()
@@ -799,6 +889,75 @@ try {
   for (const name of ["url", "username", "password", "epgUrl"])
     assert.equal(await page.locator(`[name="${name}"]`).inputValue(), "");
   await page.locator('[name="name"]').fill("Casa editada");
+  const patchesBeforeRefresh = fixture.patches.length;
+  let releaseRefresh;
+  const refreshGate = new Promise((resolve) => (releaseRefresh = resolve));
+  await page.route(
+    "**/api/iptv/lists/fixture/refresh",
+    async (route) => {
+      await refreshGate;
+      await route.fallback();
+    },
+    { times: 1 },
+  );
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "A atualizar a lista…" })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "A atualizar…", exact: true })
+      .isDisabled(),
+    true,
+  );
+  releaseRefresh();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Lista «Casa» atualizada." })
+    .waitFor();
+  assert.equal(
+    await page.locator('[name="name"]').inputValue(),
+    "Casa editada",
+  );
+  assert.equal(
+    fixture.patches.length,
+    patchesBeforeRefresh,
+    "refresh does not save pending edits",
+  );
+  assert.ok(
+    fixture.requests.some(
+      (r) =>
+        r.path === "/api/iptv/lists/fixture/refresh" && r.method === "POST",
+    ),
+  );
+  await page.route(
+    "**/api/iptv/lists/fixture/refresh",
+    (route) =>
+      route.fulfill({
+        status: 502,
+        json: { error: "Não foi possível atualizar a lista." },
+      }),
+    { times: 1 },
+  );
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Não foi possível atualizar a lista." })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Lista «Casa» atualizada." })
+    .waitFor();
+  assert.equal(await page.getByRole("alert").count(), 0);
+
   await page
     .getByRole("button", { name: "Guardar lista", exact: true })
     .click();
@@ -834,7 +993,7 @@ try {
     .click();
   assert.equal(await page.locator('[name="password"]').inputValue(), "");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Listas IPTV", exact: true }).click();
+  await openTVSettings();
   await page
     .getByRole("button", { name: "＋ Adicionar lista", exact: true })
     .click();
@@ -920,6 +1079,15 @@ try {
     "cancelled start never reopens old target",
   );
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  // Electron can advertise native HLS without actually decoding the channel.
+  await page.evaluate(() => {
+    const original = HTMLMediaElement.prototype.canPlayType;
+    HTMLMediaElement.prototype.canPlayType = function (type) {
+      return type === "application/vnd.apple.mpegurl"
+        ? "maybe"
+        : original.call(this, type);
+    };
+  });
   const decoded = [];
   for (const mode of ["mp4", "hls", "mpegts", "remux"]) {
     fixture.setMode(mode);
@@ -944,9 +1112,63 @@ try {
       0,
       "red only live",
     );
+    if (mode === "hls")
+      assert.ok(
+        await page
+          .locator("video")
+          .evaluate((v) => v.currentSrc.startsWith("blob:")),
+        "HLS uses MSE despite native maybe support",
+      );
     decoded.push(mode);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
   }
+  fixture.setMode("mp4");
+  fixture.setCompatibilityAvailable(true);
+  const startsBeforeCompatibility = fixture.starts.length;
+  await page.evaluate(() =>
+    window.__tvFixture.play({
+      section: "live",
+      id: "compatible",
+      title: "Canal compatível",
+      start: 30,
+    }),
+  );
+  await page.waitForFunction(
+    () => document.querySelector("video")?.videoWidth === 320,
+  );
+  const requestsBeforeFailure = fixture.requests.length;
+  await page
+    .locator("video")
+    .evaluate((v) => v.dispatchEvent(new Event("error")));
+  await page.waitForFunction(
+    () => document.querySelector("video")?.videoWidth === 320,
+  );
+  await page.waitForFunction(
+    () => document.querySelector("video")?.currentTime > 0.3,
+  );
+  assert.equal(
+    fixture.starts.length,
+    startsBeforeCompatibility + 2,
+    "one compatibility fallback",
+  );
+  assert.equal(fixture.starts.at(-1).compatibility, true);
+  const recoveryRequests = fixture.requests.slice(requestsBeforeFailure);
+  assert.ok(
+    recoveryRequests
+      .filter((r) => r.path.endsWith("/remux"))
+      .every((r) => !r.query),
+    "live compatibility never seeks to a saved position",
+  );
+  const stopIndex = recoveryRequests.findIndex((r) => r.path.endsWith("/stop"));
+  const startIndex = recoveryRequests.findIndex((r) =>
+    r.path.endsWith("/play"),
+  );
+  assert.ok(
+    stopIndex >= 0 && startIndex > stopIndex,
+    "old connection closes before compatible start",
+  );
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  fixture.setCompatibilityAvailable(false);
   assert.ok(fixture.stops.length >= 5);
   assert.ok(fixture.starts.every((s) => s.id));
   assert.ok(
@@ -963,6 +1185,7 @@ try {
       selectedChannelGuide: true,
       channelGuideCancellationNoGuideRetry: true,
       publicListCRUD: true,
+      playlistRefreshProgressAndRetry: true,
       secretOnlyRefresh: true,
       mockedMember: true,
       localDecoded: decoded,
@@ -977,6 +1200,8 @@ try {
       episodes: true,
       guideRetry: true,
       playbackRetry: true,
+      liveCompatibilityFallback: true,
+      hlsMsePreference: true,
       globalSearchScope: true,
       abandonedStart: true,
       search50000: true,

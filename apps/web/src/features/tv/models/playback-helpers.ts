@@ -3,6 +3,8 @@ export interface PlaybackSession {
   type: "hls" | "mpegts" | "mp4";
   url: string;
   remux: boolean;
+  compatibilityAvailable?: boolean;
+  compatible?: boolean;
 }
 export const progressKey = (t: {
   section: string;

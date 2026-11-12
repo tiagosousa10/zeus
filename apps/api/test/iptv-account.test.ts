@@ -67,6 +67,21 @@ describe("upstreamFor xtream", () => {
       "hls",
     );
   });
+  it("compatibility selects only an existing TS transport", () => {
+    const target = { section: "live" as const, id: "101", compatibility: true };
+    for (const formats of [["m3u8", "ts"], []] as Account["formats"][]) {
+      const source = upstreamFor(list, catalog, undefined, { formats }, target);
+      assert.equal(source?.kind, "ts");
+      assert.equal(
+        source?.url,
+        "https://tv.example.test:8080/live/u/segredo-123/101.ts",
+      );
+    }
+    assert.equal(
+      upstreamFor(list, catalog, undefined, { formats: ["m3u8"] }, target),
+      undefined,
+    );
+  });
   it("movie and episode use their container", () => {
     const m = upstreamFor(list, catalog, undefined, both, {
       section: "movie",
@@ -197,6 +212,14 @@ describe("upstreamFor m3u", () => {
       container: "ts",
     });
     assert.equal(up({ section: "live", id: "b" })?.kind, "hls");
+    assert.equal(
+      up({ section: "live", id: "a", compatibility: true })?.kind,
+      "ts",
+    );
+    assert.equal(
+      up({ section: "live", id: "b", compatibility: true }),
+      undefined,
+    );
     assert.equal(up({ section: "movie", id: "m" })?.kind, "file");
     assert.deepEqual(up({ section: "series", id: "s", episodeId: "e1" }), {
       url: ep.source,

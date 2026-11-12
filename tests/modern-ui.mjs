@@ -96,6 +96,30 @@ try {
     .filter({ hasText: "Canal 49999" })
     .click();
   await page.locator(".tv-player").waitFor();
+  // Lock the document scroller too: body overflow alone leaves html scrolling.
+  const documentScroll = await page.evaluate(() => ({
+    x: scrollX,
+    y: scrollY,
+    hasScrollablePage: document.documentElement.scrollHeight > innerHeight,
+  }));
+  assert.ok(
+    documentScroll.hasScrollablePage,
+    "fixture must exercise a scrollable page behind the player",
+  );
+  await page.mouse.move(1400, 450);
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(200);
+  assert.deepEqual(
+    await page.evaluate(() => ({ x: scrollX, y: scrollY })),
+    { x: documentScroll.x, y: documentScroll.y },
+    "wheel over playback must not scroll the page behind it",
+  );
+  assert.equal(
+    await page.evaluate(
+      () => getComputedStyle(document.documentElement).overflowY,
+    ),
+    "hidden",
+  );
   // Playback is edge-to-edge, unlike ordinary padded dialogs. Check both
   // desktop and mobile rules, including resizing an already open player.
   for (const viewport of [
@@ -117,9 +141,12 @@ try {
     }
   }
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  await page.getByRole("button", { name: /^Menu da conta/ }).click();
+  await page.getByRole("menuitem", { name: "Configuração da TV" }).click();
   assert.equal(
     await page
-      .getByRole("combobox", { name: "Lista IPTV", exact: true })
+      .getByRole("combobox", { name: "Lista IPTV ativa", exact: true })
       .inputValue(),
     "other",
   );

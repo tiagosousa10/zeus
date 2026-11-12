@@ -59,6 +59,7 @@ export async function tvFixture(page, { media, largeSearch = false } = {}) {
   let delay = 0,
     guideError = false,
     mode = "mp4",
+    compatibilityAvailable = false,
     failedPlay = false;
   await page.route("**/api/iptv/**", async (route) => {
     const u = new URL(route.request().url()),
@@ -90,11 +91,14 @@ export async function tvFixture(page, { media, largeSearch = false } = {}) {
           json: { error: "Fornecedor indisponível." },
         });
       }
+      const playbackMode = body.compatibility ? "remux" : mode;
       json = {
         token,
-        type: mode === "remux" ? "mp4" : mode,
-        url: `/api/iptv/play/${token}/${mode === "hls" ? "index.m3u8" : mode === "mpegts" ? "stream.ts" : mode === "remux" ? "remux" : "file.mp4"}`,
-        remux: mode === "remux",
+        compatibilityAvailable,
+        compatible: body.compatibility === true,
+        type: playbackMode === "remux" ? "mp4" : playbackMode,
+        url: `/api/iptv/play/${token}/${playbackMode === "hls" ? "index.m3u8" : playbackMode === "mpegts" ? "stream.ts" : playbackMode === "remux" ? "remux" : "file.mp4"}`,
+        remux: playbackMode === "remux",
       };
     } else if (p.endsWith("/search-index")) {
       json = [
@@ -298,6 +302,7 @@ export async function tvFixture(page, { media, largeSearch = false } = {}) {
       return { started, release };
     },
     setMode: (v) => (mode = v),
+    setCompatibilityAvailable: (v) => (compatibilityAvailable = v),
     failNextPlay: () => (failedPlay = true),
     setGuideError: (v) => (guideError = v),
   };

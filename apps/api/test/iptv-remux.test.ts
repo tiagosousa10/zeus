@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -327,5 +327,80 @@ test("cancelling a waiting seek frees the waiter without stopping the current co
   } finally {
     endSession(s);
     await replacement?.catch(() => {});
+  }
+});
+
+test("live compatibility transcodes TS video and audio to bounded H264/AAC that decodes", async () => {
+  const source = execFileSync(
+    ffmpeg!,
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc=duration=1:size=1440x1080:rate=25",
+      "-f",
+      "lavfi",
+      "-i",
+      "sine=duration=1",
+      "-c:v",
+      "mpeg2video",
+      "-threads",
+      "2",
+      "-c:a",
+      "mp2",
+      "-f",
+      "mpegts",
+      "pipe:1",
+    ],
+    { maxBuffer: 10 * 1024 * 1024 },
+  );
+  const s = distinctSession("compatible", "live");
+  try {
+    const output = await remuxSession(
+      s,
+      0,
+      s.signal,
+      async () => new Response(source),
+      { transcodeVideo: true },
+    );
+    const converted = Buffer.from(await new Response(output).arrayBuffer());
+    const decoded = spawnSync(
+      ffmpeg!,
+      ["-hide_banner", "-i", "pipe:0", "-f", "null", "-"],
+      { input: converted, encoding: "utf8" },
+    );
+    assert.equal(decoded.status, 0, decoded.stderr);
+    assert.match(decoded.stderr, /Video: h264/);
+    assert.match(decoded.stderr, /Audio: aac/);
+    assert.match(decoded.stderr, /yuv420p.*1280x960/);
+    assert.match(decoded.stderr, /25 fps/);
+  } finally {
+    endSession(s);
+  }
+});
+
+test("compatibility keeps the demuxer restriction against disguised HLS", async () => {
+  const s = distinctSession("compatible-hls", "live");
+  let reads = 0;
+  try {
+    const output = await remuxSession(
+      s,
+      0,
+      s.signal,
+      async () => {
+        reads++;
+        return new Response(
+          "#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhttp://127.0.0.1:1/private\n#EXT-X-ENDLIST\n",
+        );
+      },
+      { transcodeVideo: true },
+    );
+    await assert.rejects(new Response(output).arrayBuffer());
+    assert.equal(reads, 1);
+  } finally {
+    endSession(s);
   }
 });

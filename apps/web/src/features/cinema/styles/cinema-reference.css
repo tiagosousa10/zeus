@@ -227,9 +227,10 @@ html.z-rm .rh__rule {
 }
 .cine-signature {
   display: block;
-  width: 180px;
+  width: 112px;
   max-width: 100%;
   height: auto;
+  margin-inline: auto;
 }
 
 @media (max-width: 760px) {
