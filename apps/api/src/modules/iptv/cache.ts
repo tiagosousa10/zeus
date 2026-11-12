@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "../../lib/config.js";
 import { decrypt, encrypt } from "../../lib/crypto.js";
+import { fetchGuide, type GuideIndex } from "./epg.js";
 import type { Account } from "./account.js";
 import { fetchAccount, fetchCatalog, fetchMovie, fetchSeries } from "./provider.js";
 import type { IPTVList, TVCatalog, TVMovieDetail, TVSeriesDetail } from "./types.js";
@@ -91,4 +92,8 @@ export async function getSeries(userId: string, list: IPTVList, id: string): Pro
 
 export function getAccount(userId: string, list: IPTVList): Promise<Account> {
   return cached(sha256(`${listKey(userId, list)}:account`), ACCOUNT_TTL, () => fetchAccount(list), false, false);
+}
+
+export function getGuide(userId: string, list: IPTVList): Promise<GuideIndex> {
+  return cached(sha256(JSON.stringify([listKey(userId, list), "guide", list.epgUrl ?? ""])), 3600_000, (now) => fetchGuide(list, now), false, false);
 }
