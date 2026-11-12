@@ -28,6 +28,7 @@ function localSecret(name: string) {
   return readFileSync(path, "utf8").trim();
 }
 export const config = {
+  dataDir: dir,
   databaseUrl:
     process.env.DATABASE_URL ||
     "postgres://zeus:zeus_local@127.0.0.1:55439/zeus",

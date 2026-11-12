@@ -5,6 +5,7 @@ export const emptyState = () => ({
   library: [],
   progress: {},
   iptv: [],
+  tv: {},
   addons: [],
   onboardingDone: false,
 });

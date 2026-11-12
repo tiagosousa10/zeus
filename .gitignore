@@ -19,3 +19,5 @@ apps/api/dist/
 /playwright-report/
 /build/*
 !/build/icon.png
+
+.superpowers/
