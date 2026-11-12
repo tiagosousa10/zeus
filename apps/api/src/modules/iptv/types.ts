@@ -10,3 +10,4 @@ export interface TVMovieDetail extends TVMovie { backdrop?: string; plot?: strin
 export interface TVSeriesDetail extends TVSeries { backdrop?: string; plot?: string; cast: string[]; genre?: string; seasons: { number: number; name: string; episodes: TVEpisode[] }[] }
 export interface SectionData<T> { categories: TVCategory[]; items: T[] }
 export interface TVCatalog { fetchedAt: number; live: SectionData<TVChannel>; movie: SectionData<TVMovie>; series: SectionData<TVSeries> }
+export type IPTVList = { id: string; name: string; type: "m3u" | "xtream"; url: string; username?: string; password?: string; epgUrl?: string };

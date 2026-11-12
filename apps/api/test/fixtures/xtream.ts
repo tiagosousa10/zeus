@@ -62,3 +62,18 @@ export function fakeFetch(routes: (url: URL) => unknown | Response): typeof safe
   };
   return Object.assign(fn, { calls });
 }
+
+export function xtreamRoutes(url: URL): unknown {
+  const { catalog, vodInfo, seriesInfo } = xtreamFixture;
+  const routes: Record<string, unknown> = {
+    get_live_categories: catalog.liveCategories,
+    get_live_streams: catalog.live,
+    get_vod_categories: catalog.vodCategories,
+    get_vod_streams: catalog.vod,
+    get_series_categories: catalog.seriesCategories,
+    get_series: catalog.series,
+    get_vod_info: vodInfo,
+    get_series_info: seriesInfo,
+  };
+  return routes[url.searchParams.get("action") ?? ""] ?? [];
+}
