@@ -1,5 +1,6 @@
 #!/bin/bash
-# Duplo clique para abrir o Zeus (instala o que faltar na primeira vez)
+set -euo pipefail
+# Arranque a partir do código-fonte. A versão DMG abre directamente pelo Finder.
 cd "$(dirname "$0")"
-[ -d node_modules ] || npm install
-npm start
+[ -d node_modules ] || npm ci
+exec npm start
