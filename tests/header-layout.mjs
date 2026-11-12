@@ -67,15 +67,21 @@ try {
             layout[".app-header-search"].x,
           `sections overlap tools at ${width}`,
         );
-      if(width===1440) {
-        const account=page.getByRole('button',{name:/Menu da conta/});
+      if (width === 1440) {
+        const account = page.getByRole("button", { name: /Menu da conta/ });
         await account.click();
-        await page.getByRole('menu',{name:'Conta',exact:true}).waitFor();
-        await page.keyboard.press('Escape');
-        assert.ok(await account.evaluate(el=>el===document.activeElement));
-        await page.getByRole('button',{name:'Pesquisar',exact:true}).click();
-        await page.getByRole('dialog',{name:'Pesquisar em Cinema e TV'}).waitFor();
-        await page.keyboard.press('Escape');
+        await page.getByRole("menu", { name: "Conta", exact: true }).waitFor();
+        await page.keyboard.press("Escape");
+        assert.ok(
+          await account.evaluate((el) => el === document.activeElement),
+        );
+        await page
+          .getByRole("button", { name: "Pesquisar", exact: true })
+          .click();
+        await page
+          .getByRole("dialog", { name: "Pesquisar em Cinema e TV" })
+          .waitFor();
+        await page.keyboard.press("Escape");
       }
       layouts.push(layout);
       if ([1440, 900, 375].includes(width))

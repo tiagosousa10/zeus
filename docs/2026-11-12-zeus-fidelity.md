@@ -4,21 +4,21 @@ A primeira implementação React alterava a composição aprovada: barra com 82 
 
 ## Ecrãs corrigidos
 
-| Área | Reposição |
-| --- | --- |
-| Base | Tokens, fonte do sistema, navegação, ícones SVG, pesquisa, menu, espaçamento e adaptação mobile originais |
-| Entrada | Busto iluminado pelo cursor, painel de vidro de 400 px, posições e controlos originais; TOTP com seis campos |
-| Onboarding | Seis passos, subida ao Olimpo, nuvens, altitude, painel inferior, idiomas ordenados e raio final |
-| Portal | Zeus/wordmark centrados, saudação, TV à esquerda e Cinema à direita, cores e último módulo |
-| Cinema | Billboard de altura completa, logótipo, metadados, réguas romanas, filas e cartões |
-| Explorar | Ulisses, pesquisa, três linhas de filtros e resultados na composição original |
-| Título/Leitor | Guerreiro, folha de Fontes, episódios, Medusa na pausa, cursor/luz, SVGs e menus do leitor |
-| TV | Recorte de Hermes, palco, separadores Directo/Guia/Favoritos/Listas, grelha EPG, formulários e cartões |
-| Conta | Atena, navegação lateral, égide, códigos de recuperação, idiomas e apresentação das legendas |
-| Add-ons | Forja, brasas, lista compacta ordenável, catálogo e modais originais |
-| Administração | Conselho dos Deuses, estatísticas, tabelas, convites e modais |
-| Estados | Relógio, máscaras, ponteiros, quatro painéis e navegação por fragmento |
-| Guia | Galeria completa de componentes, arte, luz, nuvens e raios |
+| Área          | Reposição                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------ |
+| Base          | Tokens, fonte do sistema, navegação, ícones SVG, pesquisa, menu, espaçamento e adaptação mobile originais    |
+| Entrada       | Busto iluminado pelo cursor, painel de vidro de 400 px, posições e controlos originais; TOTP com seis campos |
+| Onboarding    | Seis passos, subida ao Olimpo, nuvens, altitude, painel inferior, idiomas ordenados e raio final             |
+| Portal        | Zeus/wordmark centrados, saudação, TV à esquerda e Cinema à direita, cores e último módulo                   |
+| Cinema        | Billboard de altura completa, logótipo, metadados, réguas romanas, filas e cartões                           |
+| Explorar      | Ulisses, pesquisa, três linhas de filtros e resultados na composição original                                |
+| Título/Leitor | Guerreiro, folha de Fontes, episódios, Medusa na pausa, cursor/luz, SVGs e menus do leitor                   |
+| TV            | Recorte de Hermes, palco, separadores Directo/Guia/Favoritos/Listas, grelha EPG, formulários e cartões       |
+| Conta         | Atena, navegação lateral, égide, códigos de recuperação, idiomas e apresentação das legendas                 |
+| Add-ons       | Forja, brasas, lista compacta ordenável, catálogo e modais originais                                         |
+| Administração | Conselho dos Deuses, estatísticas, tabelas, convites e modais                                                |
+| Estados       | Relógio, máscaras, ponteiros, quatro painéis e navegação por fragmento                                       |
+| Guia          | Galeria completa de componentes, arte, luz, nuvens e raios                                                   |
 
 Os dados continuam reais. Mensagens de indisponibilidade, listas vazias, estado do Motor, sessão activa e serviços não configurados não são substituídos pelos exemplos fictícios do protótipo. Fontes de vídeo dependem dos Add-ons aprovados; a grelha TV depende do XMLTV do fornecedor. O catálogo de Add-ons que não contenha metadata de tipos/recursos não activa filtros que não possa cumprir.
 

@@ -172,7 +172,9 @@ test("both guarded transports identify Zeus and preserve explicit User-Agent hea
       assert.equal(response.status, 200);
       assert.equal(await response.text(), "Zeus/1.1.3");
       for (const key of ["User-Agent", "user-agent"]) {
-        const custom = await load(`${base}/agent`, { headers: { [key]: "CustomPlayer/2" } });
+        const custom = await load(`${base}/agent`, {
+          headers: { [key]: "CustomPlayer/2" },
+        });
         assert.equal(await custom.text(), "CustomPlayer/2");
       }
     }

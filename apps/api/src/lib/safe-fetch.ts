@@ -88,11 +88,13 @@ async function guardedGet(
           method: "GET",
           // Some IPTV servers return 404 for anonymous HTTP clients.
           // Headers normalizes casing so an explicit caller agent always wins.
-          headers: Object.fromEntries(new Headers({
-            "accept-encoding": "identity",
-            "user-agent": "Zeus/1.1.3",
-            ...Object.fromEntries(new Headers(options.headers)),
-          })),
+          headers: Object.fromEntries(
+            new Headers({
+              "accept-encoding": "identity",
+              "user-agent": "Zeus/1.1.3",
+              ...Object.fromEntries(new Headers(options.headers)),
+            }),
+          ),
           lookup: ((_host: any, opts: any, cb: any) =>
             opts.all
               ? cb(null, [chosen])
@@ -111,7 +113,9 @@ async function guardedGet(
             );
             return;
           }
-          onResponse(res, status, resolve, reject, () => clearTimeout(deadline));
+          onResponse(res, status, resolve, reject, () =>
+            clearTimeout(deadline),
+          );
         },
       );
       const deadline = setTimeout(
@@ -208,26 +212,33 @@ export function safeStream(
     timeout?: number;
   } = {},
 ): Promise<Response> {
-  return guardedGet(input, options, (res, status, resolve, reject, clearDeadline) => {
-    clearDeadline();
-    const headers = copyHeaders(res, [
-      "content-type",
-      "content-length",
-      "content-range",
-      "accept-ranges",
-    ]);
-    const nullBody = nullBodyStatuses.has(status);
-    if (nullBody) res.resume();
-    try {
-      resolve(
-        new Response(nullBody ? null : (Readable.toWeb(res) as ReadableStream), {
-          status,
-          headers,
-        }),
-      );
-    } catch (e) {
-      res.destroy();
-      reject(e);
-    }
-  });
+  return guardedGet(
+    input,
+    options,
+    (res, status, resolve, reject, clearDeadline) => {
+      clearDeadline();
+      const headers = copyHeaders(res, [
+        "content-type",
+        "content-length",
+        "content-range",
+        "accept-ranges",
+      ]);
+      const nullBody = nullBodyStatuses.has(status);
+      if (nullBody) res.resume();
+      try {
+        resolve(
+          new Response(
+            nullBody ? null : (Readable.toWeb(res) as ReadableStream),
+            {
+              status,
+              headers,
+            },
+          ),
+        );
+      } catch (e) {
+        res.destroy();
+        reject(e);
+      }
+    },
+  );
 }
