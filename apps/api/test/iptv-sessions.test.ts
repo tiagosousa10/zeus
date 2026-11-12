@@ -24,11 +24,11 @@ test("a new session on the same list ends the previous one first", () => {
   const a = createSession("u1", "l1", up, acc);
   let closed = false;
   a.onEnd.add(() => (closed = true));
-  const b = createSession("u2", "l1", up, acc);
+  const b = createSession("u1", "l1", up, acc);
   assert.equal(a.signal.aborted, true);
   assert.equal(closed, true);
   assert.equal(findSession(a.token, "u1"), "ended");
-  assert.equal(findSession(b.token, "u2"), b);
+  assert.equal(findSession(b.token, "u1"), b);
 });
 
 test("tokens are private to their member", () => {
@@ -106,4 +106,25 @@ test("playlist marks follow their resource and leave with the cap", () => {
   assert.deepEqual([...s.playlists], ["https://cdn.test/v.m3u8"]);
   for (let i = 0; i < 2000; i++) addResource(s, `https://cdn.test/${i}.ts`);
   assert.equal(s.playlists.size, 0);
+});
+
+test("members with the same private list id do not end each other's playback", () => {
+  const a = createSession("u1", "imported-list", up, acc);
+  const b = createSession("u2", "imported-list", up, acc);
+  assert.equal(a.signal.aborted, false);
+  assert.equal(findSession(a.token, "u1"), a);
+  assert.equal(findSession(b.token, "u2"), b);
+  endSession(b);
+  assert.equal(a.signal.aborted, false);
+});
+
+test("clearing sessions aborts active streams and runs cleanup once", () => {
+  const s = createSession("u1", "l1", up, acc);
+  let cleanups = 0;
+  s.onEnd.add(() => cleanups++);
+  clearSessions();
+  clearSessions();
+  assert.equal(s.signal.aborted, true);
+  assert.equal(cleanups, 1);
+  assert.equal(findSession(s.token, "u1"), undefined);
 });

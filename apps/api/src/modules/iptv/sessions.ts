@@ -37,6 +37,7 @@ export function setSessionClock(f: () => number): void {
 }
 
 export function clearSessions(): void {
+  for (const e of entries.values()) finish(e);
   entries.clear();
 }
 
@@ -71,7 +72,9 @@ export function createSession(
   secrets: PlaySession["secrets"] = { credentials: [], hosts: [] },
 ): PlaySession {
   sweep();
-  for (const e of entries.values()) if (!e.session.ended && e.session.listId === listId) finish(e);
+  for (const e of entries.values()) {
+    if (!e.session.ended && e.session.userId === userId && e.session.listId === listId) finish(e);
+  }
   const controller = new AbortController();
   const session: PlaySession = {
     token: randomBytes(32).toString("base64url"),
