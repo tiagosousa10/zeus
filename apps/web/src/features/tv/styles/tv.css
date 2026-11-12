@@ -695,8 +695,8 @@
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  .tv-channel-main {
-    min-height: 170px !important;
+  .tv-app .tv-channel:not(.tv-channel--row) .tv-channel-main {
+    min-height: 170px;
   }
   .tv-portals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
