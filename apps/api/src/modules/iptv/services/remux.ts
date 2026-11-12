@@ -253,7 +253,18 @@ export function remux(
       "mp4",
       "pipe:1",
     ],
-    { stdio: ["ignore", "pipe", "ignore"], env: nativeEnvironment() },
+    {
+      stdio: ["ignore", "pipe", "ignore"],
+      env: {
+        ...nativeEnvironment(),
+        // The bundled Linux FFmpeg statically links an older glibc. Loading
+        // host gconv modules while reading MPEG-TS service names can crash it.
+        // /dev/null is never a module directory; keep built-in conversions.
+        ...(process.platform === "linux" && !process.env.ZEUS_FFMPEG_PATH
+          ? { GCONV_PATH: "/dev/null" }
+          : {}),
+      },
+    },
   );
   let ended = false;
   let failed = false;
