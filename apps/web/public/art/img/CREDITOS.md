@@ -96,3 +96,9 @@ Só `guerreiro` exige atribuição (CC BY 2.0); `atena`, `conselho`, `hefesto`, 
 - **Licença:** CC0 (Met Open Access)
 - **Dimensões finais:** 1810 × 2400
 - **Foco:** céu claro ao centro com Apolo e os deuses (≈40 % x, 40 % y), com margens escuras de figuras e moldura; funciona como fundo se o centro for escurecido.
+
+## zeus-cinema (12 de Novembro de 2026)
+Imagem original gerada por IA para esta aplicação: busto clássico de Zeus em mármore, composição panorâmica. Exportada para WebP a 1672 × 941. O ícone usa o original local fornecido `images-zeus/zeus-4.png` (1024 × 1024), também usado no retrato zeus-4.
+
+## Ícone macOS — 1.2.5
+A imagem original `images-zeus/zeus-4.png` é preservada. `scripts/build-icon.mjs` aplica por código uma máscara com cantos contínuos, margem transparente e contorno subtil para gerar `build/icon.png` (1024 × 1024), usado no Dock e no pacote macOS.
