@@ -48,6 +48,7 @@ export type Stream = {
   addonName?: string;
   url?: string;
   infoHash?: string;
+  externalUrl?: string;
   fileIdx?: number;
   behaviorHints?: { filename?: string; bingeGroup?: string };
   subtitles?: Subtitle[];

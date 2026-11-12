@@ -131,6 +131,56 @@ export async function installedAddons(
     }))
     .filter(({ addon }: any) => !addon || addon.resources.includes(resource));
 }
+const playable = (s: any) =>
+  (typeof s.infoHash === "string" && /^[a-f0-9]{40}$/i.test(s.infoHash)) ||
+  (typeof s.url === "string" && /^https?:\/\//.test(s.url));
+// Fontes externas e do YouTube nunca são reproduzidas no Zeus: seguem como ligação para abrir fora.
+function externalLink(s: any) {
+  if (typeof s.externalUrl === "string" && /^https?:\/\//.test(s.externalUrl))
+    return s.externalUrl;
+  if (typeof s.ytId === "string" && /^[\w-]{11}$/.test(s.ytId))
+    return `https://www.youtube.com/watch?v=${s.ytId}`;
+}
+export function addonSources(
+  streams: unknown[],
+  a: { id: string; name: string },
+) {
+  return streams
+    .slice(0, 100)
+    .filter(
+      (s: any) =>
+        typeof s === "object" && s !== null && (playable(s) || externalLink(s)),
+    )
+    .map((s: any) => {
+      const inZeus = playable(s);
+      return {
+        name: typeof s.name === "string" ? s.name : a.name,
+        title: typeof s.title === "string" ? s.title : "",
+        url: inZeus ? s.url : undefined,
+        infoHash: inZeus ? s.infoHash : undefined,
+        externalUrl: inZeus ? undefined : externalLink(s),
+        fileIdx:
+          Number.isInteger(s.fileIdx) && s.fileIdx >= 0 ? s.fileIdx : undefined,
+        behaviorHints: s.behaviorHints,
+        subtitles: Array.isArray(s.subtitles)
+          ? s.subtitles
+              .filter(
+                (t: any) =>
+                  typeof t?.url === "string" &&
+                  /^https?:\/\//.test(t.url) &&
+                  typeof t.lang === "string",
+              )
+              .map((t: any, i: number) => ({
+                id: String(t.id || i),
+                url: subtitleLink(t.url),
+                lang: t.lang,
+              }))
+          : [],
+        addonId: a.id,
+        addonName: a.name,
+      };
+    });
+}
 export const streamRoutes = new Hono();
 streamRoutes.use("*", requireMember);
 streamRoutes.get("/", async (c) => {
@@ -163,43 +213,7 @@ streamRoutes.get("/", async (c) => {
         if (!Array.isArray(result.streams))
           throw new Error("Resposta inválida.");
         return {
-          streams: result.streams
-            .slice(0, 100)
-            .filter(
-              (s: any) =>
-                typeof s === "object" &&
-                s !== null &&
-                ((typeof s.infoHash === "string" &&
-                  /^[a-f0-9]{40}$/i.test(s.infoHash)) ||
-                  (typeof s.url === "string" && /^https?:\/\//.test(s.url))),
-            )
-            .map((s: any) => ({
-              name: typeof s.name === "string" ? s.name : a.name,
-              title: typeof s.title === "string" ? s.title : "",
-              url: s.url,
-              infoHash: s.infoHash,
-              fileIdx:
-                Number.isInteger(s.fileIdx) && s.fileIdx >= 0
-                  ? s.fileIdx
-                  : undefined,
-              behaviorHints: s.behaviorHints,
-              subtitles: Array.isArray(s.subtitles)
-                ? s.subtitles
-                    .filter(
-                      (t: any) =>
-                        typeof t?.url === "string" &&
-                        /^https?:\/\//.test(t.url) &&
-                        typeof t.lang === "string",
-                    )
-                    .map((t: any, i: number) => ({
-                      id: String(t.id || i),
-                      url: subtitleLink(t.url),
-                      lang: t.lang,
-                    }))
-                : [],
-              addonId: a.id,
-              addonName: a.name,
-            })),
+          streams: addonSources(result.streams, a),
         };
       } catch {
         return {

@@ -182,8 +182,16 @@ export default function Player() {
           `/streams?${new URLSearchParams({ id: videoId, type })}`,
           { signal: controller.signal },
         );
-        selected = response.streams[Number(params.get("source")) || 0];
+        const index = params.get("source");
+        selected =
+          index === null
+            ? response.streams.find((s) => !s.externalUrl)
+            : response.streams[Number(index)];
       }
+      if (selected?.externalUrl)
+        throw new Error(
+          "Esta Fonte abre fora do Zeus. Volta ao título e escolhe-a lá.",
+        );
       if (!selected)
         throw new Error(
           "Não há nenhuma Fonte disponível. Volta ao título para escolher outra.",

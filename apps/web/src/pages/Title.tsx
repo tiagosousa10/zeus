@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "../components/Layout";
 import { api } from "../lib/api";
@@ -18,6 +18,31 @@ import {
 import "./cinema.css";
 import "./cinema-reference.css";
 import { cursorLight, lightning } from "../lib/fx.js";
+// Fontes externas abrem o site no browser; nunca entram no leitor do Zeus.
+function SourceAction({
+  externalUrl,
+  onPlay,
+  children,
+}: {
+  externalUrl?: string;
+  onPlay: () => void;
+  children: ReactNode;
+}) {
+  return externalUrl ? (
+    <a
+      className="t-src"
+      href={externalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {children}
+    </a>
+  ) : (
+    <button className="t-src" onClick={onPlay}>
+      {children}
+    </button>
+  );
+}
 export default function Title() {
   const params = new URLSearchParams(location.search),
     id = params.get("id") ?? "",
@@ -481,14 +506,14 @@ export default function Title() {
               <li
                 key={`${stream.name}:${stream.infoHash ?? stream.url}:${index}`}
               >
-                <button
-                  className="t-src"
-                  onClick={() =>
+                <SourceAction
+                  externalUrl={stream.externalUrl}
+                  onPlay={() =>
                     play(stream, (sources.data?.streams ?? []).indexOf(stream))
                   }
                 >
                   <span className="t-q">
-                    {facts.quality || "Vídeo"}
+                    {facts.quality || (stream.externalUrl ? "Site" : "Vídeo")}
                     <small>
                       {stream.addonName ||
                         stream.addon ||
@@ -506,6 +531,7 @@ export default function Title() {
                           ? `${facts.seeders} seeders`
                           : "",
                         facts.cached ? "Em cache" : "",
+                        stream.externalUrl ? "Abre fora do Zeus ↗" : "",
                       ]
                         .filter(Boolean)
                         .map((chip) => (
@@ -523,16 +549,30 @@ export default function Title() {
                   </span>
                   <span className="t-src__end">
                     <span className="t-go">
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z" />
-                      </svg>
+                      {stream.externalUrl ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M7 17L17 7M9 7h8v8" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z" />
+                        </svg>
+                      )}
                     </span>
                   </span>
-                </button>
+                </SourceAction>
               </li>
             ))}
           </ol>
