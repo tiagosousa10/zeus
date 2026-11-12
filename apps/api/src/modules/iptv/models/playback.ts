@@ -1,6 +1,10 @@
 import { z } from "zod";
 export const playBody = z.discriminatedUnion("section", [
-  z.object({ section: z.literal("live"), id: z.string().min(1) }),
+  z.object({
+    section: z.literal("live"),
+    id: z.string().min(1),
+    compatibility: z.boolean().optional(),
+  }),
   z.object({ section: z.literal("movie"), id: z.string().min(1) }),
   z.object({
     section: z.literal("series"),

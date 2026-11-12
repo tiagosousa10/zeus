@@ -6,6 +6,7 @@ export interface PlaySession {
   userId: string;
   listId: string;
   upstream: Upstream;
+  compatibility?: boolean;
   account: Account;
   signal: AbortSignal;
   ended: boolean;

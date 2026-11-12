@@ -745,6 +745,93 @@ test("playback starts through the API and HLS never reveals the provider", async
     setUpstreamFetch(fake);
   }
 
+  // Compatibility remains an authenticated, server-selected TS source.
+  assert.equal(
+    (
+      await a("/iptv/lists/l6/play", {
+        section: "live",
+        id: tsId,
+        compatibility: "true",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await b("/iptv/lists/l6/play", {
+        section: "live",
+        id: tsId,
+        compatibility: true,
+      })
+    ).status,
+    404,
+  );
+  const incompatible = await a("/iptv/lists/l6/play", {
+    section: "live",
+    id: channel,
+    compatibility: true,
+  });
+  assert.equal(incompatible.status, 422);
+  assert.equal(
+    incompatible.body.error,
+    "Este canal não disponibiliza um formato compatível.",
+  );
+  const normal = await a("/iptv/lists/l6/play", { section: "live", id: tsId });
+  assert.equal(normal.body.compatibilityAvailable, true);
+  assert.equal(normal.body.compatible, false);
+  const compatible = await a("/iptv/lists/l6/play", {
+    section: "live",
+    id: tsId,
+    compatibility: true,
+  });
+  assert.equal(compatible.status, 200, compatible.text);
+  assert.equal(compatible.body.compatible, true);
+  assert.equal(compatible.body.compatibilityAvailable, true);
+  assert.equal(compatible.body.type, "mp4");
+  assert.equal(compatible.body.remux, true);
+  assert.equal(
+    compatible.body.url,
+    `/api/iptv/play/${compatible.body.token}/remux.mp4`,
+  );
+  assert.equal((await b(compatible.body.url.slice(4))).status, 404);
+  assert.equal((await a(compatible.body.url.slice(4) + "?t=1")).status, 400);
+  const playbackSession = findSession(compatible.body.token, boot.body.user.id);
+  assert.ok(playbackSession && playbackSession !== "ended");
+  assert.equal(playbackSession.compatibility, true);
+  assert.equal(playbackSession.upstream.url, "https://stream.m3u.test/live.ts");
+  const liveFixture = execFileSync(ffmpeg!, [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-f",
+    "lavfi",
+    "-i",
+    "testsrc=duration=1:size=160x120:rate=25",
+    "-f",
+    "lavfi",
+    "-i",
+    "sine=duration=1",
+    "-c:v",
+    "mpeg2video",
+    "-c:a",
+    "mp2",
+    "-f",
+    "mpegts",
+    "pipe:1",
+  ]);
+  upstream["https://stream.m3u.test/live.ts"] = { body: liveFixture };
+  const converted = await a.raw(compatible.body.url.slice(4));
+  assert.equal(converted.status, 200);
+  const convertedBytes = Buffer.from(await converted.arrayBuffer());
+  assert.equal(convertedBytes.subarray(4, 8).toString(), "ftyp");
+  assert.ok(convertedBytes.includes(Buffer.from("avc1")));
+  await a(`/iptv/play/${compatible.body.token}/stop`, {});
+  const hlsOnly = await a("/iptv/lists/l6/play", {
+    section: "live",
+    id: channel,
+  });
+  assert.equal(hlsOnly.body.compatibilityAvailable, false);
+
   const resource = await a("/iptv/resource?listId=l2");
   assert.equal(resource.status, 404);
   assert.ok(!/127\.0\.0\.1|privado/.test(resource.text), resource.text);
