@@ -11,6 +11,8 @@ export interface PlaySession {
   ended: boolean;
   resources: Map<string, string>;
   playlists: Set<string>;
+  // Provider credentials and hosts: no playlist the API returns may contain them.
+  secrets: string[];
   onEnd: Set<() => void>;
 }
 
@@ -61,7 +63,13 @@ function sweep(): void {
   }
 }
 
-export function createSession(userId: string, listId: string, upstream: Upstream, account: Account): PlaySession {
+export function createSession(
+  userId: string,
+  listId: string,
+  upstream: Upstream,
+  account: Account,
+  secrets: string[] = [],
+): PlaySession {
   sweep();
   for (const e of entries.values()) if (!e.session.ended && e.session.listId === listId) finish(e);
   const controller = new AbortController();
@@ -75,6 +83,7 @@ export function createSession(userId: string, listId: string, upstream: Upstream
     ended: false,
     resources: new Map(),
     playlists: new Set(),
+    secrets,
     onEnd: new Set(),
   };
   entries.set(session.token, { session, controller, lastSeen: clock(), nextResource: 0, resourceIds: new Map() });

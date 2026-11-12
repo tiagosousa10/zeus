@@ -1,7 +1,11 @@
 const PLAYLIST_TAG = /^#EXT-X-(MEDIA|I-FRAME-STREAM-INF|RENDITION-REPORT):/i;
 const URI_ATTR = /URI=(?:"([^"]*)"|([^,\s]*))/gi;
-// These point to JSON or other documents we would only ever relay raw.
-const DROPPED_TAG = /^#EXT-X-(CONTENT-STEERING|SESSION-DATA)\b/i;
+// These point to JSON we would only relay raw, or (DEFINE) let the player build URLs we never see.
+const DROPPED_TAG = /^#EXT-X-(CONTENT-STEERING|SESSION-DATA|DEFINE)\b/i;
+// hls.js also breaks lines on a lone CR and on U+2028/U+2029.
+const LINE_BREAK = /\r\n|[\r\n\u2028\u2029]/;
+// Rewritten links never hold "//", a backslash, a "scheme:/" or a value starting with "/"; browsers read "\" as "/".
+const POINTS_SOMEWHERE = /[/\\]{2}|\\|=\s*"?\s*[/\\]|[a-z][a-z0-9+.-]*:[/\\]/i;
 
 const resolve = (uri: string, base: string): string | undefined => {
   try {
@@ -14,8 +18,7 @@ const resolve = (uri: string, base: string): string | undefined => {
 function rewriteTag(value: string, base: string, link: (absoluteUrl: string, playlist: boolean) => string): string | undefined {
   if (DROPPED_TAG.test(value) || (/^#EXT-X-DATERANGE:/i.test(value) && /X-ASSET-/i.test(value))) return undefined;
   const tag = value.replace(/^(#EXTINF:[^,]*),.*$/i, "$1,");
-  // Rewritten links never hold "//" or start an attribute value with "/", so anything left like that is upstream.
-  if (/\/\/|=\s*"?\//.test(tag.replace(URI_ATTR, 'URI=""'))) return undefined;
+  if (POINTS_SOMEWHERE.test(tag.replace(URI_ATTR, 'URI=""'))) return undefined;
   const uris = [...tag.matchAll(URI_ATTR)].map((m) => resolve(m[1] ?? m[2] ?? "", base));
   if (uris.some((u) => u === undefined)) return undefined;
   const playlist = PLAYLIST_TAG.test(tag);
@@ -31,20 +34,19 @@ export function rewritePlaylist(
 ): string {
   const out: string[] = [];
   let next: "segment" | "playlist" | "skip" = "segment";
-  for (const line of text.split("\n")) {
-    const cr = line.endsWith("\r") ? "\r" : "";
-    const value = line.slice(0, line.length - cr.length).trim();
+  for (const line of text.split(LINE_BREAK)) {
+    const value = line.trim();
     if (!value) {
-      out.push(line);
+      out.push("");
     } else if (!value.startsWith("#")) {
       const kind = next;
       next = "segment";
       const url = resolve(value, base);
-      if (kind !== "skip" && url) out.push(link(url, kind === "playlist") + cr);
+      if (kind !== "skip" && url) out.push(link(url, kind === "playlist"));
     } else if (/^#EXT/i.test(value)) {
       const tag = rewriteTag(value, base, link);
       if (/^#EXT-X-STREAM-INF:/i.test(value)) next = tag === undefined ? "skip" : "playlist";
-      if (tag !== undefined) out.push(tag + cr);
+      if (tag !== undefined) out.push(tag);
     }
   }
   return out.join("\n");

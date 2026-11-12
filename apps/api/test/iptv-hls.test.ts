@@ -23,9 +23,9 @@ test("every URI is rewritten and nothing upstream is left", () => {
   assert.match(out, /#EXTINF:6\.0,/);
 });
 
-test("CRLF line endings, blank lines and tags without URI stay as they are", () => {
+test("CRLF becomes LF; blank lines and tags without URI stay as they are", () => {
   const out = rewritePlaylist("#EXTM3U\r\n#EXT-X-VERSION:3\r\n\r\n#EXTINF:4,\r\n  a.ts  \r\n", "https://e.test/x/", () => "/r/0");
-  assert.equal(out, "#EXTM3U\r\n#EXT-X-VERSION:3\r\n\r\n#EXTINF:4,\r\n/r/0\r\n");
+  assert.equal(out, "#EXTM3U\n#EXT-X-VERSION:3\n\n#EXTINF:4,\n/r/0\n");
 });
 
 test("lowercase, unquoted and unknown URL attributes and plain comments never leak", () => {
@@ -93,4 +93,35 @@ shown.m3u8`;
   const out = rewritePlaylist(text, "https://e.test/", (u, playlist) => (marks.push(`${u}:${playlist}`), "/r/0"));
   assert.deepEqual(marks, ["https://e.test/shown.m3u8:true"]);
   assert.equal(out, "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=2\n/r/0");
+});
+
+test("lone CR, LS and PS split lines like hls.js, and backslash URLs never survive", () => {
+  const cases: [string, string, boolean][] = [
+    ["#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\rhttps:\\\\cdn.test\\hls\\u\\pass\\1.ts\n", "https://cdn.test/hls/u/pass/1.ts", false],
+    ["#EXTM3U\n#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z\u2028https:\\\\cdn.test\\u\\pass\\1.ts\n", "https://cdn.test/u/pass/1.ts", false],
+    ["#EXTM3U\n#EXTINF:6,\u2029/\\cdn.test/u/pass/1.ts\n", "https://cdn.test/u/pass/1.ts", false],
+    ["#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\rhttps:\\\\cdn.test\\u\\pass\\v.m3u8\n", "https://cdn.test/u/pass/v.m3u8", true],
+  ];
+  for (const [text, url, playlist] of cases) {
+    const seen: string[] = [];
+    const out = rewritePlaylist(text, "https://edge.test/hls/x/index.m3u8", (u, p) => (seen.push(`${u}:${p}`), "/r/0"));
+    assert.deepEqual(seen, [`${url}:${playlist}`], JSON.stringify(text));
+    assert.ok(!/cdn\.test|pass|\\|[\r\u2028\u2029]/.test(out), JSON.stringify(out));
+  }
+});
+
+test("tags with backslash, scheme or root-relative values are dropped", () => {
+  const text = [
+    "#EXTM3U",
+    "#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z https:\\\\cdn.test\\u\\pass\\1.ts",
+    '#EXT-X-KEY:METHOD=AES-128,URI="k",X-F="https:\\\\cdn.test\\u\\pass"',
+    '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME=" /u/pass",URI="a.m3u8"',
+    "#EXTGRP:/hls/u/pass",
+    "#EXT-X-PROGRAM-DATE-TIME:/u/pass",
+    '#EXT-X-DEFINE:NAME="h",VALUE="cdn.test"',
+    "#EXTINF:6,u segredo-123",
+    "s.ts",
+  ].join("\n");
+  const out = rewritePlaylist(text, "https://e.test/", () => "/r/0");
+  assert.equal(out, "#EXTM3U\n#EXTINF:6,\n/r/0");
 });

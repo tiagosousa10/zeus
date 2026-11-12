@@ -6,6 +6,7 @@ import { getAccount, getCatalog, getSeries } from "./cache.js";
 import { rewritePlaylist } from "./hls.js";
 import { fail, findList, NOT_AVAILABLE } from "./route-helpers.js";
 import { addResource, createSession, findSession, type PlaySession } from "./sessions.js";
+import type { IPTVList } from "./types.js";
 import { visibleItem } from "./views.js";
 
 const ENDED = "Esta reprodução terminou.";
@@ -15,6 +16,7 @@ const MAX_PLAYLIST = 2 * 1024 * 1024;
 const TOUCH_MS = 60_000;
 const DIRECT = new Set(["mp4", "m4v", "mov", "webm"]);
 const PASS_HEADERS = ["content-type", "content-length", "content-range", "accept-ranges"];
+const MAX_LEADING_SPACE = 64 * 1024;
 
 let upstreamFetch = safeStream;
 export function setUpstreamFetch(f: typeof safeStream): void {
@@ -51,13 +53,25 @@ playRoutes.post("/lists/:listId/play", async (c) => {
     const detail = target.section === "series" ? await getSeries(userId, found.list, target.id) : undefined;
     const upstream = upstreamFor(found.list, catalog, detail, account, target);
     if (!upstream) return c.json({ error: NOT_AVAILABLE }, 404);
-    const s = createSession(userId, found.list.id, upstream, account);
+    const s = createSession(userId, found.list.id, upstream, account, secretsFor(found.list, upstream));
     const { type, path, remux } = playback(upstream);
     return c.json({ token: s.token, type, url: `/api/iptv/play/${s.token}/${path}`, remux });
   } catch (e) {
     return fail(c, e);
   }
 });
+
+function secretsFor(list: IPTVList, upstream: Upstream): string[] {
+  const values = [list.username, list.password].filter((v): v is string => !!v && v.length >= 3);
+  values.push(new URL(list.url).hostname, new URL(upstream.url).hostname);
+  return [...new Set(values.flatMap((v) => [v, encodeURIComponent(v)]).map((v) => v.toLowerCase()))];
+}
+
+// Our own links hold a random token that could contain a short secret by chance, so they are left out.
+const leaksSecret = (s: PlaySession, text: string): boolean => {
+  const rest = text.replace(/\/api\/iptv\/play\/[\w-]+\/r\/\d+/g, "").toLowerCase();
+  return s.secrets.some((secret) => rest.includes(secret));
+};
 
 class UpstreamStatus extends Error {
   constructor(readonly status: number) {
@@ -122,19 +136,21 @@ async function playlist(c: Context, s: PlaySession, r: Response): Promise<Respon
     r.url,
     (u, isPlaylist) => `/api/iptv/play/${s.token}/r/${addResource(s, u, isPlaylist)}`,
   );
+  if (leaksSecret(s, text)) throw new Error("playlist holds a provider secret");
   return c.body(text, 200, { "content-type": "application/vnd.apple.mpegurl", "cache-control": "no-store" });
 }
 
 // Reads until "#EXTM3U" could show (BOM and whitespace skipped) to spot a playlist with an odd path or
-// content-type; the body stays intact for relaying.
+// content-type; the body stays intact for relaying. Endless leading whitespace counts as "not a playlist".
 async function peek(r: Response): Promise<{ playlist: boolean; response: Response }> {
   if (!r.body) return { playlist: false, response: r };
   const reader = r.body.getReader();
+  const decoder = new TextDecoder();
   const head: Uint8Array[] = [];
   let bytes = 0;
   let done = false;
   let start = "";
-  while (start.length < 7) {
+  while (start.length < 7 && bytes <= MAX_LEADING_SPACE) {
     const next = await reader.read();
     if (next.done) {
       done = true;
@@ -142,11 +158,7 @@ async function peek(r: Response): Promise<{ playlist: boolean; response: Respons
     }
     head.push(next.value);
     bytes += next.value.byteLength;
-    if (bytes > MAX_PLAYLIST) {
-      await reader.cancel().catch(() => {});
-      throw new Error("no content");
-    }
-    start = Buffer.concat(head).toString("utf8").trimStart();
+    start = (start + decoder.decode(next.value, { stream: true })).trimStart();
   }
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -212,7 +224,14 @@ playRoutes.get("/play/:token/r/:id", (c) =>
     }
     if (!known && !/mpegurl/i.test(type)) {
       const peeked = await peek(r);
-      if (!peeked.playlist) return relay(s, peeked.response);
+      if (!peeked.playlist) {
+        // Keys and segments are binary (WebVTT subtitles aside); other text may hold upstream locations.
+        if (/^text\/(?!vtt\b)|^application\/json/i.test(type)) {
+          await peeked.response.body?.cancel().catch(() => {});
+          throw new Error("unexpected text");
+        }
+        return relay(s, peeked.response);
+      }
       r = peeked.response;
     }
     // Re-adding keeps a long-lived playlist (live variant) from being evicted by the resource cap.

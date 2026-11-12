@@ -98,12 +98,16 @@ const upstream: Record<string, FakeResource> = {
     headers: { "content-type": "text/plain", "content-range": "bytes 1-60/61" },
     body: "EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/ranged1.ts\n",
   },
+  [`${EDGE}/low/json`]: { headers: { "content-type": "application/json" }, body: '{"next":"https://cdn.test/segredo-123/x.ts"}' },
+  [`${EDGE}/low/html`]: { headers: { "content-type": "text/html" }, body: "<a href=https://cdn.test/x>x</a>" },
+  [`${EDGE}/low/spaces`]: { headers: { "content-type": "text/plain" }, body: [" ".repeat(70 * 1024), "#EXTM3U\nhttps://cdn.test/x.ts\n"] },
+  [`${EDGE}/low/sub.vtt`]: { headers: { "content-type": "text/vtt" }, body: "WEBVTT\n\n00:00.000 --> 00:01.000\nOlá\n" },
   [`${EDGE}/low/odd`]: {
     headers: { "content-type": "text/plain" },
     body: "\uFEFF \n#EXTM3U\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/odd1.ts\n",
   },
   [`${EDGE}/low/index.m3u8`]: {
-    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n",
+    body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n#EXTINF:6.0,\njson\n#EXTINF:6.0,\nhtml\n#EXTINF:6.0,\nspaces\n#EXTINF:6.0,\nsub.vtt\n",
   },
   [`${EDGE}/low/seg1.ts`]: { headers: { "content-type": "video/mp2t" }, body: "SEGMENT-1", open: true },
   [`${ORIGIN}/102.m3u8`]: { status: 509, body: "max connections https://tv.example.test" },
@@ -161,7 +165,7 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(media.status, 200, media.text);
   assert.equal(media.type, "application/vnd.apple.mpegurl");
   assert.ok(!leaks(media.text), media.text);
-  assert.equal(links(media.text).length, 6);
+  assert.equal(links(media.text).length, 10);
   for (const i of [2, 3, 4]) {
     const sniffed = await a(links(media.text)[i].slice(4));
     assert.equal(sniffed.type, "application/vnd.apple.mpegurl", `link ${i}: ${sniffed.text}`);
@@ -172,6 +176,13 @@ test("playback starts through the API and HLS never reveals the provider", async
   const rangedText = await ranged.text();
   assert.deepEqual([ranged.status, JSON.parse(rangedText).error], [502, "O fornecedor não respondeu. Tenta de novo."]);
   assert.ok(!leaks(rangedText));
+  for (const i of [6, 7, 8]) {
+    const textual = await a(links(media.text)[i].slice(4));
+    assert.deepEqual([textual.status, textual.body?.error], [502, "O fornecedor não respondeu. Tenta de novo."], `link ${i}`);
+    assert.ok(!leaks(textual.text));
+  }
+  const vtt = await a(links(media.text)[9].slice(4));
+  assert.deepEqual([vtt.status, vtt.type, vtt.text], [200, "text/vtt", "WEBVTT\n\n00:00.000 --> 00:01.000\nOlá\n"]);
 
   const segment = await a.raw(links(media.text)[0].slice(4), { headers: { range: "bytes=0-" } });
   assert.equal(segment.status, 200);
@@ -206,6 +217,17 @@ test("playback starts through the API and HLS never reveals the provider", async
   Object.assign(upstream[`${ORIGIN}/102.m3u8`], { status: 200, body: "#EXTM3U\n" + "#".repeat(2 * 1024 * 1024) });
   const huge = await a(second.body.url.slice(4));
   assert.deepEqual([huge.status, huge.body.error], [502, "O fornecedor não respondeu. Tenta de novo."]);
+
+  for (const name of ["u segredo-123", "TV.Example.Test"]) {
+    upstream[`${ORIGIN}/102.m3u8`].body = `#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",NAME="${name}",URI="a.m3u8"\n`;
+    const secret = await a(second.body.url.slice(4));
+    assert.deepEqual([secret.status, secret.body?.error], [502, "O fornecedor não respondeu. Tenta de novo."], name);
+    assert.ok(!leaks(secret.text) && !/example/i.test(secret.text));
+  }
+  upstream[`${ORIGIN}/102.m3u8`].body = "#EXTM3U\n#EXTINF:6,u segredo-123\nseg.ts\n";
+  const titled = await a(second.body.url.slice(4));
+  assert.equal(titled.status, 200, titled.text);
+  assert.ok(!leaks(titled.text), titled.text);
 
   const mp4 = await a("/iptv/lists/l1/play", { section: "movie", id: "201" });
   assert.deepEqual([mp4.body.type, mp4.body.remux, mp4.body.url], ["mp4", false, `/api/iptv/play/${mp4.body.token}/file`]);
