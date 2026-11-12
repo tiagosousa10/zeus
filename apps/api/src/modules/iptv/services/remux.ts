@@ -19,6 +19,10 @@ export class RemuxBusyError extends Error {
     super("O conversor está ocupado. Tenta novamente dentro de instantes.");
   }
 }
+export interface RemuxOptions {
+  transcodeVideo?: boolean;
+}
+
 type Reservation = {
   userId: string;
   onClosed: Set<() => void>;
@@ -60,6 +64,7 @@ export async function remuxSession(
   startSec: number,
   signal: AbortSignal,
   open: (range?: string, signal?: AbortSignal) => Promise<Response>,
+  options: RemuxOptions = {},
 ): Promise<ReadableStream<Uint8Array>> {
   if (signal.aborted || session.ended) throw new Error("Reprodução cancelada.");
   const previous = active.get(session.token);
@@ -89,7 +94,14 @@ export async function remuxSession(
   };
   try {
     const input = await startBridge(session, open, combined);
-    return remux(input, startSec, combined, release, () => lifetime.abort());
+    return remux(
+      input,
+      startSec,
+      combined,
+      release,
+      () => lifetime.abort(),
+      options,
+    );
   } catch (error) {
     release();
     throw error;
@@ -177,6 +189,7 @@ export function remux(
   signal: AbortSignal,
   onClose: () => void = () => {},
   onStop: () => void = () => {},
+  options: RemuxOptions = {},
 ): ReadableStream<Uint8Array> {
   // Constrain the process even if the provider returns a playlist disguised as a media file.
   const url = new URL(input);
@@ -206,8 +219,26 @@ export function remux(
       "0:v:0",
       "-map",
       "0:a:0?",
-      "-c:v",
-      "copy",
+      ...(options.transcodeVideo
+        ? [
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-tune",
+            "zerolatency",
+            "-vf",
+            "bwdif=mode=send_frame:deint=interlaced,scale=w=min(1280\\,iw):h=-2,fps=25",
+            "-pix_fmt",
+            "yuv420p",
+            "-threads",
+            "2",
+            "-filter_threads",
+            "2",
+            "-g",
+            "50",
+          ]
+        : ["-c:v", "copy"]),
       "-c:a",
       "aac",
       "-b:a",
