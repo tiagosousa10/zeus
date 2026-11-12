@@ -1,3 +1,5 @@
+> Actualização de 12/11/2026 autorizada pelo utilizador: a distribuição desktop passa a Electron + SQLite, sem Docker/launchd. As referências PostgreSQL abaixo registam a decisão histórica. Ver [plano desktop autónomo](../plans/2026-11-12-standalone-desktop.md).
+
 # Zeus — escolhas aprovadas
 
 O utilizador aprovou todos os ecrãs em `prototipos/estilo/zeus/`: «está top! implementa todos os ecrãs então. guarda as minhas escolhas, adorei.» A aprovação cobre a implementação da direção apresentada, sem nova ronda de propostas.
@@ -21,3 +23,7 @@ Um frontend em apps/web, API em apps/api e Motor original conservado. Docker Pos
 ## Fidelidade confirmada em 12 de Novembro
 
 O utilizador pediu corrigir todos os pormenores para coincidir com a proposta original em `/zeus`. Os HTML em `prototipos/estilo/zeus` são a referência visual canónica, não apenas inspiração. Não substituir por heros genéricos, tipografia serifada, outro texto promocional, outras dimensões de navegação ou novos rodapés. Transportar composição, enquadramento da arte, controlos, espaçamento, mobile e efeitos para a implementação real. Alterar texto apenas quando necessário para representar dados/estado reais ou capacidades disponíveis. Guardar preferências antes de navegar.
+
+## Ajuste de composição autorizado — 12 de Novembro, versão 1.2.3
+
+O utilizador pediu equilibrar imagem e texto nos heros de Add-ons, Conta e Administração, mantendo os estilos aprovados. Estas páginas partilham agora uma composição mais compacta: texto à esquerda, arte à direita, margens alinhadas com o conteúdo e imagem acima do texto em ecrãs estreitos. Mantêm-se Hefesto, Atena e o Conselho, as paletas, a tipografia e os efeitos com movimento reduzido. Esta revisão substitui a composição anterior destes três heros.
