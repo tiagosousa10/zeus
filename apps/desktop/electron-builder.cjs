@@ -1,4 +1,7 @@
 const release = process.env.ZEUS_RELEASE === "1";
+const entitlements = release
+  ? "apps/desktop/scripts/entitlements.mac.plist"
+  : "apps/desktop/scripts/entitlements.adhoc.mac.plist";
 // Paths are relative to the repo root: the Electron app (package.json "main") lives there.
 module.exports = {
   appId: "pt.zeus.app",
@@ -25,9 +28,11 @@ module.exports = {
     icon: "apps/desktop/build/icon.png",
     target: ["dmg"],
     hardenedRuntime: true,
-    entitlements: "apps/desktop/scripts/entitlements.mac.plist",
-    entitlementsInherit: "apps/desktop/scripts/entitlements.mac.plist",
-    ...(release ? { notarize: true } : { identity: null, notarize: false }),
+    entitlements,
+    entitlementsInherit: entitlements,
+    // Re-sign the renamed Electron bundle even without a Developer ID.
+    // Skipping signing leaves its linker signature invalid after packaging.
+    ...(release ? { notarize: true } : { identity: "-", notarize: false }),
   },
   dmg: {
     title: "Zeus",

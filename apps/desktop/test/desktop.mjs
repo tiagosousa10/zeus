@@ -34,6 +34,14 @@ async function launch() {
   });
 }
 try {
+  if (packaged && process.platform === "darwin")
+    execFileSync(
+      "/usr/bin/codesign",
+      ["--verify", "--deep", "--strict", packaged],
+      {
+        stdio: "inherit",
+      },
+    );
   if (packaged)
     execFileSync(
       join(

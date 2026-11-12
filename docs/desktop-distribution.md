@@ -52,7 +52,9 @@ O teste cria um perfil temporário, confirma primeiro arranque, conta persistida
 
 ## Assinatura, notarização e GitHub
 
-`npm run dist` gera por omissão um DMG local **sem assinatura Developer ID nem notarização**. Serve para desenvolvimento/validação. Não deve ser apresentado como uma versão pública que passa Gatekeeper sem intervenção.
+`npm run dist` gera por omissão um DMG com **assinatura ad hoc**, sem Developer ID nem notarização. A assinatura ad hoc sela corretamente a aplicação e os executáveis após o empacotamento; omitir a assinatura deixa a assinatura parcial do Electron inválida. O teste do pacote exige `codesign --verify --deep --strict` antes do arranque.
+
+A assinatura ad hoc não identifica um programador perante a Apple nem dispensa o Gatekeeper. Depois de instalar uma cópia verificada, o macOS pode exigir autorização em Definições do Sistema → Privacidade e Segurança → Abrir mesmo assim. Não desativar o Gatekeeper globalmente. Ver [instruções da Apple](https://support.apple.com/102445).
 
 Para a distribuição pública, o processo está preparado para um certificado **Developer ID Application** da conta Apple Developer e uma chave App Store Connect com acesso à notarização. Configurar fora do repositório:
 
