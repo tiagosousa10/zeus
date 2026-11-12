@@ -15,7 +15,7 @@ export function publicItem<T extends object>(item: T): Omit<T, "source"> {
 
 function visibleItems(c: TVCatalog, p: TVListPrefs, section: Section): Item[] {
   const hidden = new Set(c[section].categories.filter((cat) => isCategoryHidden(cat, p)).map((cat) => cat.id));
-  const adult = adultItemsVisible(section, p);
+  const adult = adultItemsVisible(c[section].categories, p);
   return (c[section].items as Item[]).filter((i) => !hidden.has(i.categoryId) && (adult || !i.adult));
 }
 

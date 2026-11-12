@@ -63,8 +63,8 @@ export function isCategoryHidden(c: TVCategory, p: TVListPrefs): boolean {
   return c.adult && !p.shownAdult[c.section].includes(c.id);
 }
 
-export function adultItemsVisible(section: Section, p: TVListPrefs): boolean {
-  return p.shownAdult[section].length > 0;
+export function adultItemsVisible(cs: TVCategory[], p: TVListPrefs): boolean {
+  return cs.some((c) => c.adult && !isCategoryHidden(c, p));
 }
 
 export function orderCategories(cs: TVCategory[], p: TVListPrefs): (TVCategory & { pinned: boolean; hidden: boolean })[] {

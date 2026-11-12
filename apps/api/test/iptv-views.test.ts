@@ -38,3 +38,35 @@ test("page items and visible items are stripped of source", () => {
   assert.ok(page.items.every((i) => !("source" in i)));
   assert.ok(visibleItem(withSource, defaultPrefs(), "live", page.items[0].id));
 });
+const gold = () => c.live.items.find((x) => x.name === "XXX Gold")!;
+const goldVisible = (p: ReturnType<typeof defaultPrefs>) => [
+  categoryPage(c, p, "live", "3", 0, 60)!.items.some((i) => i.name === "XXX Gold"),
+  searchIndex(c, p).some((e) => e.n === "XXX Gold"),
+  visibleItem(c, p, "live", gold().id) !== undefined,
+];
+test("adult items show only while an adult folder is shown", () => {
+  const p = defaultPrefs();
+  p.shownAdult.live = ["2"];
+  assert.deepEqual(goldVisible(p), [true, true, true]);
+});
+test("a stale shownAdult id does not reveal adult items", () => {
+  const p = defaultPrefs();
+  p.shownAdult.live = ["999"];
+  assert.deepEqual(goldVisible(p), [false, false, false]);
+});
+test("an adult folder shown and then hidden keeps adult items hidden", () => {
+  const p = defaultPrefs();
+  p.shownAdult.live = ["2"];
+  p.hidden.live = ["2"];
+  assert.deepEqual(goldVisible(p), [false, false, false]);
+});
+test("a hidden normal folder leaves pages, search and totals", () => {
+  const p = defaultPrefs();
+  p.hidden.live = ["1"];
+  assert.equal(categoryPage(c, p, "live", "1", 0, 60), undefined);
+  assert.ok(!searchIndex(c, p).some((e) => e.n === "RTP1 HD" || e.n === "SIC"));
+  const live = sectionsView(c, p).sections.live!;
+  assert.equal(live.total, 0);
+  const folder = live.categories.find((x) => x.id === "1")!;
+  assert.deepEqual([folder.hidden, folder.count], [true, 0]);
+});

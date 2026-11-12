@@ -9,10 +9,13 @@ const cats = [cat("1", "Portugal"), cat("2", "For Adults", true), cat("3", "Bras
 test("adult folders start hidden and can be shown", () => {
   const p = defaultPrefs();
   assert.equal(isCategoryHidden(cats[1], p), true);
-  assert.equal(adultItemsVisible("live", p), false);
+  assert.equal(adultItemsVisible(cats, p), false);
   p.shownAdult.live = ["2"];
   assert.equal(isCategoryHidden(cats[1], p), false);
-  assert.equal(adultItemsVisible("live", p), true);
+  assert.equal(adultItemsVisible(cats, p), true);
+  p.hidden.live = ["2"];
+  assert.equal(adultItemsVisible(cats, p), false);
+  assert.equal(adultItemsVisible(cats, { ...defaultPrefs(), shownAdult: { live: ["99"], movie: [], series: [] } }), false);
 });
 test("pinned first, then saved order, then provider order", () => {
   const p = { ...defaultPrefs(), pinned: { ...defaultPrefs().pinned, live: ["4"] }, order: { ...defaultPrefs().order, live: ["3", "1"] } };
