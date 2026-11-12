@@ -1427,7 +1427,18 @@
 }
 
 /* Playback and programme guide */
+.tv-modal.tv-modal-full-viewport {
+  padding: 0;
+  background: #000;
+  backdrop-filter: none;
+}
 .tv-player-modal {
+  position: relative;
+  flex-shrink: 0;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: hidden;
   width: 100vw !important;
   max-width: none !important;
   height: 100dvh !important;
@@ -1756,3 +1767,412 @@
   min-height: 1.3em;
   flex-shrink: 0;
 }
+/* Compact desktop presentation: controls never dominate the video. */
+.tv-header {
+  min-height: 74px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  gap: 16px;
+}
+.tv-header button,
+.tv-header a:not(.tv-brand) {
+  font-size: 13px;
+}
+.tv-listbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.tv-listbar > label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tv-list-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #8f9ca4;
+}
+.tv-listbar select,
+.tv-listbar button {
+  height: 36px;
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+.tv-listbar .tv-toolbar {
+  margin: 0;
+  align-items: center;
+}
+.tv-portals {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.tv-portal {
+  min-height: 180px;
+  padding: 22px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+.tv-portal h2 {
+  font-size: 23px;
+  margin: 13px 0;
+}
+.tv-portal .tv-outline {
+  font-size: 38px;
+  line-height: 1;
+}
+.tv-portal small {
+  font-size: 11px;
+}
+.tv-category-emblem {
+  position: absolute;
+  right: 20px;
+  top: 19px;
+  font-size: 29px;
+  line-height: 1;
+  filter: saturate(0.75);
+}
+.tv-category-emblem img {
+  width: 38px;
+  height: 30px;
+  object-fit: contain;
+}
+.tv-portal .tv-eyebrow {
+  font-size: 9px;
+  padding-right: 44px;
+}
+.tv-detail-panel {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+  gap: 28px;
+  border-radius: 18px;
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+.tv-detail-poster {
+  max-width: 180px;
+  border-radius: 12px;
+}
+.tv-detail-copy h1 {
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.15;
+  margin: 12px 0;
+}
+.tv-detail-tags > span {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+.tv-synopsis {
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 75ch;
+}
+.tv-detail-aside button {
+  font-size: 12px;
+  padding: 10px;
+  border-radius: 9px;
+}
+.tv-season-tabs {
+  margin: 24px 0 16px;
+}
+.tv-season-tabs button {
+  font-size: 12px;
+  min-height: 34px;
+  padding: 7px 13px;
+}
+.tv-episodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.tv-episode {
+  padding: 0 0 10px;
+  border-radius: 10px;
+  max-width: 280px;
+  text-align: left;
+}
+.tv-episode > div {
+  aspect-ratio: 16/9;
+  min-height: 0;
+}
+.tv-episode img {
+  aspect-ratio: 16/9;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tv-episode strong {
+  font-size: 12px;
+  line-height: 1.45;
+  display: block;
+  padding: 9px 10px 0;
+}
+.tv-episode small {
+  padding: 0 10px;
+  font-size: 10px;
+}
+.tv-episode p {
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tv-bento {
+  max-height: 560px;
+}
+.tv-bento h1 {
+  font-size: clamp(28px, 3.3vw, 52px);
+}
+.tv-player-modal > header {
+  top: 14px;
+  right: 16px;
+  padding: 0;
+  border-radius: 8px;
+}
+.tv-player-modal > header button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+.tv-player-top {
+  top: 64px;
+  left: 24px;
+  right: 24px;
+  align-items: flex-start;
+  gap: 20px;
+}
+.tv-programme-capsule {
+  max-width: 60%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  gap: 10px;
+  background: #0b111ad9;
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.tv-programme-capsule strong {
+  font-size: 13px;
+}
+.tv-programme-capsule > span:not(.tv-live-dot):not(.tv-programme-ring) {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #aab6c1;
+}
+.tv-programme-ring {
+  width: 20px;
+  height: 20px;
+  border-width: 5px;
+}
+.tv-player .tv-toolbar {
+  margin: 0;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tv-player button,
+.tv-player select {
+  border-radius: 7px;
+  padding: 7px 11px;
+  font-size: 11px;
+  min-height: 32px;
+  background: #111923dc;
+}
+.tv-player-bottom {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(900px, calc(100% - 48px));
+  bottom: 24px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #0e1722e8, #090d15ef);
+  backdrop-filter: blur(12px);
+  border: 1px solid #9bb7cc26;
+  box-shadow: 0 6px 32px #0005;
+}
+.tv-player-bottom label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+}
+.tv-player input[type="range"] {
+  accent-color: #a2d7df;
+  height: 3px;
+  cursor: pointer;
+}
+.tv-player-bottom label input {
+  width: 100px;
+  margin: 0;
+}
+.tv-player-bottom .tv-seek {
+  font-size: 11px;
+  gap: 14px;
+  margin: 12px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.tv-player-bottom .tv-toolbar button:first-child {
+  font-size: 14px;
+}
+.tv-channel-dock {
+  max-height: 86px;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #ffffff10;
+}
+.tv-channel-dock button {
+  min-width: 90px;
+  max-width: 110px;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 8px;
+}
+.tv-channel-dock img {
+  height: 27px;
+  width: 48px;
+  object-fit: contain;
+}
+.tv-channel-dock strong {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-player-bottom p {
+  font-size: 11px;
+  color: #97a9b8;
+  margin: 8px 0;
+}
+.tv-player-error {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(440px, 90vw);
+  padding: 24px;
+  border-radius: 14px;
+  font-size: 13px;
+  border: 1px solid #ffffff1a;
+}
+.tv-player-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.tv-player-loading .zeus-loader {
+  min-height: 0;
+  background: #080e16d9;
+  padding: 22px 30px;
+  border: 1px solid #8bd6df19;
+  border-radius: 14px;
+}
+.tv-controls-hidden .tv-player-controls {
+  visibility: hidden;
+}
+.tv-player .player-menu-toggle {
+  position: absolute;
+  right: 64px;
+  top: 14px;
+  z-index: 8;
+}
+.tv-player-controls[inert] {
+  pointer-events: none;
+  visibility: hidden;
+}
+@media (max-width: 650px) {
+  .tv-list-label {
+    display: none;
+  }
+  .tv-header {
+    gap: 8px;
+  }
+  .tv-header-tools button kbd {
+    display: none;
+  }
+  .tv-detail-panel {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 16px;
+  }
+  .tv-detail-aside {
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .tv-detail-aside .tv-detail-poster {
+    width: 90px;
+    max-width: 90px;
+  }
+  .tv-detail-aside button {
+    max-width: 170px;
+  }
+  .tv-episodes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .tv-player-top {
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tv-programme-capsule {
+    max-width: 100%;
+  }
+  .tv-player-bottom {
+    width: calc(100% - 24px);
+    bottom: 12px;
+    padding: 10px;
+  }
+  .tv-programme-capsule > span:not(.tv-live-dot) {
+    display: none;
+  }
+  .tv-player .tv-toolbar {
+    gap: 5px;
+  }
+  .tv-player button {
+    padding: 6px 9px;
+  }
+  .tv-bento {
+    max-height: none;
+  }
+  .tv-portals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .tv-portal {
+    padding: 16px;
+    min-height: 160px;
+  }
+  .tv-portal h2 {
+    font-size: 19px;
+  }
+  .tv-category-emblem {
+    right: 12px;
+    font-size: 22px;
+  }
+}
+@media(max-width:650px){.tv-programme-capsule>span.tv-now-programme{display:block;max-width:180px;font-size:10px}}
