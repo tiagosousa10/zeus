@@ -13,6 +13,7 @@ export interface CategoryView {
   id: string;
   name: string;
   country?: string;
+  logo?: string;
   count: number;
   pinned: boolean;
   hidden: boolean;

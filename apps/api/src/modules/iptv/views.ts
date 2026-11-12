@@ -19,6 +19,7 @@ export interface CategoryView {
   id: string;
   name: string;
   country?: string;
+  logo?: string;
   count: number;
   pinned: boolean;
   hidden: boolean;
@@ -77,6 +78,7 @@ export function sectionsView(c: TVCatalog, p: TVListPrefs) {
       id: cat.id,
       name: cat.name,
       ...(cat.country ? { country: cat.country } : {}),
+      ...(cat.logo ? { logo: cat.logo } : {}),
       count: cat.hidden ? 0 : (counts.get(cat.id) ?? 0),
       pinned: cat.pinned,
       hidden: cat.hidden,

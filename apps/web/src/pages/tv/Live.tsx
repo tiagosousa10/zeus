@@ -233,6 +233,31 @@ export default function Live() {
                     ? "★ FIXADA"
                     : `PORTAL ${String(i + 1).padStart(2, "0")}`}
                 </span>
+                <span className="tv-category-emblem" aria-hidden="true">
+                  {c.logo ? (
+                    <img
+                      src={c.logo}
+                      alt=""
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : c.country && /^[A-Z]{2}$/.test(c.country) ? (
+                    [...c.country]
+                      .map((x) =>
+                        String.fromCodePoint(127397 + x.charCodeAt(0)),
+                      )
+                      .join("")
+                  ) : /sport|desporto/i.test(c.name) ? (
+                    "◉"
+                  ) : /infantil|kids/i.test(c.name) ? (
+                    "✦"
+                  ) : /music/i.test(c.name) ? (
+                    "♫"
+                  ) : (
+                    "✧"
+                  )}
+                </span>
                 <h2>{c.name}</h2>
                 <Outline>{c.count}</Outline>
                 <small>canais · Entrar ↗</small>

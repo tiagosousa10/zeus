@@ -1,12 +1,32 @@
-import { channelTags, cleanFolderName, detectCountry, isAdult } from "./names.js";
+import {
+  channelTags,
+  cleanFolderName,
+  detectCountry,
+  isAdult,
+} from "./names.js";
 import type {
-  SectionData, TVCatalog, TVCategory, TVChannel, TVEpisode, TVMovie, TVMovieDetail, TVSeries, TVSeriesDetail, Section,
+  SectionData,
+  TVCatalog,
+  TVCategory,
+  TVChannel,
+  TVEpisode,
+  TVMovie,
+  TVMovieDetail,
+  TVSeries,
+  TVSeriesDetail,
+  Section,
 } from "./types.js";
 
 type Rec = Record<string, unknown>;
 
-const rec = (v: unknown): Rec => (v && typeof v === "object" && !Array.isArray(v) ? (v as Rec) : {});
-const list = (v: unknown): Rec[] => (Array.isArray(v) ? v.filter((x) => x && typeof x === "object" && !Array.isArray(x)) as Rec[] : []);
+const rec = (v: unknown): Rec =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Rec) : {};
+const list = (v: unknown): Rec[] =>
+  Array.isArray(v)
+    ? (v.filter(
+        (x) => x && typeof x === "object" && !Array.isArray(x),
+      ) as Rec[])
+    : [];
 const str = (v: unknown): string | undefined => {
   if (v === null || v === undefined) return undefined;
   const s = String(v).trim();
@@ -25,7 +45,8 @@ const year = (...vs: unknown[]): number | undefined => {
   }
   return undefined;
 };
-const firstString = (v: unknown): string | undefined => (Array.isArray(v) ? str(v[0]) : str(v));
+const firstString = (v: unknown): string | undefined =>
+  Array.isArray(v) ? str(v[0]) : str(v);
 const castList = (v: unknown): string[] =>
   (Array.isArray(v) ? v.map(String) : (str(v) ?? "").split(","))
     .map((x) => x.trim())
@@ -45,8 +66,10 @@ export function xtreamUrl(
   params: Record<string, string> = {},
 ): string {
   const u = new URL("/player_api.php", list.url);
-  if (list.username !== undefined) u.searchParams.set("username", list.username);
-  if (list.password !== undefined) u.searchParams.set("password", list.password);
+  if (list.username !== undefined)
+    u.searchParams.set("username", list.username);
+  if (list.password !== undefined)
+    u.searchParams.set("password", list.password);
   if (action) u.searchParams.set("action", action);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
   return u.toString();
@@ -58,25 +81,46 @@ function section<T extends { categoryId: string }>(
   items: T[],
 ): SectionData<T> {
   const counts = new Map<string, number>();
-  for (const it of items) counts.set(it.categoryId, (counts.get(it.categoryId) ?? 0) + 1);
+  for (const it of items)
+    counts.set(it.categoryId, (counts.get(it.categoryId) ?? 0) + 1);
   const categories: TVCategory[] = [];
   const seen = new Set<string>();
-  const add = (id: string, rawName: string | undefined) => {
+  const add = (id: string, rawName: string | undefined, logo?: string) => {
     if (seen.has(id)) return;
     seen.add(id);
     const name = rawName ? cleanFolderName(rawName) || "Outros" : "Outros";
-    categories.push({ id, section: kind, name, country: detectCountry(name), adult: isAdult(name), count: counts.get(id) ?? 0 });
+    categories.push({
+      id,
+      section: kind,
+      name,
+      ...(logo && /^https?:\/\//i.test(logo) ? { logo } : {}),
+      country: detectCountry(name),
+      adult: isAdult(name),
+      count: counts.get(id) ?? 0,
+    });
   };
   for (const c of list(rawCategories)) {
     const id = str(c.category_id);
-    if (id) add(id, str(c.category_name));
+    if (id)
+      add(
+        id,
+        str(c.category_name),
+        str(c.category_icon) || str(c.icon) || str(c.logo),
+      );
   }
   for (const it of items) add(it.categoryId, undefined);
   return { categories, items };
 }
 
 export function normalizeXtreamCatalog(
-  raw: { liveCategories: unknown; live: unknown; vodCategories: unknown; vod: unknown; seriesCategories: unknown; series: unknown },
+  raw: {
+    liveCategories: unknown;
+    live: unknown;
+    vodCategories: unknown;
+    vod: unknown;
+    seriesCategories: unknown;
+    series: unknown;
+  },
   now: number,
 ): TVCatalog {
   const live: TVChannel[] = [];
@@ -85,8 +129,14 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     live.push({
-      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, number: num(r.num), logo: str(r.stream_icon), epgId: str(r.epg_channel_id),
-      tags: channelTags(name), adult: isAdult(name),
+      id,
+      categoryId: str(r.category_id) ?? NO_CATEGORY,
+      name,
+      number: num(r.num),
+      logo: str(r.stream_icon),
+      epgId: str(r.epg_channel_id),
+      tags: channelTags(name),
+      adult: isAdult(name),
     });
   }
   const movie: TVMovie[] = [];
@@ -95,8 +145,15 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     movie.push({
-      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, poster: str(r.stream_icon), year: year(r.year, r.releaseDate, r.releasedate),
-      rating: num(r.rating), added: num(r.added), container: str(r.container_extension) ?? "mp4", adult: isAdult(name),
+      id,
+      categoryId: str(r.category_id) ?? NO_CATEGORY,
+      name,
+      poster: str(r.stream_icon),
+      year: year(r.year, r.releaseDate, r.releasedate),
+      rating: num(r.rating),
+      added: num(r.added),
+      container: str(r.container_extension) ?? "mp4",
+      adult: isAdult(name),
     });
   }
   const series: TVSeries[] = [];
@@ -105,18 +162,34 @@ export function normalizeXtreamCatalog(
     const name = str(r.name);
     if (!id || !name) continue;
     series.push({
-      id, categoryId: str(r.category_id) ?? NO_CATEGORY, name, poster: str(r.cover), year: year(r.year, r.releaseDate, r.releasedate),
-      rating: num(r.rating), added: num(r.last_modified), adult: isAdult(name),
+      id,
+      categoryId: str(r.category_id) ?? NO_CATEGORY,
+      name,
+      poster: str(r.cover),
+      year: year(r.year, r.releaseDate, r.releasedate),
+      rating: num(r.rating),
+      added: num(r.last_modified),
+      adult: isAdult(name),
     });
   }
   const liveData = section("live", raw.liveCategories, live);
   const movieData = section("movie", raw.vodCategories, movie);
   const seriesData = section("series", raw.seriesCategories, series);
-  for (const data of [liveData, movieData, seriesData] as SectionData<TVChannel | TVMovie | TVSeries>[]) {
-    const adultIds = new Set(data.categories.filter((c) => c.adult).map((c) => c.id));
-    for (const it of data.items) if (adultIds.has(it.categoryId)) it.adult = true;
+  for (const data of [liveData, movieData, seriesData] as SectionData<
+    TVChannel | TVMovie | TVSeries
+  >[]) {
+    const adultIds = new Set(
+      data.categories.filter((c) => c.adult).map((c) => c.id),
+    );
+    for (const it of data.items)
+      if (adultIds.has(it.categoryId)) it.adult = true;
   }
-  return { fetchedAt: now, live: liveData, movie: movieData, series: seriesData };
+  return {
+    fetchedAt: now,
+    live: liveData,
+    movie: movieData,
+    series: seriesData,
+  };
 }
 
 export function normalizeVodInfo(raw: unknown, base: TVMovie): TVMovieDetail {
@@ -137,7 +210,10 @@ export function normalizeVodInfo(raw: unknown, base: TVMovie): TVMovieDetail {
   };
 }
 
-export function normalizeSeriesInfo(raw: unknown, base: TVSeries): TVSeriesDetail {
+export function normalizeSeriesInfo(
+  raw: unknown,
+  base: TVSeries,
+): TVSeriesDetail {
   const r = rec(raw);
   const info = rec(r.info);
   const names = new Map<number, string>();
@@ -153,17 +229,26 @@ export function normalizeSeriesInfo(raw: unknown, base: TVSeries): TVSeriesDetai
     const ei = rec(e.info);
     const number = num(e.episode_num) ?? 0;
     const ep: TVEpisode = {
-      id, season, number, title: str(e.title) ?? `Episódio ${number}`, thumb: str(ei.movie_image), plot: str(ei.plot),
-      durationMin: minutes(ei), container: str(e.container_extension) ?? "mp4",
+      id,
+      season,
+      number,
+      title: str(e.title) ?? `Episódio ${number}`,
+      thumb: str(ei.movie_image),
+      plot: str(ei.plot),
+      durationMin: minutes(ei),
+      container: str(e.container_extension) ?? "mp4",
     };
     bySeason.set(season, [...(bySeason.get(season) ?? []), ep]);
   };
   if (Array.isArray(r.episodes)) {
     r.episodes.forEach((v, i) => {
-      if (Array.isArray(v)) for (const e of list(v)) push(num(e.season) ?? i + 1, e);
+      if (Array.isArray(v))
+        for (const e of list(v)) push(num(e.season) ?? i + 1, e);
       else for (const e of list([v])) push(num(e.season), e);
     });
-  } else for (const [k, v] of Object.entries(rec(r.episodes))) for (const e of list(v)) push(num(k), e);
+  } else
+    for (const [k, v] of Object.entries(rec(r.episodes)))
+      for (const e of list(v)) push(num(k), e);
   const seasons = [...bySeason.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([number, episodes]) => ({
