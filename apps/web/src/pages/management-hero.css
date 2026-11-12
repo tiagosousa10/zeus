@@ -1,0 +1,120 @@
+/* A shared composition for the forge, Athena and the council.
+   Keep the approved artwork and page palettes; reserve one readable text column. */
+.management-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  min-height: calc(var(--nav-h) + clamp(390px, 48vh, 500px));
+  padding: calc(var(--nav-h) + 48px)
+    max(var(--gutter), calc((100% - 1180px) / 2 + var(--gutter))) 56px;
+}
+.management-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      #000 5%,
+      rgba(0, 0, 0, 0.94) 28%,
+      rgba(0, 0, 0, 0.65) 46%,
+      transparent 70%
+    ),
+    linear-gradient(0deg, #000, transparent 32%);
+}
+.management-hero-copy {
+  position: relative;
+  z-index: 2;
+  width: min(50%, 560px);
+  min-width: 0;
+}
+.management-hero-copy .z-display {
+  font-size: clamp(56px, 6.4vw, 88px);
+  line-height: 1.04;
+}
+.management-hero-copy .z-lede {
+  margin-top: 22px;
+  max-width: 42ch;
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.55;
+  color: #c1c1c5;
+  text-wrap: pretty;
+}
+.management-hero .z-painting {
+  top: var(--nav-h);
+}
+.management-hero .fg-art {
+  position: absolute;
+  inset: var(--nav-h) 0 0 45%;
+  overflow: hidden;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 24%),
+    linear-gradient(180deg, transparent, #000 14%);
+  mask-composite: intersect;
+}
+.management-hero .fg-pan {
+  width: 100%;
+  height: 100%;
+}
+.management-hero .fg-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 38% 0;
+  transform-origin: 38% 30%;
+  filter: brightness(0.82) contrast(1.06) saturate(1.05);
+}
+.management-hero.council h1 {
+  font: 400 clamp(40px, 4.4vw, 64px)/1.08 var(--serif);
+  letter-spacing: -0.045em;
+}
+.management-hero.council .sigil {
+  width: 44px;
+  height: 44px;
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+.management-hero.council .eyebrow {
+  margin-bottom: 16px;
+}
+@media (max-width: 780px) {
+  .management-hero {
+    align-items: end;
+    min-height: 0;
+    padding: calc(var(--nav-h) + 230px) var(--gutter) 32px;
+  }
+  .management-hero::after {
+    background: linear-gradient(
+      0deg,
+      #000 5%,
+      rgba(0, 0, 0, 0.96) 32%,
+      rgba(0, 0, 0, 0.25) 70%,
+      rgba(0, 0, 0, 0.2)
+    );
+  }
+  .management-hero-copy {
+    width: min(100%, 560px);
+  }
+  .management-hero-copy .z-display {
+    font-size: clamp(44px, 8vw, 60px);
+  }
+  .management-hero-copy .z-lede {
+    margin-top: 16px;
+    font-size: 17px;
+  }
+  .management-hero .fg-art {
+    inset: var(--nav-h) 0 auto;
+    height: 300px;
+  }
+  .management-hero .fg-art img {
+    object-position: 40% 20%;
+  }
+  .management-hero.council .sigil {
+    display: none;
+  }
+}

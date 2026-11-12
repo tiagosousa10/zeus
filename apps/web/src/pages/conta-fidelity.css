@@ -11,34 +11,6 @@
 .account-fidelity .z-switch[aria-checked="true"]::before {
   background: #b98d2c;
 }
-.account-fidelity .at-hero {
-  position: relative;
-  min-height: min(66vh, 620px);
-  display: grid;
-  align-items: end;
-  overflow: hidden;
-  isolation: isolate;
-  padding: calc(var(--nav-h) + 24px) var(--gutter) clamp(36px, 6vh, 60px);
-}
-.account-fidelity .at-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    linear-gradient(270deg, #000 0, rgba(0, 0, 0, 0.8) 30%, transparent 58%),
-    linear-gradient(0deg, #000 0, transparent 30%);
-}
-.account-fidelity .at-copy {
-  position: relative;
-  z-index: 2;
-  justify-self: end;
-  width: min(440px, 100%);
-}
-.account-fidelity .at-copy .z-lede {
-  margin-top: 12px;
-}
 .account-fidelity .at-sum {
   display: flex;
   align-items: center;
@@ -487,21 +459,6 @@
   }
 }
 @media (max-width: 760px) {
-  .account-fidelity .at-hero {
-    min-height: 640px;
-  }
-  .account-fidelity .at-hero::after {
-    background: linear-gradient(
-      0deg,
-      #000 0,
-      #000 34%,
-      rgba(0, 0, 0, 0.5) 56%,
-      transparent 76%
-    );
-  }
-  .account-fidelity .at-copy {
-    justify-self: start;
-  }
   .account-fidelity .grid2 {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -10,43 +10,6 @@
 .addons-fidelity .z-switch[aria-checked="true"]::before {
   background: #d9692a;
 }
-.addons-fidelity .fg-hero {
-  position: relative;
-  min-height: min(70vh, 660px);
-  display: grid;
-  align-items: end;
-  overflow: hidden;
-  isolation: isolate;
-  padding: calc(var(--nav-h) + 24px) var(--gutter) clamp(36px, 6vh, 64px);
-}
-.addons-fidelity .fg-art {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: min(68vw, 1100px);
-  overflow: hidden;
-  -webkit-mask-image:
-    linear-gradient(90deg, #000 48%, transparent 97%),
-    linear-gradient(0deg, transparent 0, #000 34%, #000 88%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(90deg, #000 48%, transparent 97%),
-    linear-gradient(0deg, transparent 0, #000 34%, #000 88%, transparent 100%);
-  mask-composite: intersect;
-}
-.addons-fidelity .fg-pan {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 118%;
-  translate: 0 -2%;
-}
-.addons-fidelity .fg-art img {
-  width: 100%;
-  max-width: none;
-  height: auto;
-  transform-origin: 32% 38%;
-  filter: brightness(0.82) contrast(1.06) saturate(1.05);
-}
 .addons-fidelity .fg-embers {
   position: absolute;
   inset: 0;
@@ -55,15 +18,6 @@
   height: 100%;
   pointer-events: none;
   mix-blend-mode: screen;
-}
-.addons-fidelity .fg-copy {
-  position: relative;
-  z-index: 2;
-  justify-self: end;
-  width: min(470px, 100%);
-}
-.addons-fidelity .fg-copy .z-lede {
-  margin-top: 14px;
 }
 .addons-fidelity .fg-meta {
   display: flex;
@@ -391,23 +345,6 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 760px) {
-  .addons-fidelity .fg-hero {
-    min-height: 620px;
-    align-items: end;
-  }
-  .addons-fidelity .fg-art {
-    width: 100%;
-    inset: 0;
-    -webkit-mask-image: linear-gradient(0deg, transparent 30%, #000 62%);
-    mask-image: linear-gradient(0deg, transparent 30%, #000 62%);
-  }
-  .addons-fidelity .fg-pan {
-    width: 170%;
-    translate: -4% 0;
-  }
-  .addons-fidelity .fg-copy {
-    justify-self: start;
-  }
   .addons-fidelity .inst li {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
     padding-right: 12px;
