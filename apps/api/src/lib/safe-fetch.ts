@@ -134,6 +134,8 @@ async function guardedGet(
       url = new URL(response.headers.get("location")!, url);
       continue;
     }
+    // Callers resolve relative links (HLS) against where the body actually came from.
+    Object.defineProperty(response, "url", { value: url.href });
     return response;
   }
   throw new Error("Demasiados redireccionamentos.");

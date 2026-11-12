@@ -66,6 +66,12 @@ const server = http.createServer((req, res) => {
         res.end();
       }
     }, 200);
+  } else if (req.url === "/hop") {
+    res.writeHead(302, { location: "/dir/final" });
+    res.end();
+  } else if (req.url === "/dir/final") {
+    res.writeHead(200);
+    res.end("ok");
   } else if (req.url === "/304") {
     res.writeHead(304);
     res.end();
@@ -138,6 +144,17 @@ test("null-body statuses resolve without throwing", async () => {
       assert.equal(f.status, status);
       assert.equal(f.body, null);
     }
+  } finally {
+    restore();
+  }
+});
+
+test("safeStream exposes the final URL after redirects", async () => {
+  const restore = loopback();
+  try {
+    const res = await safeStream(`${base}/hop`);
+    assert.equal(res.url, `${base}/dir/final`);
+    assert.equal(await res.text(), "ok");
   } finally {
     restore();
   }
