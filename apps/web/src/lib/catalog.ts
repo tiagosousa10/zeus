@@ -50,7 +50,13 @@ export type Stream = {
   infoHash?: string;
   fileIdx?: number;
   behaviorHints?: { filename?: string; bingeGroup?: string };
-  subtitles?: { id: string; url: string; lang: string }[];
+  subtitles?: Subtitle[];
+};
+export type Subtitle = {
+  id: string;
+  url: string;
+  lang: string;
+  addonName?: string;
 };
 export type StreamResponse = {
   streams: Stream[];

@@ -11,6 +11,7 @@ import {
   type ProgressEntry,
   type Stream,
   type StreamResponse,
+  type Subtitle,
 } from "../lib/catalog";
 import "./cinema.css";
 import "./cinema-reference.css";
@@ -37,6 +38,15 @@ export default function Player() {
     queryKey: ["meta", type, id],
     queryFn: ({ signal }) => metadata(type, id, signal),
     staleTime: 300000,
+  });
+  const addonSubtitles = useQuery({
+    queryKey: ["subtitles", type, videoId],
+    queryFn: ({ signal }) =>
+      api<{ subtitles: Subtitle[] }>(
+        `/subtitles?${new URLSearchParams({ id: videoId, type })}`,
+        { signal },
+      ),
+    staleTime: 600000,
   });
   const video = useRef<HTMLVideoElement>(null),
     host = useRef<HTMLDivElement>(null);
@@ -112,9 +122,16 @@ export default function Player() {
     idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const resumeDone = useRef(false),
     autoplayDone = useRef(false);
-  const tracks = (source?.subtitles ?? []).filter((track) =>
-    safeMediaURL(track.url),
-  );
+  // O proxy converte SRT em WebVTT e evita bloqueios de CORS no <track>.
+  const tracks = [
+    ...(source?.subtitles ?? []),
+    ...(addonSubtitles.data?.subtitles ?? []),
+  ]
+    .filter((track) => safeMediaURL(track.url))
+    .map((track) => ({
+      ...track,
+      url: `/api/subtitles/file?${new URLSearchParams({ url: track.url })}`,
+    }));
   const episodes = (meta.data?.videos ?? [])
     .filter((item) => item.season > 0)
     .sort((a, b) => a.season - b.season || a.episode - b.episode);
@@ -378,6 +395,7 @@ export default function Player() {
     setActiveSubtitle(index);
   }, [
     source,
+    addonSubtitles.data,
     state.preferences.language,
     state.preferences.subtitles,
     state.preferences.subtitleLanguages,
@@ -716,8 +734,9 @@ export default function Player() {
               <h2>Legendas</h2>
               {!tracks.length && (
                 <p>
-                  Esta Fonte não disponibilizou legendas. As faixas integradas
-                  dependem do formato e do browser.
+                  Nem esta Fonte nem os teus Add-ons de legendas têm legendas
+                  para este título. As faixas integradas dependem do formato e
+                  do browser.
                 </p>
               )}
               <button
@@ -749,6 +768,7 @@ export default function Player() {
                   }}
                 >
                   {track.lang}
+                  {track.addonName && ` · ${track.addonName}`}
                   {activeSubtitle === index && " ✓"}
                 </button>
               ))}
