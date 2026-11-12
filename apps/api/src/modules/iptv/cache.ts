@@ -3,10 +3,12 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "../../lib/config.js";
 import { decrypt, encrypt } from "../../lib/crypto.js";
-import { fetchCatalog, fetchMovie, fetchSeries } from "./provider.js";
+import type { Account } from "./account.js";
+import { fetchAccount, fetchCatalog, fetchMovie, fetchSeries } from "./provider.js";
 import type { IPTVList, TVCatalog, TVMovieDetail, TVSeriesDetail } from "./types.js";
 
 const CATALOG_TTL = 6 * 3600_000;
+const ACCOUNT_TTL = 3600_000;
 const DETAIL_TTL = 12 * 3600_000;
 // Bump when the cached shape changes so old disk files stop matching.
 const CACHE_VERSION = 2;
@@ -43,9 +45,15 @@ function writeDisk(key: string, entry: Entry): void {
   } catch {}
 }
 
-async function cached<T>(key: string, ttl: number, load: (now: number) => Promise<T>, force = false): Promise<T> {
+async function cached<T>(
+  key: string,
+  ttl: number,
+  load: (now: number) => Promise<T>,
+  force = false,
+  disk = true,
+): Promise<T> {
   if (!force) {
-    const hit = memory.get(key) ?? readDisk(key);
+    const hit = memory.get(key) ?? (disk ? readDisk(key) : undefined);
     if (hit && hit.expires > clock()) {
       memory.set(key, hit);
       return hit.value as T;
@@ -58,7 +66,7 @@ async function cached<T>(key: string, ttl: number, load: (now: number) => Promis
     const value = await load(now);
     const entry = { value, expires: now + ttl };
     memory.set(key, entry);
-    writeDisk(key, entry);
+    if (disk) writeDisk(key, entry);
     return value;
   })().finally(() => inFlight.delete(key));
   inFlight.set(key, promise);
@@ -79,4 +87,8 @@ export async function getSeries(userId: string, list: IPTVList, id: string): Pro
   const base = (await getCatalog(userId, list)).series.items.find((s) => s.id === id);
   if (!base) return undefined;
   return cached(sha256(`${listKey(userId, list)}:series:${id}`), DETAIL_TTL, () => fetchSeries(list, base));
+}
+
+export function getAccount(userId: string, list: IPTVList): Promise<Account> {
+  return cached(sha256(`${listKey(userId, list)}:account`), ACCOUNT_TTL, () => fetchAccount(list), false, false);
 }

@@ -41,13 +41,13 @@ const NO_CATEGORY = "outros";
 
 export function xtreamUrl(
   list: { url: string; username?: string; password?: string },
-  action: string,
+  action?: string,
   params: Record<string, string> = {},
 ): string {
   const u = new URL("/player_api.php", list.url);
   if (list.username !== undefined) u.searchParams.set("username", list.username);
   if (list.password !== undefined) u.searchParams.set("password", list.password);
-  u.searchParams.set("action", action);
+  if (action) u.searchParams.set("action", action);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
   return u.toString();
 }
