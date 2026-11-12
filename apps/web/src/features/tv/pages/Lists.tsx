@@ -7,10 +7,13 @@ export default function Lists() {
     [editing, setEditing] = useState<IPTVList | null | undefined>(),
     [kind, setKind] = useState("xtream"),
     [busy, setBusy] = useState(false),
+    [refreshing, setRefreshing] = useState<string | null>(null),
+    [success, setSuccess] = useState(""),
     [error, setError] = useState("");
   async function run(fn: () => Promise<unknown>) {
     setBusy(true);
     setError("");
+    setSuccess("");
     try {
       await fn();
     } catch (e) {
@@ -19,7 +22,20 @@ export default function Lists() {
       setBusy(false);
     }
   }
+  function refreshList(list: IPTVList) {
+    void run(async () => {
+      setRefreshing(list.id);
+      try {
+        await tv.refresh(list.id);
+        setSuccess(`Lista «${list.name}» atualizada.`);
+      } finally {
+        setRefreshing(null);
+      }
+    });
+  }
   function edit(list: IPTVList | null) {
+    setError("");
+    setSuccess("");
     setEditing(list);
     setKind(list?.type || "xtream");
   }
@@ -89,11 +105,10 @@ export default function Lists() {
                   <button disabled={busy} onClick={() => edit(list)}>
                     Editar
                   </button>
-                  <button
-                    disabled={busy}
-                    onClick={() => void run(() => tv.refresh(list.id))}
-                  >
-                    Actualizar lista
+                  <button disabled={busy} onClick={() => refreshList(list)}>
+                    {refreshing === list.id
+                      ? "A atualizar…"
+                      : "Atualizar lista"}
                   </button>
                   <button
                     disabled={busy}
@@ -111,7 +126,11 @@ export default function Lists() {
               </article>
             ))}
           </div>
-          <button className="tv-primary" onClick={() => edit(null)}>
+          <button
+            className="tv-primary"
+            disabled={busy}
+            onClick={() => edit(null)}
+          >
             ＋ Adicionar lista
           </button>
         </>
@@ -203,8 +222,17 @@ export default function Lists() {
           )}
           <div className="tv-toolbar">
             <button type="submit" className="tv-primary" disabled={busy}>
-              {busy ? "A guardar…" : "Guardar lista"}
+              {busy && !refreshing ? "A guardar…" : "Guardar lista"}
             </button>
+            {editing && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => refreshList(editing)}
+              >
+                {refreshing === editing.id ? "A atualizar…" : "Atualizar lista"}
+              </button>
+            )}
             <button
               type="button"
               disabled={busy}
@@ -215,7 +243,12 @@ export default function Lists() {
           </div>
         </form>
       )}
-      {busy && <p role="status">A concluir…</p>}
+      {busy && (
+        <p role="status">
+          {refreshing ? "A atualizar a lista…" : "A concluir…"}
+        </p>
+      )}
+      {!busy && success && <p role="status">{success}</p>}
       {error && <p role="alert">{error}</p>}
     </Modal>
   );

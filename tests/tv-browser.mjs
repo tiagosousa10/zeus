@@ -836,6 +836,75 @@ try {
   for (const name of ["url", "username", "password", "epgUrl"])
     assert.equal(await page.locator(`[name="${name}"]`).inputValue(), "");
   await page.locator('[name="name"]').fill("Casa editada");
+  const patchesBeforeRefresh = fixture.patches.length;
+  let releaseRefresh;
+  const refreshGate = new Promise((resolve) => (releaseRefresh = resolve));
+  await page.route(
+    "**/api/iptv/lists/fixture/refresh",
+    async (route) => {
+      await refreshGate;
+      await route.fallback();
+    },
+    { times: 1 },
+  );
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "A atualizar a lista…" })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "A atualizar…", exact: true })
+      .isDisabled(),
+    true,
+  );
+  releaseRefresh();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Lista «Casa» atualizada." })
+    .waitFor();
+  assert.equal(
+    await page.locator('[name="name"]').inputValue(),
+    "Casa editada",
+  );
+  assert.equal(
+    fixture.patches.length,
+    patchesBeforeRefresh,
+    "refresh does not save pending edits",
+  );
+  assert.ok(
+    fixture.requests.some(
+      (r) =>
+        r.path === "/api/iptv/lists/fixture/refresh" && r.method === "POST",
+    ),
+  );
+  await page.route(
+    "**/api/iptv/lists/fixture/refresh",
+    (route) =>
+      route.fulfill({
+        status: 502,
+        json: { error: "Não foi possível atualizar a lista." },
+      }),
+    { times: 1 },
+  );
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("alert")
+    .filter({ hasText: "Não foi possível atualizar a lista." })
+    .waitFor();
+  await page
+    .getByRole("button", { name: "Atualizar lista", exact: true })
+    .click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Lista «Casa» atualizada." })
+    .waitFor();
+  assert.equal(await page.getByRole("alert").count(), 0);
+
   await page
     .getByRole("button", { name: "Guardar lista", exact: true })
     .click();
@@ -1000,6 +1069,7 @@ try {
       selectedChannelGuide: true,
       channelGuideCancellationNoGuideRetry: true,
       publicListCRUD: true,
+      playlistRefreshProgressAndRetry: true,
       secretOnlyRefresh: true,
       mockedMember: true,
       localDecoded: decoded,
