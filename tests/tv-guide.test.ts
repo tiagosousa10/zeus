@@ -7,11 +7,11 @@ import {
   guideWindows,
   mergeGuideWindows,
   type GuideGrid,
-} from "../apps/web/src/pages/tv/guide-helpers";
+} from "../apps/web/src/features/tv/models/guide-helpers";
 import {
   overlappingGuideDays,
   validGuideZone,
-} from "../apps/api/src/modules/iptv/guide-days";
+} from "../packages/contracts/guide-days";
 test("Lisbon civil days include summer midnight and DST days of 23/25 hours", () => {
   const previous = process.env.TZ;
   process.env.TZ = "Europe/Lisbon";

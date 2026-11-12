@@ -5,7 +5,7 @@ import {
   playbackDuration,
   progressKey,
   serializeStart,
-} from "../apps/web/src/pages/tv/playback-helpers";
+} from "../apps/web/src/features/tv/models/playback-helpers";
 test("remux offset remains absolute and unknown media duration preserves metadata", () => {
   assert.equal(playbackPosition(12, 60), 72);
   assert.equal(playbackPosition(Infinity, 60), 60);

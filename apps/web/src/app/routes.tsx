@@ -1,0 +1,148 @@
+import { SearchHost } from "../features/shell/components/UniversalSearch";
+import { ZeusLoader, ActivityIndicator } from "../shared/components/ZeusLoader";
+import React, { Component, Suspense, lazy, type ReactNode } from "react";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+} from "@tanstack/react-router";
+import { useSession } from "../shared/hooks/session";
+const Entry = lazy(() => import("../features/auth/pages/Entry"));
+const Onboarding = lazy(
+  () => import("../features/onboarding/pages/Onboarding"),
+);
+const Portal = lazy(() => import("../features/portal/pages/Portal"));
+const Cinema = lazy(() => import("../features/cinema/pages/Cinema"));
+const Explore = lazy(() => import("../features/cinema/pages/Explore"));
+const Title = lazy(() => import("../features/cinema/pages/Title"));
+const Player = lazy(() => import("../features/cinema/pages/Player"));
+const TV = lazy(() => import("../features/tv/pages/TV"));
+const Addons = lazy(() => import("../features/addons/pages/Addons"));
+const Account = lazy(() => import("../features/account/pages/Account"));
+const Admin = lazy(() => import("../features/admin/pages/Admin"));
+const States = lazy(() => import("../features/motor/pages/States"));
+const Guide = lazy(() => import("../features/design-guide/pages/Guide"));
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: boolean }
+> {
+  state = { error: false };
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  render() {
+    return this.state.error ? (
+      <main className="page-loading">
+        <b>ZEUS</b>
+        <h1>Algo interrompeu a viagem.</h1>
+        <p>Tenta abrir novamente este ecrã.</p>
+        <a className="z-btn z-btn--primary" href="/portal">
+          Voltar ao Portal
+        </a>
+      </main>
+    ) : (
+      this.props.children
+    );
+  }
+}
+function Guard({
+  children,
+  admin = false,
+}: {
+  children: ReactNode;
+  admin?: boolean;
+}) {
+  const { user, loading, error } = useSession();
+  if (loading)
+    return (
+      <div className="page-loading" role="status">
+        <ZeusLoader label="A abrir as portas…" />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="page-loading">
+        <b>ZEUS</b>
+        <p>Não foi possível ligar à API.</p>
+        <button className="z-btn" onClick={() => location.reload()}>
+          Tentar novamente
+        </button>
+      </div>
+    );
+  if (!user || !user.twoFactorEnabled || !user.twoFactorVerified) {
+    location.replace("/entrada");
+    return null;
+  }
+  if (admin && user.role !== "admin")
+    return (
+      <div className="page-loading">
+        <h1>Este lugar é reservado ao Administrador.</h1>
+        <a href="/portal">Voltar ao Portal</a>
+      </div>
+    );
+  return children;
+}
+const root = createRootRoute({
+  component: () => (
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="page-loading" role="status">
+            <ZeusLoader label="A abrir…" />
+          </div>
+        }
+      >
+        <>
+          <SearchHost />
+          <ActivityIndicator />
+          <Outlet />
+        </>
+      </Suspense>
+    </ErrorBoundary>
+  ),
+  notFoundComponent: () => (
+    <div className="page-loading">
+      <h1>Este caminho não existe.</h1>
+      <a href="/portal">Voltar ao Portal</a>
+    </div>
+  ),
+});
+const screens: {
+  path: string;
+  component: React.ComponentType;
+  public?: boolean;
+  admin?: boolean;
+}[] = [
+  { path: "/", component: Portal },
+  { path: "/entrada", component: Entry, public: true },
+  { path: "/onboarding", component: Onboarding },
+  { path: "/portal", component: Portal },
+  { path: "/cinema", component: Cinema },
+  { path: "/explorar", component: Explore },
+  { path: "/titulo", component: Title },
+  { path: "/leitor", component: Player },
+  { path: "/tv", component: TV },
+  { path: "/addons", component: Addons },
+  { path: "/conta", component: Account },
+  { path: "/admin", component: Admin, admin: true },
+  { path: "/estados", component: States },
+  { path: "/guia", component: Guide },
+];
+const routeTree = root.addChildren(
+  screens.map((s) =>
+    createRoute({
+      getParentRoute: () => root,
+      path: s.path,
+      component: () =>
+        s.public ? (
+          <s.component />
+        ) : (
+          <Guard admin={s.admin}>
+            <s.component />
+          </Guard>
+        ),
+    }),
+  ),
+);
+export const router = createRouter({ routeTree });
