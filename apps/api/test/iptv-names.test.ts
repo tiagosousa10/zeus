@@ -9,6 +9,7 @@ test("folder names lose decorations and shouting", () => {
   assert.equal(cleanFolderName("HBO"), "HBO");
   assert.equal(cleanFolderName("4K UHD"), "4K UHD");
   assert.equal(cleanFolderName("★★★"), "★★★");
+  assert.equal(cleanFolderName("PORTUGAL (HD)"), "Portugal (HD)");
 });
 test("country detection in PT, EN, ES and FR", () => {
   for (const [name, code] of [
@@ -29,4 +30,8 @@ test("channel tags derive from channel names", () => {
   assert.deepEqual(channelTags("CNN Portugal"), ["Notícias"]);
   assert.deepEqual(channelTags("Panda Kids"), ["Infantis"]);
   assert.deepEqual(channelTags("RTP2"), []);
+  assert.ok(channelTags("Sky Sports 1").includes("Desporto"));
+  assert.ok(channelTags("Eleven Sports").includes("Desporto"));
+  assert.ok(channelTags("SportTV").includes("Desporto"));
+  assert.deepEqual(channelTags("Canais Infantis"), ["Infantis"]);
 });

@@ -16,7 +16,9 @@ export function cleanFolderName(raw: string): string {
   return cleaned
     .split(" ")
     .map((w) =>
-      w.length > 3 ? w.charAt(0) + w.slice(1).toLowerCase() : w,
+      (w.match(/\p{L}/gu) ?? []).length > 3
+        ? w.toLowerCase().replace(/\p{L}/u, (c) => c.toUpperCase())
+        : w,
     )
     .join(" ");
 }
@@ -57,8 +59,8 @@ export function isAdult(name: string): boolean {
 const HIGH_RES = wordsRe(["fhd", "4k", "uhd"]);
 const HD_RE = wordsRe(["hd"]);
 const NEWS_RE = wordsRe(["noticias", "news", "cnn", "informacao"]);
-const SPORT_RE = wordsRe(["sport", "desporto", "deportes", "eleven", "dazn", "eurosport"]);
-const KIDS_RE = wordsRe(["kids", "infantil", "panda", "cartoon", "disney junior", "nick jr"]);
+const SPORT_RE = wordsRe(["sport\\p{L}*", "desportos?", "deportes", "eleven", "dazn", "eurosport"]);
+const KIDS_RE = wordsRe(["kids", "infantil", "infantis", "panda", "cartoon", "disney junior", "nick jr"]);
 
 export function channelTags(name: string): ChannelTag[] {
   const text = plain(name);
