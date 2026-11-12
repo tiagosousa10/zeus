@@ -1,0 +1,326 @@
+.admin-fidelity {
+  --accent: #e8c982;
+  --cool: 232, 201, 130;
+  --serif: "Iowan Old Style", Palatino, Georgia, serif;
+}
+.admin-fidelity .council {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 640px;
+  display: flex;
+  align-items: end;
+  padding: calc(var(--nav-h) + 80px) var(--gutter) 68px;
+}
+.admin-fidelity .council::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.85),
+      rgba(0, 0, 0, 0.25) 58%,
+      transparent
+    ),
+    linear-gradient(0deg, #000, transparent 55%);
+}
+.admin-fidelity .council-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 620px;
+}
+.admin-fidelity .eyebrow {
+  font: 12px var(--mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.admin-fidelity .council h1 {
+  font: 400 clamp(44px, 6vw, 88px)/1.05 var(--serif);
+  letter-spacing: -0.045em;
+}
+.admin-fidelity .council .z-lede {
+  max-width: 450px;
+  margin-top: 22px;
+}
+.admin-fidelity .sigil {
+  width: 70px;
+  height: 70px;
+  border: 1px solid #c9a55a70;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 38px var(--serif);
+  color: var(--accent);
+  margin-bottom: 28px;
+  box-shadow: inset 0 0 0 6px #b4924210;
+}
+.admin-fidelity .workspace {
+  max-width: 1380px;
+  margin: auto;
+  padding: 0 var(--gutter) 80px;
+}
+.admin-fidelity .stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 0 0 34px;
+  border-bottom: 1px solid var(--hair);
+}
+.admin-fidelity .stat b {
+  font: 42px var(--serif);
+  display: block;
+}
+.admin-fidelity .stat span {
+  font-size: 14px;
+  color: var(--text-2);
+}
+.admin-fidelity .section-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 28px 0;
+}
+.admin-fidelity .section-nav button {
+  border-radius: 99px;
+}
+.admin-fidelity .section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin: 10px 0 26px;
+}
+.admin-fidelity .section-head p {
+  color: var(--text-2);
+  margin-top: 8px;
+  max-width: 58ch;
+}
+.admin-fidelity .panels {
+  min-height: 400px;
+}
+.admin-fidelity .member,
+.admin-fidelity .invite {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--hair);
+}
+.admin-fidelity .initial {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--accent);
+  background: linear-gradient(140deg, #8b703a40, #252016);
+  border: 1px solid #d7b26330;
+  font: 20px var(--serif);
+}
+.admin-fidelity .identity {
+  flex: 1;
+  min-width: 0;
+}
+.admin-fidelity .identity b {
+  font-size: 16px;
+}
+.admin-fidelity .identity small {
+  display: block;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.admin-fidelity .member-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.admin-fidelity .catalogue {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.admin-fidelity .proposal {
+  position: relative;
+  padding: 28px;
+  min-height: 258px;
+  background: linear-gradient(145deg, #29241a80, #101010);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.admin-fidelity .proposal h3 {
+  margin: 24px 0 10px;
+  font-size: 23px;
+}
+.admin-fidelity .proposal p {
+  color: var(--text-2);
+  font-size: 15px;
+  min-height: 64px;
+}
+.admin-fidelity .proposal footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+.admin-fidelity .proposal .stamp {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: var(--accent);
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  font: 10px var(--mono);
+  transform: rotate(-14deg);
+  box-shadow: inset 0 0 0 4px #d4af5020;
+}
+.admin-fidelity .proposal[data-status="aprovado"] {
+  border-color: #d6b46a66;
+}
+.admin-fidelity .proposal[data-status="rejeitado"] {
+  opacity: 0.65;
+}
+.admin-fidelity .empty {
+  padding: 50px 0;
+  color: var(--text-2);
+}
+.admin-fidelity .demo {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 44px;
+}
+.admin-fidelity .invite-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: end;
+  max-width: 680px;
+  margin: 24px 0;
+}
+.admin-fidelity .invite-form .z-field {
+  margin: 0;
+}
+.admin-fidelity .invite-state {
+  color: var(--accent);
+  font: 12px var(--mono);
+}
+.admin-fidelity .confirm-note {
+  padding: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  margin-top: 16px;
+}
+.admin-fidelity .z-sheet {
+  max-width: 520px;
+}
+.admin-fidelity .z-sheet__body {
+  padding: 36px;
+}
+.admin-fidelity .z-sheet__body p {
+  margin: 16px 0 24px;
+  color: var(--text-2);
+}
+@media (max-width: 760px) {
+  .admin-fidelity .council {
+    min-height: 620px;
+    padding-bottom: 44px;
+  }
+  .admin-fidelity .council::after {
+    background: linear-gradient(
+      0deg,
+      #000,
+      rgba(0, 0, 0, 0.55) 52%,
+      rgba(0, 0, 0, 0.1)
+    );
+  }
+  .admin-fidelity .council-copy {
+    padding-top: 180px;
+  }
+  .admin-fidelity .sigil {
+    display: none;
+  }
+  .admin-fidelity .stats {
+    gap: 12px;
+  }
+  .admin-fidelity .stat b {
+    font-size: 34px;
+  }
+  .admin-fidelity .stat span {
+    font-size: 12px;
+  }
+  .admin-fidelity .catalogue {
+    grid-template-columns: 1fr;
+  }
+  .admin-fidelity .section-head {
+    align-items: start;
+    flex-direction: column;
+  }
+  .admin-fidelity .member,
+  .admin-fidelity .invite {
+    flex-wrap: wrap;
+  }
+  .admin-fidelity .member-actions {
+    width: 100%;
+    padding-left: 64px;
+  }
+  .admin-fidelity .invite-form {
+    grid-template-columns: 1fr;
+  }
+  .admin-fidelity .invite-form button {
+    justify-self: start;
+  }
+  .admin-fidelity .section-nav {
+    gap: 4px;
+  }
+  .admin-fidelity .section-nav .z-btn {
+    font-size: 14px;
+    padding: 10px 13px;
+  }
+}
+.admin-fidelity .admin-confirm {
+  color: var(--text);
+  border: 0;
+  padding: 0;
+  margin: auto;
+  position: fixed;
+  max-width: 520px;
+}
+.admin-fidelity .admin-confirm::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+}
+.admin-fidelity .admin-confirm:not([open]) {
+  display: none;
+}
+@media (max-width: 760px) {
+  .admin-fidelity .admin-confirm {
+    width: calc(100% - 20px);
+  }
+}
+.admin-fidelity .z-field > .z-label {
+  margin-bottom: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .admin-fidelity .stamp {
+    animation: admin-stamp 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes admin-stamp {
+    from {
+      transform: scale(1.8) rotate(12deg);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) rotate(-14deg);
+      opacity: 1;
+    }
+  }
+}

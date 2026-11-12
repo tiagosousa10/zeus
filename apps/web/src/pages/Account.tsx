@@ -1,8 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Art, Page } from "../components/Layout";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Page } from "../components/Layout";
 import { api } from "../lib/api";
 import { useSession, useMemberState } from "../lib/session";
 import "./management.css";
+import "./conta-fidelity.css";
+import gsap from "gsap";
 type Session = {
   id: string;
   token: string;
@@ -82,65 +84,115 @@ export default function Account() {
       "Palavra-passe alterada. As outras sessões foram terminadas.",
     );
   };
-  if (stateError)
-    return (
-      <Page>
-        <div className="management-content">
-          <h1 className="z-t2">Não foi possível carregar as tuas escolhas.</h1>
-          <p className="mg-message mg-error" role="alert">
-            {stateError.message}
-          </p>
-          <button
-            className="z-btn z-btn--primary"
-            onClick={() => location.reload()}
-          >
-            Tentar novamente
-          </button>
-        </div>
-      </Page>
+  const paintingRef = useRef<HTMLDivElement>(null);
+  const [showBackup, setShowBackup] = useState(false),
+    [showCurrent, setShowCurrent] = useState(false),
+    [showKey, setShowKey] = useState(false),
+    [activeSection, setActiveSection] = useState(
+      location.hash.slice(1) || "perfil",
     );
+  useEffect(() => {
+    let disposed = false,
+      painting: any;
+    Promise.all([import("three"), import("../lib/fx.js")]).then(
+      ([three, fx]) => {
+        if (disposed || !paintingRef.current) return;
+        Object.assign(window, { THREE: three, gsap });
+        painting = (fx.livingPainting as any)(
+          paintingRef.current,
+          "/art/img/atena.webp",
+          {
+            focus: { x: 0.33, y: 0.17 },
+            anchor: { x: 0.3, y: 0.4 },
+            anchorNarrow: { x: 0.5, y: 0.27 },
+            figure: [
+              [0.33, 0.2, 0.14, 0.18],
+              [0.4, 0.64, 0.36, 0.4],
+              [0.92, 0.5, 0.06, 0.5],
+            ],
+            size: (w: number, h: number) =>
+              w < 700
+                ? Math.max(h * 0.95, w * 1.5)
+                : Math.max(h * 1.45, w * 0.64),
+            kenBurns: 0.035,
+            parallax: [12, 8],
+          },
+        );
+      },
+    );
+    return () => {
+      disposed = true;
+      painting?.destroy();
+    };
+  }, []);
+  const subtitleSize = state.preferences.subtitleSize || "medium";
+  const field = (label: string, input: React.ReactNode) => (
+    <label className="z-field">
+      <span className="z-label">{label}</span>
+      {input}
+    </label>
+  );
   return (
     <Page>
-      <div className="management">
-        <Art
-          image="atena"
-          title="Sob a protecção de Atena."
-          eyebrow="A tua conta"
-        />
-        <div className="management-content">
-          <nav className="mg-tabs" aria-label="Definições">
-            <a className="z-btn z-btn--ghost" href="#personal">
-              Dados pessoais
-            </a>
-            <a className="z-btn z-btn--ghost" href="#security">
-              Segurança
-            </a>
-            <a className="z-btn z-btn--ghost" href="#preferences">
-              Leitor
-            </a>
-            <a className="z-btn z-btn--ghost" href="#tmdb">
-              TMDB
-            </a>
+      <div className="account-fidelity">
+        <section className="at-hero" aria-labelledby="account-title">
+          <div ref={paintingRef} aria-hidden="true" />
+          <div className="at-copy">
+            <h1 className="z-display" id="account-title">
+              Conta
+            </h1>
+            <p className="z-lede">
+              O teu perfil, a segurança da conta e a forma como o leitor se
+              comporta. Só tu vês estas definições.
+            </p>
+            <p className="at-sum">
+              <i aria-hidden="true" />
+              {user?.name}
+              {user
+                ? `, ${user.role === "admin" ? "Administrador" : "Membro"}`
+                : ""}
+            </p>
+          </div>
+        </section>
+        <div className="layout">
+          <nav className="side" aria-label="Definições da conta">
+            {[
+              ["perfil", "Perfil"],
+              ["seguranca", "Segurança"],
+              ["tmdb", "Chave TMDB"],
+              ["leitor", "Leitor"],
+              ["importar", "Importar do MacStream"],
+            ].map(([id, label]) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                aria-current={activeSection === id ? "true" : undefined}
+                onClick={() => setActiveSection(id)}
+              >
+                {label}
+              </a>
+            ))}
           </nav>
-          <h1 className="z-t2">A tua Conta</h1>
-          <p className="mg-lede">
-            As tuas escolhas, a tua segurança. Só tu vês estas definições.
-          </p>
-          {error && (
-            <p role="alert" className="mg-message mg-error">
-              {error}
-            </p>
-          )}
-          {message && (
-            <p role="status" className="mg-message">
-              {message}
-            </p>
-          )}
-          <div className="mg-grid">
-            <section id="personal" className="mg-card mg-section">
-              <h2 className="z-t3">Dados pessoais</h2>
+          <div>
+            {(error || stateError) && (
+              <p className="z-msg" role="alert">
+                {error || stateError?.message}
+              </p>
+            )}
+            {message && (
+              <p className="z-msg is-ok" role="status">
+                {message}
+              </p>
+            )}
+            <section className="sec" id="perfil">
+              <h2 className="z-t2">Perfil</h2>
+              <p className="z-callout">
+                O nome aparece aos outros Membros. O email identifica a tua
+                conta e o Convite; contacta o Administrador se precisares de o
+                alterar.
+              </p>
               <form
-                className="mg-form"
+                className="form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void run(
@@ -156,43 +208,373 @@ export default function Account() {
                   );
                 }}
               >
-                <label>
-                  Nome
-                  <input
-                    className="mg-input"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    autoComplete="name"
-                  />
-                </label>
-                <label>
-                  Email
-                  <input
-                    className="mg-input"
-                    value={user?.email || ""}
-                    readOnly
-                  />
-                </label>
-                <p className="mg-muted">
-                  O email identifica a tua conta e o Convite. Contacta o
-                  Administrador se precisares de o alterar.
-                </p>
-                <button
-                  className="z-btn z-btn--secondary"
-                  disabled={!!busy || !name.trim()}
-                >
-                  Guardar nome
-                </button>
+                <div className="grid2">
+                  {field(
+                    "Nome",
+                    <input
+                      className="z-input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      autoComplete="name"
+                    />,
+                  )}
+                  {field(
+                    "Email",
+                    <input
+                      className="z-input"
+                      type="email"
+                      value={user?.email || ""}
+                      readOnly
+                      autoComplete="email"
+                    />,
+                  )}
+                </div>
+                <div className="actions">
+                  <button
+                    className="z-btn z-btn--primary z-btn--sm"
+                    disabled={!!busy || !name.trim()}
+                  >
+                    Guardar perfil
+                  </button>
+                </div>
               </form>
             </section>
-            <section id="tmdb" className="mg-card mg-section">
-              <h2 className="z-t3">A tua chave TMDB</h2>
-              <p className="mg-lede">
-                Metadados dos filmes e séries com a tua chave pessoal.
+            <section className="sec" id="seguranca">
+              <div className="sec-head">
+                <div
+                  className={`aegis ${user?.twoFactorEnabled ? "is-locked" : ""}`}
+                  aria-hidden="true"
+                >
+                  <svg viewBox="0 0 120 120">
+                    <defs>
+                      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stopColor="#f6df9a" />
+                        <stop offset=".5" stopColor="#c99a3a" />
+                        <stop offset="1" stopColor="#8a6420" />
+                      </linearGradient>
+                    </defs>
+                    {[0, 1].flatMap((r) =>
+                      Array.from({ length: 24 }, (_, i) => (
+                        <g
+                          key={`${r}-${i}`}
+                          transform={`rotate(${i * 15 + r * 7.5} 60 60)`}
+                        >
+                          <path
+                            className="sc"
+                            style={{ "--i": i + r * 3 } as React.CSSProperties}
+                            d={
+                              r
+                                ? "M54.5 17 a5.5 5.5 0 0 0 11 0 z"
+                                : "M53 7 a7 7 0 0 0 14 0 z"
+                            }
+                          />
+                        </g>
+                      )),
+                    )}
+                    <circle className="core" cx="60" cy="60" r="38" />
+                    <g className="lock">
+                      <rect x="48" y="58" width="24" height="18" rx="4" />
+                      <path
+                        className="shackle"
+                        d="M53 58v-6a7 7 0 0 1 14 0v6"
+                      />
+                    </g>
+                  </svg>
+                  <span className="aegis__gleam" />
+                </div>
+                <div>
+                  <h2 className="z-t2">Segurança</h2>
+                  <p>
+                    <b>
+                      {user?.twoFactorEnabled
+                        ? "A tua conta está protegida"
+                        : "Configura a protecção da tua conta"}
+                    </b>
+                    <span>
+                      Palavra-passe, verificação em dois passos e sessões em
+                      ordem.
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <h3 className="sub">Alterar palavra-passe</h3>
+              <form className="form" onSubmit={changePassword}>
+                {field(
+                  "Palavra-passe actual",
+                  <div className="z-input-wrap">
+                    <input
+                      className="z-input"
+                      type={showCurrent ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={current}
+                      onChange={(e) => setCurrent(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={showCurrent}
+                      onClick={() => setShowCurrent(!showCurrent)}
+                    >
+                      {showCurrent ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>,
+                )}
+                <div className="grid2">
+                  {field(
+                    "Nova palavra-passe",
+                    <input
+                      className="z-input"
+                      type="password"
+                      minLength={12}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />,
+                  )}
+                  {field(
+                    "Repetir nova palavra-passe",
+                    <input
+                      className="z-input"
+                      type="password"
+                      minLength={12}
+                      autoComplete="new-password"
+                      value={repeat}
+                      onChange={(e) => setRepeat(e.target.value)}
+                      required
+                    />,
+                  )}
+                </div>
+                <p className="z-help">
+                  Pelo menos 12 caracteres. As outras sessões terminam quando a
+                  alterares.
+                </p>
+                <div className="actions">
+                  <button
+                    className="z-btn z-btn--primary z-btn--sm"
+                    disabled={!!busy}
+                  >
+                    Alterar palavra-passe
+                  </button>
+                </div>
+              </form>
+              <h3 className="sub">Verificação em dois passos</h3>
+              <div className="row">
+                <div>
+                  <b>App de autenticação</b>
+                  <p>
+                    Protege o acesso com um código da tua app de autenticação.
+                  </p>
+                </div>
+                <span className="z-tag z-tag--gold">
+                  {user?.twoFactorEnabled ? "Activa" : "Por configurar"}
+                </span>
+              </div>
+              {user?.twoFactorEnabled ? (
+                <>
+                  <div className="actions" style={{ marginTop: 12 }}>
+                    <button
+                      className="z-btn z-btn--secondary z-btn--sm"
+                      aria-expanded={showBackup}
+                      onClick={() => setShowBackup(!showBackup)}
+                    >
+                      Gerar novos códigos de recuperação
+                    </button>
+                  </div>
+                  {showBackup && (
+                    <form
+                      className="confirm"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void run(
+                          "backup",
+                          async () => {
+                            const r = await api<{ backupCodes: string[] }>(
+                              "/auth/two-factor/generate-backup-codes",
+                              {
+                                method: "POST",
+                                body: JSON.stringify({
+                                  password: backupPassword,
+                                }),
+                              },
+                            );
+                            setCodes(r.backupCodes);
+                            setBackupPassword("");
+                            setShowBackup(false);
+                          },
+                          "Novos códigos gerados. Guarda-os antes de sair desta página.",
+                        );
+                      }}
+                    >
+                      <p>
+                        Os códigos actuais deixam de funcionar logo que gerares
+                        novos.
+                      </p>
+                      {field(
+                        "Confirma a palavra-passe",
+                        <input
+                          className="z-input"
+                          type="password"
+                          autoComplete="current-password"
+                          value={backupPassword}
+                          onChange={(e) => setBackupPassword(e.target.value)}
+                          required
+                        />,
+                      )}
+                      <button
+                        className="z-btn z-btn--primary z-btn--sm"
+                        disabled={!!busy}
+                      >
+                        Gerar códigos
+                      </button>
+                      <button
+                        className="z-btn z-btn--ghost z-btn--sm"
+                        type="button"
+                        onClick={() => setShowBackup(false)}
+                      >
+                        Cancelar
+                      </button>
+                    </form>
+                  )}
+                </>
+              ) : (
+                <a className="z-btn z-btn--primary" href="/entrada">
+                  Configurar autenticador
+                </a>
+              )}
+              {codes.length > 0 && (
+                <>
+                  <div
+                    className="plaque"
+                    role="group"
+                    aria-label="Códigos de recuperação"
+                  >
+                    {[0, 1, 2, 3].map((i) => (
+                      <i className="rivet" key={i} />
+                    ))}
+                    <h3>Códigos de recuperação</h3>
+                    <p>Cada código serve uma vez. Guarda-os fora do Zeus.</p>
+                    <ol>
+                      {codes.map((c) => (
+                        <li key={c}>{c}</li>
+                      ))}
+                    </ol>
+                  </div>
+                  <div className="actions" style={{ marginTop: 14 }}>
+                    <button
+                      className="z-btn z-btn--secondary z-btn--sm"
+                      onClick={() =>
+                        void run(
+                          "copy",
+                          () => navigator.clipboard.writeText(codes.join("\n")),
+                          "Códigos copiados.",
+                        )
+                      }
+                    >
+                      Copiar
+                    </button>
+                    <button
+                      className="z-btn z-btn--secondary z-btn--sm"
+                      onClick={() => {
+                        const url = URL.createObjectURL(
+                          new Blob([codes.join("\n")], { type: "text/plain" }),
+                        );
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = "zeus-codigos-recuperacao.txt";
+                        link.click();
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      }}
+                    >
+                      Descarregar .txt
+                    </button>
+                    <button
+                      className="z-btn z-btn--ghost z-btn--sm"
+                      onClick={() => setCodes([])}
+                    >
+                      Já os guardei
+                    </button>
+                  </div>
+                </>
+              )}
+              <h3 className="sub">Sessões activas</h3>
+              <ul className="sessions">
+                {sessions.map((s) => (
+                  <li key={s.id}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="13" rx="2" />
+                      <path d="M8 21h8M12 17v4" />
+                    </svg>
+                    <div>
+                      <b>{s.userAgent || "Dispositivo sem identificação"}</b>
+                      <small>
+                        {s.ipAddress || "IP não disponível"} · Iniciada em{" "}
+                        {new Date(s.createdAt).toLocaleDateString("pt-PT")}
+                      </small>
+                    </div>
+                    <button
+                      className="z-btn z-btn--ghost z-btn--sm"
+                      disabled={!!busy}
+                      onClick={() =>
+                        void run(
+                          s.id,
+                          async () => {
+                            await api("/auth/revoke-session", {
+                              method: "POST",
+                              body: JSON.stringify({ token: s.token }),
+                            });
+                            await refresh();
+                            await loadSessions();
+                          },
+                          "Sessão terminada.",
+                        )
+                      }
+                    >
+                      Terminar sessão
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {!sessions.length && (
+                <p className="z-help">Nenhuma sessão disponível.</p>
+              )}
+              <div className="actions" style={{ marginTop: 12 }}>
+                <button
+                  className="z-btn z-btn--danger z-btn--sm"
+                  disabled={!!busy}
+                  onClick={() =>
+                    void run(
+                      "sessions",
+                      async () => {
+                        await api("/auth/revoke-other-sessions", {
+                          method: "POST",
+                          body: "{}",
+                        });
+                        await loadSessions();
+                      },
+                      "As outras sessões foram terminadas.",
+                    )
+                  }
+                >
+                  Terminar todas as outras sessões
+                </button>
+              </div>
+            </section>
+            <section className="sec" id="tmdb">
+              <h2 className="z-t2">Chave TMDB</h2>
+              <p className="z-callout">
+                Os cartazes, sinopses e elencos vêm do The Movie Database. Com a
+                tua chave, os pedidos contam na tua conta TMDB.
               </p>
               <form
-                className="mg-form"
+                className="form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (tmdb && !/^[0-9a-f]{32}$/i.test(tmdb)) {
@@ -207,301 +589,297 @@ export default function Account() {
                       save({
                         preferences: { ...state.preferences, tmdbKey: tmdb },
                       }),
-                    "Chave guardada de forma cifrada. Será utilizada na próxima consulta de metadados.",
+                    "Chave guardada de forma cifrada.",
                   );
                 }}
               >
-                <label>
-                  Chave API
-                  <input
-                    className="mg-input"
-                    type="password"
-                    autoComplete="off"
-                    value={tmdb}
-                    onChange={(e) => setTmdb(e.target.value.trim())}
-                  />
-                </label>
-                <p className="mg-muted">
+                {field(
+                  "Chave da API (v3)",
+                  <div className="z-input-wrap">
+                    <input
+                      className="z-input z-input--mono"
+                      type={showKey ? "text" : "password"}
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={tmdb}
+                      onChange={(e) => setTmdb(e.target.value.trim())}
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={showKey}
+                      onClick={() => setShowKey(!showKey)}
+                    >
+                      {showKey ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>,
+                )}
+                <p className="z-help">
                   Deixa em branco para remover. Guardar não verifica a validade
                   junto do TMDB.
                 </p>
-                <button
-                  className="z-btn z-btn--secondary"
-                  disabled={!!busy || loading}
-                >
-                  Guardar chave
-                </button>
+                <div className="actions">
+                  <button
+                    className="z-btn z-btn--primary z-btn--sm"
+                    disabled={!!busy || loading || !!stateError}
+                  >
+                    Guardar chave
+                  </button>
+                </div>
               </form>
             </section>
-          </div>
-          <section id="security" className="mg-section">
-            <h2 className="z-t2">O teu escudo</h2>
-            <p className="mg-lede">
-              Autenticação em dois passos obrigatória. A tua conta mantém-se
-              protegida.
-            </p>
-            <div className="mg-grid">
-              <div className="mg-card">
-                <h3>Alterar palavra-passe</h3>
-                <form className="mg-form" onSubmit={changePassword}>
-                  <label>
-                    Palavra-passe actual
-                    <input
-                      className="mg-input"
-                      type="password"
-                      autoComplete="current-password"
-                      value={current}
-                      onChange={(e) => setCurrent(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Nova palavra-passe
-                    <input
-                      className="mg-input"
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={12}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Repetir nova palavra-passe
-                    <input
-                      className="mg-input"
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={12}
-                      value={repeat}
-                      onChange={(e) => setRepeat(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <button className="z-btn z-btn--secondary" disabled={!!busy}>
-                    Alterar palavra-passe
-                  </button>
-                </form>
-              </div>
-              <div className="mg-card">
-                <span className="mg-tag">
-                  {user?.twoFactorEnabled
-                    ? "TOTP ACTIVO"
-                    : "CONFIGURAÇÃO NECESSÁRIA"}
-                </span>
-                <h3 style={{ marginTop: 20 }}>Códigos de recuperação</h3>
-                <p>
-                  Se perderes o autenticador, estes códigos permitem recuperar o
-                  acesso. Gerar novos códigos invalida os anteriores.
-                </p>
-                {user?.twoFactorEnabled ? (
-                  <form
-                    className="mg-form"
-                    style={{ marginTop: 20 }}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (
-                        !window.confirm(
-                          "Gerar novos códigos invalida todos os anteriores. Continuar?",
-                        )
-                      )
-                        return;
-                      void run(
-                        "backup",
-                        async () => {
-                          const r = await api<{ backupCodes: string[] }>(
-                            "/auth/two-factor/generate-backup-codes",
-                            {
-                              method: "POST",
-                              body: JSON.stringify({
-                                password: backupPassword,
-                              }),
-                            },
-                          );
-                          setCodes(r.backupCodes);
-                          setBackupPassword("");
-                        },
-                        "Novos códigos gerados. Guarda-os antes de sair desta página.",
-                      );
-                    }}
-                  >
-                    <label>
-                      Confirma a palavra-passe
-                      <input
-                        className="mg-input"
-                        type="password"
-                        autoComplete="current-password"
-                        value={backupPassword}
-                        onChange={(e) => setBackupPassword(e.target.value)}
-                        required
-                      />
-                    </label>
-                    <button
-                      className="z-btn z-btn--secondary"
-                      disabled={!!busy}
-                    >
-                      Gerar novos códigos
-                    </button>
-                  </form>
-                ) : (
-                  <a className="z-btn z-btn--primary" href="/entrada">
-                    Configurar autenticador
-                  </a>
-                )}
-                {codes.length > 0 && (
-                  <ul className="mg-codes">
-                    {codes.map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-            <div className="mg-card" style={{ marginTop: 24 }}>
-              <div className="mg-section-head">
-                <h3>Sessões abertas</h3>
+            <section className="sec" id="leitor">
+              <h2 className="z-t2">Preferências do leitor</h2>
+              <p className="z-callout">
+                Valem para todos os filmes e séries. A ordem dos idiomas decide
+                qual é escolhido primeiro.
+              </p>
+              {[
+                {
+                  key: "audioLanguages",
+                  label: "Idiomas de áudio, por ordem de preferência",
+                  fallback: [state.preferences.language || "pt-PT", "original"],
+                  options: [
+                    ["pt-PT", "Português"],
+                    ["original", "Original"],
+                    ["en", "Inglês"],
+                    ["es", "Espanhol"],
+                    ["fr", "Francês"],
+                  ],
+                },
+                {
+                  key: "subtitleLanguages",
+                  label: "Idiomas das legendas, por ordem de preferência",
+                  fallback: [state.preferences.language || "pt-PT"],
+                  options: [
+                    ["pt-PT", "Português (Portugal)"],
+                    ["pt-BR", "Português (Brasil)"],
+                    ["en", "Inglês"],
+                    ["es", "Espanhol"],
+                  ],
+                },
+              ].map((group) => {
+                const chosen: string[] =
+                  state.preferences[group.key] || group.fallback;
+                return (
+                  <fieldset key={group.key}>
+                    <legend className="z-label">{group.label}</legend>
+                    <div className="z-chips">
+                      {group.options.map(([id, label]) => (
+                        <button
+                          key={id}
+                          className="z-chip"
+                          aria-pressed={chosen.includes(id)}
+                          disabled={loading || !!busy || !!stateError}
+                          onClick={() => {
+                            if (chosen.length === 1 && chosen.includes(id)) {
+                              setMessage("Escolhe pelo menos um idioma.");
+                              return;
+                            }
+                            const next = chosen.includes(id)
+                              ? chosen.filter((code) => code !== id)
+                              : [...chosen, id];
+                            void preferences({
+                              [group.key]: next,
+                              ...(group.key === "audioLanguages"
+                                ? {
+                                    language:
+                                      next.find(
+                                        (code) => code !== "original",
+                                      ) || "pt-PT",
+                                  }
+                                : {}),
+                            });
+                          }}
+                        >
+                          {chosen.includes(id) && (
+                            <span className="z-chip__n">
+                              {chosen.indexOf(id) + 1}
+                            </span>
+                          )}
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+              <div className="toggles">
                 <button
-                  className="z-btn z-btn--ghost"
-                  disabled={!!busy}
+                  className="z-switch"
+                  role="switch"
+                  aria-checked={state.preferences.autoplay !== false}
+                  disabled={loading || !!busy || !!stateError}
                   onClick={() =>
-                    run(
-                      "sessions",
-                      async () => {
-                        await api("/auth/revoke-other-sessions", {
-                          method: "POST",
-                          body: "{}",
-                        });
-                        await loadSessions();
-                      },
-                      "As outras sessões foram terminadas.",
-                    )
+                    preferences({
+                      autoplay: state.preferences.autoplay === false,
+                    })
                   }
                 >
-                  Terminar outras sessões
+                  Reproduzir o episódio seguinte automaticamente
+                </button>
+                <button
+                  className="z-switch"
+                  role="switch"
+                  aria-checked={state.preferences.previews === true}
+                  disabled={loading || !!busy || !!stateError}
+                  onClick={() =>
+                    preferences({
+                      previews: state.preferences.previews !== true,
+                    })
+                  }
+                >
+                  Mostrar pré-visualizações ao passar o rato
                 </button>
               </div>
-              {sessions.map((s) => (
-                <article className="mg-row" key={s.id}>
-                  <div>
-                    <b>{s.userAgent || "Dispositivo sem identificação"}</b>
-                    <small>
-                      {s.ipAddress || "IP não disponível"} · Iniciada em{" "}
-                      {new Date(s.createdAt).toLocaleDateString("pt-PT")}
-                    </small>
+              <h3 className="sub" style={{ marginTop: 0 }}>
+                Aparência das legendas
+              </h3>
+              <div className="segs">
+                <div>
+                  <span className="z-label" id="subtitle-size">
+                    Tamanho
+                  </span>
+                  <div
+                    className="z-seg"
+                    role="radiogroup"
+                    aria-labelledby="subtitle-size"
+                  >
+                    {[
+                      ["small", "Pequeno"],
+                      ["medium", "Médio"],
+                      ["large", "Grande"],
+                    ].map(([id, label]) => (
+                      <label key={id}>
+                        <input
+                          type="radio"
+                          name="subtitle-size"
+                          checked={subtitleSize === id}
+                          disabled={loading || !!busy || !!stateError}
+                          onChange={() => preferences({ subtitleSize: id })}
+                        />
+                        {label}
+                      </label>
+                    ))}
                   </div>
-                  <button
-                    className="z-btn z-btn--ghost z-btn--sm"
-                    disabled={!!busy}
-                    onClick={() =>
-                      run(
-                        s.id,
-                        async () => {
-                          await api("/auth/revoke-session", {
-                            method: "POST",
-                            body: JSON.stringify({ token: s.token }),
-                          });
-                          await refresh();
-                          await loadSessions();
-                        },
-                        "Sessão terminada.",
-                      )
-                    }
-                  >
-                    Terminar sessão
-                  </button>
-                </article>
-              ))}
-              {!sessions.length && (
-                <p className="mg-muted">Nenhuma sessão disponível.</p>
-              )}
-            </div>
-          </section>
-          <section id="preferences" className="mg-card mg-section">
-            <h2 className="z-t3">O leitor à tua medida</h2>
-            <div className="mg-grid">
-              <div className="mg-form">
-                <label>
-                  Idioma preferido
-                  <select
-                    className="mg-input"
-                    disabled={loading || !!busy}
-                    value={state.preferences?.language || "pt-PT"}
-                    onChange={(e) => preferences({ language: e.target.value })}
-                  >
-                    <option value="pt-PT">Português (Portugal)</option>
-                    <option value="pt-BR">Português (Brasil)</option>
-                    <option value="en">Inglês</option>
-                    <option value="es">Espanhol</option>
-                  </select>
-                </label>
-                <label>
-                  Tamanho das legendas
-                  <select
-                    className="mg-input"
-                    disabled={loading || !!busy}
-                    value={state.preferences?.subtitleSize || "medium"}
-                    onChange={(e) =>
-                      preferences({ subtitleSize: e.target.value })
-                    }
-                  >
-                    <option value="small">Pequeno</option>
-                    <option value="medium">Médio</option>
-                    <option value="large">Grande</option>
-                  </select>
-                </label>
-              </div>
-              <div className="mg-form">
-                <label className="mg-check">
-                  <input
-                    type="checkbox"
-                    disabled={loading || !!busy}
-                    checked={state.preferences?.autoplay !== false}
-                    onChange={(e) =>
-                      preferences({ autoplay: e.target.checked })
-                    }
-                  />
-                  Reprodução automática
-                </label>
-                <label className="mg-check">
-                  <input
-                    type="checkbox"
-                    disabled={loading || !!busy}
-                    checked={state.preferences?.subtitles !== false}
-                    onChange={(e) =>
-                      preferences({ subtitles: e.target.checked })
-                    }
-                  />
-                  Legendas activadas
-                </label>
-                <p className="mg-muted">
-                  As animações respeitam a preferência de movimento reduzido do
-                  teu dispositivo.
-                </p>
-              </div>
-            </div>
-          </section>
-          <p className="mg-footer">
-            Os dados do MacStream continuam intactos. A importação de dados
-            antigos ainda não foi definida.
-          </p>
-          <div className="mg-actions">
-            <button
-              className="z-btn z-btn--ghost"
-              disabled={!!busy}
-              onClick={() =>
-                run(
-                  "logout",
-                  async () => {
-                    await api("/auth/sign-out", { method: "POST", body: "{}" });
-                    location.href = "/entrada";
+                </div>
+                {[
+                  {
+                    key: "subtitleColor",
+                    label: "Cor",
+                    fallback: "#ffffff",
+                    options: [
+                      ["#ffffff", "Branco"],
+                      ["#ffe45c", "Amarelo"],
+                    ],
                   },
-                  "",
-                )
-              }
-            >
-              Sair do Zeus
-            </button>
+                  {
+                    key: "subtitleBackground",
+                    label: "Fundo",
+                    fallback: "sombra",
+                    options: [
+                      ["nenhum", "Nenhum"],
+                      ["sombra", "Sombra"],
+                      ["caixa", "Caixa"],
+                    ],
+                  },
+                ].map((group) => (
+                  <div key={group.key}>
+                    <span className="z-label" id={group.key}>
+                      {group.label}
+                    </span>
+                    <div
+                      className="z-seg"
+                      role="radiogroup"
+                      aria-labelledby={group.key}
+                    >
+                      {group.options.map(([id, label]) => (
+                        <label key={id}>
+                          <input
+                            type="radio"
+                            name={group.key}
+                            checked={
+                              (state.preferences[group.key] ||
+                                group.fallback) === id
+                            }
+                            disabled={loading || !!busy || !!stateError}
+                            onChange={() => preferences({ [group.key]: id })}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div
+                className="preview"
+                data-bg={state.preferences.subtitleBackground || "sombra"}
+                role="img"
+                aria-label="Pré-visualização das legendas"
+              >
+                <span
+                  style={{
+                    color: state.preferences.subtitleColor || "#ffffff",
+                    fontSize:
+                      subtitleSize === "large"
+                        ? 30
+                        : subtitleSize === "small"
+                          ? 18
+                          : 23,
+                  }}
+                >
+                  Ninguém atravessa estas portas sem o meu consentimento.
+                </span>
+              </div>
+              <p className="save-note">
+                As preferências são guardadas na tua conta.
+              </p>
+            </section>
+            <section className="sec" id="importar">
+              <h2 className="z-t2">Importar dados do MacStream</h2>
+              <p className="z-callout">
+                A migração ainda está por decidir. Os dados do MacStream
+                continuam intactos; a importação estará disponível quando for
+                definida.
+              </p>
+              <div className="drop" aria-disabled="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" />
+                  <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+                </svg>
+                <b>Exportação do MacStream</b>
+                <span className="z-foot">Importação ainda indisponível.</span>
+              </div>
+            </section>
+            <div className="actions">
+              <button
+                className="z-btn z-btn--ghost"
+                disabled={!!busy}
+                onClick={() =>
+                  void run(
+                    "logout",
+                    async () => {
+                      await api("/auth/sign-out", {
+                        method: "POST",
+                        body: "{}",
+                      });
+                      location.href = "/entrada";
+                    },
+                    "",
+                  )
+                }
+              >
+                Sair do Zeus
+              </button>
+            </div>
           </div>
         </div>
       </div>

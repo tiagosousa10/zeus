@@ -1,40 +1,201 @@
-import { useEffect, useState } from "react";
-import { Art, Page } from "../components/Layout";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { Page } from "../components/Layout";
 import { api } from "../lib/api";
 import { useMemberState } from "../lib/session";
 import "./management.css";
+import "./addons-fidelity.css";
+type ConfigField = {
+  key: string;
+  title?: string;
+  type?: string;
+  options?: string[];
+  default?: string | boolean;
+  required?: boolean;
+};
 type Addon = {
   id: string;
   name: string;
   description: string;
   manifestUrl: string;
-  configFields?: Array<{
-    key: string;
-    title?: string;
-    type?: string;
-    options?: string[];
-    default?: string;
-    required?: boolean;
-  }>;
+  version?: string;
+  types?: string[];
+  resources?: Array<string | { name: string }>;
+  configFields?: ConfigField[];
   configurationRequired?: boolean;
 };
+// Provider and quality keys follow Torrentio's public domain/filter.rs.
+const providers = [
+  ["yts", "YTS"],
+  ["eztv", "EZTV"],
+  ["rarbg", "RARBG"],
+  ["1337x", "1337x"],
+  ["thepiratebay", "The Pirate Bay"],
+  ["kickasstorrents", "KickassTorrents"],
+  ["torrentgalaxy", "TorrentGalaxy"],
+  ["magnetdl", "MagnetDL"],
+  ["nyaasi", "Nyaa"],
+  ["rutor", "Rutor"],
+  ["comando", "Comando"],
+  ["torrent9", "Torrent9"],
+];
+const qualities = [
+  ["4k", "4K"],
+  ["brremux", "Remux"],
+  ["hdrall", "HDR"],
+  ["dolbyvision", "Dolby Vision"],
+  ["1080p", "1080p"],
+  ["720p", "720p"],
+  ["480p", "480p"],
+  ["threed", "3D"],
+  ["scr", "Screener"],
+  ["cam", "CAM"],
+  ["unknown", "Desconhecida"],
+];
+const resourceNames: Record<string, string> = {
+  catalog: "Catálogos",
+  meta: "Fichas",
+  stream: "Fontes",
+  subtitles: "Legendas",
+};
+const resources = (a: Addon) =>
+  (a.resources || []).map((r) => (typeof r === "string" ? r : r.name));
 export default function Addons() {
   const { state, save, loading, error: stateError } = useMemberState();
   const [catalogue, setCatalogue] = useState<Addon[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(""),
-    [q, setQ] = useState(""),
-    [configuring, setConfiguring] = useState<string | null>(null),
+    [query, setQuery] = useState(""),
+    [kind, setKind] = useState(""),
+    [editing, setEditing] = useState<Addon | null>(null),
     [config, setConfig] = useState<Record<string, any>>({}),
-    [draft, setDraft] = useState<Addon | null>(null);
+    [installing, setInstalling] = useState(false),
+    [announcement, setAnnouncement] = useState(""),
+    [hot, setHot] = useState(""),
+    [dragging, setDragging] = useState(""),
+    [showApi, setShowApi] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null),
+    list = useRef<HTMLOListElement>(null),
+    forge = useRef<HTMLImageElement>(null),
+    embers = useRef<HTMLCanvasElement>(null),
+    dragTarget = useRef(0);
+  const installed = state.addons || [],
+    ordered = installed.map((a: any) => ({
+      ...catalogue.find((c) => c.id === a.id),
+      ...a,
+    }));
   const load = () =>
     api<{ addons: Addon[] }>("/addons")
-      .then((x) => setCatalogue(x.addons))
+      .then((r) => setCatalogue(r.addons))
       .catch((e) => setError(e.message));
   useEffect(() => {
     void load();
   }, []);
-  const installed = state.addons || [];
+  useEffect(() => {
+    if (editing) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [editing]);
+  useEffect(() => {
+    const img = forge.current,
+      canvas = embers.current;
+    if (
+      !img ||
+      !canvas ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const intro = gsap.fromTo(
+      img,
+      { scale: 1.12, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 3.2, ease: "power3.out" },
+    );
+    const drift = gsap.to(img, {
+      scale: 1.045,
+      duration: 38,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+      delay: 3.2,
+    });
+    let visible = true,
+      raf = 0,
+      last = 0,
+      acc = 0;
+    let particles: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      age: number;
+      life: number;
+      r: number;
+    }> = [];
+    const size = () => {
+      const r = canvas.getBoundingClientRect(),
+        d = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = r.width * d;
+      canvas.height = r.height * d;
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+    };
+    const resize = new ResizeObserver(size);
+    resize.observe(canvas);
+    size();
+    const frame = (now: number) => {
+      const dt = Math.min(now - (last || now), 50) / 1000;
+      last = now;
+      const c = canvas.getBoundingClientRect(),
+        r = img.getBoundingClientRect();
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.globalCompositeOperation = "lighter";
+      for (acc += dt * 9; acc > 1; acc--)
+        particles.push({
+          x: r.left - c.left + r.width * 0.41 + Math.random() * 28 - 14,
+          y: r.top - c.top + r.height * 0.57,
+          vx: Math.random() * 24 - 12,
+          vy: -30 - Math.random() * 40,
+          age: 0,
+          life: 1.8 + Math.random() * 1.8,
+          r: 0.8 + Math.random() * 1.3,
+        });
+      particles = particles.filter((p) => p.age < p.life);
+      for (const p of particles) {
+        p.age += dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        const k = 1 - p.age / p.life;
+        ctx.fillStyle = `rgba(255,${100 + Math.round(140 * k)},${30 + Math.round(160 * k)},${k * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    const sync = () => {
+      const running = visible && !document.hidden;
+      drift.paused(!running);
+      cancelAnimationFrame(raf);
+      if (running) {
+        last = 0;
+        raf = requestAnimationFrame(frame);
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      sync();
+    });
+    observer.observe(canvas);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      intro.kill();
+      drift.kill();
+      cancelAnimationFrame(raf);
+      resize.disconnect();
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, []);
   const mutate = async (id: string, fn: () => Promise<unknown>) => {
     setBusy(id);
     setError("");
@@ -50,508 +211,694 @@ export default function Addons() {
     save({
       addons: installed.map((a: any) => (a.id === id ? { ...a, ...patch } : a)),
     });
-  const initialConfig = (a: Addon) =>
+  const defaults = (a: Addon) =>
     Object.fromEntries(
       (a.configFields || [])
         .filter(
           (f) =>
             f.default !== undefined &&
             (f.type !== "checkbox" ||
-              ["checked", "on", true].includes(f.default as any)),
+              ["checked", "on", true].includes(f.default)),
         )
         .map((f) => [f.key, f.type === "checkbox" ? "on" : f.default]),
     );
-  const ordered = installed.map((a: any) => ({
-    ...catalogue.find((c) => c.id === a.id),
-    ...a,
-  }));
-  if (stateError)
-    return (
-      <Page>
-        <div className="management-content">
-          <h1 className="z-t2">Não foi possível carregar as tuas escolhas.</h1>
-          <p className="mg-message mg-error" role="alert">
-            {stateError.message}
-          </p>
-          <button
-            className="z-btn z-btn--primary"
-            onClick={() => location.reload()}
-          >
-            Tentar novamente
-          </button>
-        </div>
-      </Page>
+  const reorder = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= installed.length) return;
+    void mutate(installed[from].id, async () => {
+      const next = [...installed];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      await save({ addons: next });
+      setAnnouncement(
+        `${ordered[from].name || item.id} passou para a posição ${to + 1} de ${next.length}.`,
+      );
+    });
+  };
+  const configure = (a: Addon, install = false) => {
+    setConfig(
+      install
+        ? defaults(a)
+        : installed.find((x: any) => x.id === a.id)?.config || {},
     );
+    setInstalling(install);
+    setEditing(a);
+  };
+  const install = (a: Addon) => {
+    if (a.configurationRequired) {
+      configure(a, true);
+      return;
+    }
+    void mutate(a.id, async () => {
+      await save({
+        addons: [
+          ...installed,
+          { id: a.id, enabled: true, config: defaults(a) },
+        ],
+      });
+      setHot(a.id);
+      setAnnouncement(`${a.name} instalado.`);
+      if (
+        forge.current &&
+        !matchMedia("(prefers-reduced-motion: reduce)").matches
+      )
+        gsap.fromTo(
+          forge.current,
+          { filter: "brightness(1.25) contrast(1.1) saturate(1.2)" },
+          {
+            filter: "brightness(.82) contrast(1.06) saturate(1.05)",
+            duration: 1.4,
+            ease: "power2.out",
+          },
+        );
+    });
+  };
+  const filtered = catalogue.filter(
+    (a) =>
+      (a.name + " " + a.description)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .includes(
+          query
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase(),
+        ) &&
+      (!kind ||
+        (kind === "movie" || kind === "series"
+          ? a.types?.includes(kind)
+          : resources(a).includes(kind))),
+  );
+  const field = (f: ConfigField) => (
+    <label key={f.key} className={f.type === "checkbox" ? "chk" : "z-field"}>
+      {f.type === "checkbox" ? (
+        <>
+          <input
+            aria-label={f.title || f.key}
+            type="checkbox"
+            checked={config[f.key] === "on" || config[f.key] === true}
+            required={f.required}
+            onChange={(e) => {
+              const next = { ...config };
+              if (e.target.checked) next[f.key] = "on";
+              else delete next[f.key];
+              setConfig(next);
+            }}
+          />
+          {f.title || f.key}
+        </>
+      ) : (
+        <>
+          <span className="z-label">{f.title || f.key}</span>
+          {f.type === "select" ? (
+            <select
+              aria-label={f.title || f.key}
+              className="z-input"
+              value={config[f.key] ?? ""}
+              required={f.required}
+              onChange={(e) =>
+                setConfig({ ...config, [f.key]: e.target.value })
+              }
+            >
+              <option value="">Escolher…</option>
+              {(f.options || []).map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              aria-label={f.title || f.key}
+              className="z-input"
+              type={
+                ["number", "password"].includes(f.type || "") ? f.type : "text"
+              }
+              value={config[f.key] ?? ""}
+              autoComplete="off"
+              required={f.required}
+              onChange={(e) =>
+                setConfig({ ...config, [f.key]: e.target.value })
+              }
+            />
+          )}
+        </>
+      )}
+    </label>
+  );
   return (
     <Page>
-      <div className="management">
-        <Art
-          image="hefesto"
-          title="Forja o teu mundo."
-          eyebrow="A forja de Hefesto"
-        />
-        <div className="management-content">
-          <section className="mg-section">
-            <div className="mg-section-head">
+      <div className="addons-fidelity">
+        <section className="fg-hero" aria-labelledby="addons-title">
+          <div className="fg-art" aria-hidden="true">
+            <div className="fg-pan">
+              <img
+                ref={forge}
+                src="/art/img/hefesto.webp"
+                alt=""
+                width="2400"
+                height="1864"
+                decoding="async"
+              />
+            </div>
+          </div>
+          <canvas className="fg-embers" ref={embers} aria-hidden="true" />
+          <div className="fg-copy">
+            <h1 className="z-display" id="addons-title">
+              Add-ons
+            </h1>
+            <p className="z-lede">
+              Escolhe de onde vêm os teus filmes, séries e legendas. Aqui só
+              aparecem Add-ons aprovados pelo Administrador.
+            </p>
+            <p className="fg-meta">
+              <span>
+                <b className="z-num">{installed.length}</b> instalados
+              </span>
+              <span>
+                <b className="z-num">{catalogue.length}</b> no catálogo
+              </span>
+            </p>
+          </div>
+        </section>
+        <nav className="z-tabs toc" aria-label="Secções">
+          <a href="#instalados">Instalados</a>
+          <a href="#catalogo">Catálogo</a>
+        </nav>
+        <div className="wrap">
+          <section className="sec" id="instalados">
+            <header>
               <div>
-                <h1 className="z-t2">Os teus Add-ons</h1>
-                <p className="mg-lede">
-                  Cada aliado abre uma porta. A ordem define a prioridade dos
-                  teus catálogos e Fontes.
+                <h2 className="z-t2">Instalados</h2>
+                <p className="z-muted z-callout" id="inst-help">
+                  Arrasta pela pega para mudar a ordem; as Fontes do primeiro
+                  aparecem primeiro. Com o teclado, foca a pega e usa as setas.
                 </p>
               </div>
-              <a className="z-btn z-btn--ghost" href="#catalogue">
-                Explorar catálogo
-              </a>
-            </div>
-            {error && (
-              <p role="alert" className="mg-message mg-error">
-                {error}{" "}
-                <button className="mg-link" onClick={load}>
+            </header>
+            {(error || stateError) && (
+              <p className="z-msg" role="alert">
+                {error || stateError?.message}{" "}
+                <button className="z-btn z-btn--ghost z-btn--sm" onClick={load}>
                   Tentar novamente
                 </button>
               </p>
             )}
-            {draft && (
-              <form
-                className="mg-card mg-form"
-                style={{ marginBottom: 24 }}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void mutate(draft.id, async () => {
-                    await save({
-                      addons: [
-                        ...installed,
-                        { id: draft.id, enabled: true, config },
-                      ],
-                    });
-                    setDraft(null);
-                  });
-                }}
-              >
-                <h2 className="z-t3">Configurar {draft.name}</h2>
-                <p className="mg-muted">
-                  Preenche os campos pedidos pelo Add-on. A configuração fica
-                  privada e cifrada.
-                </p>
-                {(draft.configFields || []).map((field) => (
-                  <label
-                    key={field.key}
-                    className={
-                      field.type === "checkbox" ? "mg-check" : undefined
-                    }
-                  >
-                    {field.type === "checkbox" ? (
-                      <>
-                        <input
-                          type="checkbox"
-                          checked={config[field.key] === "on"}
-                          required={field.required}
-                          onChange={(e) => {
-                            const next = { ...config };
-                            if (e.target.checked) next[field.key] = "on";
-                            else delete next[field.key];
-                            setConfig(next);
-                          }}
-                        />
-                        {field.title || field.key}
-                      </>
-                    ) : (
-                      <>
-                        {field.title || field.key}
-                        {field.type === "select" ? (
-                          <select
-                            className="mg-input"
-                            value={config[field.key] ?? ""}
-                            required={field.required}
-                            onChange={(e) =>
-                              setConfig({
-                                ...config,
-                                [field.key]: e.target.value,
-                              })
-                            }
-                          >
-                            <option value="">Escolher…</option>
-                            {(field.options || []).map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            className="mg-input"
-                            type={
-                              ["number", "password"].includes(field.type || "")
-                                ? field.type
-                                : "text"
-                            }
-                            autoComplete="off"
-                            value={config[field.key] ?? ""}
-                            required={field.required}
-                            onChange={(e) =>
-                              setConfig({
-                                ...config,
-                                [field.key]: e.target.value,
-                              })
-                            }
-                          />
-                        )}
-                      </>
-                    )}
-                  </label>
-                ))}
-                <div className="mg-actions">
-                  <button className="z-btn z-btn--primary" disabled={!!busy}>
-                    Guardar e instalar
-                  </button>
-                  <button
-                    className="z-btn z-btn--ghost"
-                    type="button"
-                    onClick={() => setDraft(null)}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            )}
             {loading ? (
-              <p>A carregar…</p>
-            ) : ordered.length === 0 ? (
-              <p className="mg-empty">
+              <p className="empty">A carregar…</p>
+            ) : !ordered.length ? (
+              <p className="empty">
                 Ainda não instalaste Add-ons. Escolhe um no catálogo abaixo.
               </p>
             ) : (
-              ordered.map((a: any, i: number) => (
-                <article
-                  className="mg-card"
-                  key={a.id}
-                  style={{ marginBottom: 14 }}
-                >
-                  <div className="mg-row">
-                    <div>
-                      <h2 className="z-t3">{a.name || a.id}</h2>
+              <ol className="inst" ref={list} aria-describedby="inst-help">
+                {ordered.map((a: any, i: number) => (
+                  <li
+                    key={a.id}
+                    data-addon={a.id}
+                    className={`${a.enabled === false ? "is-off" : ""} ${dragging === a.id ? "is-drag" : ""} ${hot === a.id ? "hot" : ""}`}
+                  >
+                    <button
+                      className="grip"
+                      disabled={!!busy}
+                      aria-label={`Mover ${a.name || a.id}, posição ${i + 1} de ${ordered.length}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          reorder(i, i + (e.key === "ArrowUp" ? -1 : 1));
+                        }
+                      }}
+                      onPointerDown={(e) => {
+                        if (e.button) return;
+                        e.preventDefault();
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        setDragging(a.id);
+                        dragTarget.current = i;
+                      }}
+                      onPointerMove={(e) => {
+                        if (dragging !== a.id) return;
+                        const rows = Array.from(list.current?.children || []);
+                        const index = rows.findIndex((row) => {
+                          const r = row.getBoundingClientRect();
+                          return e.clientY < r.top + r.height / 2;
+                        });
+                        dragTarget.current =
+                          index === -1 ? rows.length - 1 : index;
+                      }}
+                      onPointerUp={(e) => {
+                        if (dragging !== a.id) return;
+                        setDragging("");
+                        reorder(i, dragTarget.current);
+                        e.currentTarget.focus();
+                      }}
+                      onPointerCancel={() => setDragging("")}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        {[7, 12, 17].flatMap((y) =>
+                          [9, 15].map((x) => (
+                            <circle key={`${x}-${y}`} cx={x} cy={y} r="1.5" />
+                          )),
+                        )}
+                      </svg>
+                    </button>
+                    <span className="tok" aria-hidden="true">
+                      {(a.name || a.id)[0]}
+                    </span>
+                    <span className="nm">
+                      <b>{a.name || a.id}</b>
                       <small>
-                        {a.description ||
+                        {resources(a)
+                          .map((r) => resourceNames[r] || r)
+                          .join(" e ") ||
+                          a.description ||
                           "Este Add-on já não está disponível no catálogo aprovado."}
                       </small>
-                    </div>
-                    <label className="mg-check">
-                      <input
-                        type="checkbox"
-                        checked={a.enabled !== false}
-                        disabled={busy === a.id}
-                        onChange={(e) =>
-                          mutate(a.id, () =>
-                            update(a.id, { enabled: e.target.checked }),
-                          )
-                        }
-                      />
-                      Activado
-                    </label>
-                  </div>
-                  <div className="mg-actions">
+                    </span>
+                    <span className="pos" aria-hidden="true">
+                      {i + 1}
+                    </span>
                     <button
-                      className="z-btn z-btn--ghost z-btn--sm"
-                      disabled={i === 0 || !!busy}
-                      onClick={() =>
-                        mutate(a.id, () => {
-                          const next = [...installed];
-                          [next[i - 1], next[i]] = [next[i], next[i - 1]];
-                          return save({ addons: next });
-                        })
-                      }
-                    >
-                      Subir
-                    </button>
-                    <button
-                      className="z-btn z-btn--ghost z-btn--sm"
-                      disabled={i === ordered.length - 1 || !!busy}
-                      onClick={() =>
-                        mutate(a.id, () => {
-                          const next = [...installed];
-                          [next[i + 1], next[i]] = [next[i], next[i + 1]];
-                          return save({ addons: next });
-                        })
-                      }
-                    >
-                      Descer
-                    </button>
-                    {(/torrentio/i.test(a.name || a.id) ||
-                      a.configFields?.length) && (
-                      <button
-                        className="z-btn z-btn--secondary z-btn--sm"
-                        onClick={() => {
-                          setConfiguring(configuring === a.id ? null : a.id);
-                          setDraft(null);
-                          setConfig(a.config || {});
-                        }}
-                      >
-                        Configurar
-                      </button>
-                    )}
-                    <button
-                      className="z-btn z-btn--ghost z-btn--sm"
+                      className="z-switch"
+                      role="switch"
+                      aria-checked={a.enabled !== false}
+                      aria-label={`${a.name || a.id} activo`}
                       disabled={!!busy}
                       onClick={() =>
-                        mutate(a.id, () =>
-                          save({
-                            addons: installed.filter((x: any) => x.id !== a.id),
-                          }),
+                        void mutate(a.id, () =>
+                          update(a.id, { enabled: a.enabled === false }),
                         )
                       }
-                    >
-                      Remover
-                    </button>
-                  </div>
-                  {configuring === a.id && (
-                    <form
-                      className="mg-config mg-form"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void mutate(a.id, async () => {
-                          await update(a.id, { config });
-                          setConfiguring(null);
-                        });
-                      }}
-                    >
-                      <h3>Configurar {a.name}</h3>
-                      {/torrentio/i.test(a.name || a.id) ? (
-                        <>
-                          <label>
-                            Serviço Debrid
-                            <select
-                              className="mg-input"
-                              value={config.debridProvider || ""}
-                              onChange={(e) =>
-                                setConfig({
-                                  ...config,
-                                  debridProvider: e.target.value,
-                                })
-                              }
-                            >
-                              <option value="">Sem Debrid</option>
-                              <option value="realdebrid">Real-Debrid</option>
-                              <option value="alldebrid">AllDebrid</option>
-                              <option value="premiumize">Premiumize</option>
-                            </select>
-                          </label>
-                          {config.debridProvider && (
-                            <label>
-                              Chave API
-                              <input
-                                className="mg-input"
-                                type="password"
-                                autoComplete="off"
-                                required
-                                value={config.apiKey || ""}
-                                onChange={(e) =>
-                                  setConfig({
-                                    ...config,
-                                    apiKey: e.target.value,
-                                  })
-                                }
-                              />
-                            </label>
-                          )}
-                          <label>
-                            Ordenação
-                            <select
-                              className="mg-input"
-                              value={config.sort || "qualityseeders"}
-                              onChange={(e) =>
-                                setConfig({ ...config, sort: e.target.value })
-                              }
-                            >
-                              <option value="qualityseeders">
-                                Qualidade e seeders
-                              </option>
-                              <option value="seeders">Mais seeders</option>
-                              <option value="size">Tamanho</option>
-                            </select>
-                          </label>
-                          <p className="mg-muted">
-                            A configuração é privada. A chave fica cifrada no
-                            servidor e só é enviada ao Add-on aprovado ao
-                            procurar Fontes.
-                          </p>
-                        </>
-                      ) : (
-                        (a.configFields || []).map((field: any) => (
-                          <label
-                            key={field.key}
-                            className={
-                              field.type === "checkbox" ? "mg-check" : undefined
-                            }
-                          >
-                            {field.type === "checkbox" ? (
-                              <>
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    config[field.key] === "on" ||
-                                    config[field.key] === true
-                                  }
-                                  required={field.required}
-                                  onChange={(e) => {
-                                    const next = { ...config };
-                                    if (e.target.checked)
-                                      next[field.key] = "on";
-                                    else delete next[field.key];
-                                    setConfig(next);
-                                  }}
-                                />
-                                {field.title || field.key}
-                              </>
-                            ) : (
-                              <>
-                                {field.title || field.key}
-                                {field.type === "select" ? (
-                                  <select
-                                    className="mg-input"
-                                    value={config[field.key] ?? ""}
-                                    required={field.required}
-                                    onChange={(e) =>
-                                      setConfig({
-                                        ...config,
-                                        [field.key]: e.target.value,
-                                      })
-                                    }
-                                  >
-                                    <option value="">Escolher…</option>
-                                    {(field.options || []).map(
-                                      (option: string) => (
-                                        <option key={option} value={option}>
-                                          {option}
-                                        </option>
-                                      ),
-                                    )}
-                                  </select>
-                                ) : (
-                                  <input
-                                    className="mg-input"
-                                    type={
-                                      ["number", "password"].includes(
-                                        field.type,
-                                      )
-                                        ? field.type
-                                        : "text"
-                                    }
-                                    autoComplete="off"
-                                    value={config[field.key] ?? ""}
-                                    required={field.required}
-                                    onChange={(e) =>
-                                      setConfig({
-                                        ...config,
-                                        [field.key]: e.target.value,
-                                      })
-                                    }
-                                  />
-                                )}
-                              </>
-                            )}
-                          </label>
-                        ))
+                    />
+                    <span className="acts">
+                      {(/torrentio/i.test(a.name || a.id) ||
+                        !!a.configFields?.length) && (
+                        <button
+                          className="z-btn z-btn--secondary z-btn--sm"
+                          onClick={() => configure(a)}
+                        >
+                          Configurar
+                        </button>
                       )}
-                      <div className="mg-actions">
-                        <button
-                          className="z-btn z-btn--primary"
-                          disabled={!!busy}
-                        >
-                          Guardar
-                        </button>
-                        <button
-                          type="button"
-                          className="z-btn z-btn--ghost"
-                          onClick={() => setConfiguring(null)}
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </article>
-              ))
+                      <button
+                        className="z-btn z-btn--ghost z-btn--sm"
+                        disabled={!!busy}
+                        onClick={() =>
+                          void mutate(a.id, async () => {
+                            await save({
+                              addons: installed.filter(
+                                (x: any) => x.id !== a.id,
+                              ),
+                            });
+                            setAnnouncement(`${a.name || a.id} removido.`);
+                          })
+                        }
+                      >
+                        Remover
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ol>
             )}
+            <p className="z-sr" aria-live="polite">
+              {announcement}
+            </p>
           </section>
-          <section id="catalogue">
-            <div className="mg-section-head">
+          <section className="sec" id="catalogo">
+            <header>
               <div>
-                <h2 className="z-t2">Catálogo de Add-ons</h2>
-                <p className="mg-muted">
-                  Aprovados pelo Administrador. Escolhidos por ti.
+                <h2 className="z-t2">Catálogo</h2>
+                <p className="z-muted z-callout">
+                  Importado do registo público da comunidade Stremio e revisto
+                  pelo Administrador.
                 </p>
               </div>
-              <input
-                className="mg-input"
-                style={{ maxWidth: 300 }}
-                type="search"
-                placeholder="Procurar Add-on"
-                aria-label="Procurar Add-on"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
+            </header>
+            <div className="tools">
+              <form
+                className="z-search"
+                role="search"
+                onSubmit={(e) => e.preventDefault()}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path d="M16 16l4.5 4.5" />
+                </svg>
+                <input
+                  type="search"
+                  placeholder="Procurar Add-ons"
+                  aria-label="Procurar Add-ons"
+                  autoComplete="off"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </form>
+              <div className="z-chips" role="group" aria-label="Tipo">
+                {[
+                  ["", "Todos"],
+                  ["movie", "Filmes"],
+                  ["series", "Séries"],
+                  ["subtitles", "Legendas"],
+                  ["catalog", "Catálogos"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    className="z-chip"
+                    aria-pressed={kind === id}
+                    disabled={
+                      !!id &&
+                      !catalogue.some((a) =>
+                        id === "movie" || id === "series"
+                          ? a.types?.length
+                          : a.resources?.length,
+                      )
+                    }
+                    title={
+                      id &&
+                      !catalogue.some(
+                        (a) => a.types?.length || a.resources?.length,
+                      )
+                        ? "O catálogo ainda não fornece informação de tipos e recursos."
+                        : undefined
+                    }
+                    onClick={() => setKind(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <span className="z-foot z-num" aria-live="polite">
+                {filtered.length} {filtered.length === 1 ? "Add-on" : "Add-ons"}
+              </span>
             </div>
-            <div className="mg-install-grid">
-              {catalogue
-                .filter((a) =>
-                  (a.name + " " + a.description)
-                    .toLowerCase()
-                    .includes(q.toLowerCase()),
-                )
-                .map((a) => (
-                  <article className="mg-card" key={a.id}>
-                    <span className="mg-tag">APROVADO</span>
-                    <h3 style={{ marginTop: 20 }}>{a.name}</h3>
-                    <p>{a.description}</p>
-                    {a.configurationRequired && (
-                      <p className="mg-muted">
-                        Precisa de configuração para instalar.
-                      </p>
-                    )}
-                    <div className="mg-actions">
-                      {installed.some((x: any) => x.id === a.id) ? (
-                        <span className="mg-tag">Instalado</span>
-                      ) : (
-                        <button
-                          className="z-btn z-btn--secondary"
-                          disabled={!!busy || loading}
-                          onClick={() => {
-                            if (a.configurationRequired) {
-                              setConfiguring(null);
-                              setDraft(a);
-                              setConfig(initialConfig(a));
-                              return;
-                            }
-                            void mutate(a.id, () =>
-                              save({
-                                addons: [
-                                  ...installed,
-                                  {
-                                    id: a.id,
-                                    enabled: true,
-                                    config: initialConfig(a),
-                                  },
-                                ],
-                              }),
-                            );
-                          }}
-                        >
-                          {busy === a.id ? "A instalar…" : "Instalar"}
-                        </button>
+            <div className="cat">
+              {filtered.map((a) => (
+                <article className="card" key={a.id}>
+                  <div className="card__top">
+                    <span className="tok" aria-hidden="true">
+                      {a.name[0]}
+                    </span>
+                    <div>
+                      <b>{a.name}</b>
+                      {a.version && (
+                        <span className="z-tag z-tag--mono">v{a.version}</span>
                       )}
                     </div>
-                  </article>
-                ))}
+                  </div>
+                  <p>{a.description}</p>
+                  <div className="z-tags">
+                    {resources(a).map((r) => (
+                      <span className="z-tag" key={r}>
+                        {resourceNames[r] || r}
+                      </span>
+                    ))}
+                    {(/torrentio/i.test(a.name) ||
+                      !!a.configFields?.length) && (
+                      <span className="z-tag z-tag--gold">Configurável</span>
+                    )}
+                  </div>
+                  <footer>
+                    {installed.some((x: any) => x.id === a.id) ? (
+                      <span className="done">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M5 12.5l4.5 4.5L19 7.5" />
+                        </svg>
+                        Instalado
+                      </span>
+                    ) : (
+                      <button
+                        className="z-btn z-btn--secondary z-btn--sm"
+                        disabled={!!busy || loading || !!stateError}
+                        aria-label={`Instalar ${a.name}`}
+                        onClick={() => install(a)}
+                      >
+                        {busy === a.id ? "A instalar…" : "Instalar"}
+                      </button>
+                    )}
+                  </footer>
+                </article>
+              ))}
             </div>
-            {!catalogue.length && (
-              <p className="mg-empty">
-                O catálogo ainda não tem Add-ons aprovados. O Administrador pode
-                sincronizá-lo e aprovar novas entradas.
-              </p>
+            {!filtered.length && (
+              <div className="empty">
+                {catalogue.length ? (
+                  <>
+                    Nenhum Add-on corresponde à pesquisa.{" "}
+                    <button
+                      className="z-btn z-btn--ghost"
+                      onClick={() => {
+                        setQuery("");
+                        setKind("");
+                      }}
+                    >
+                      Limpar filtros
+                    </button>
+                  </>
+                ) : (
+                  "O catálogo ainda não tem Add-ons aprovados. O Administrador pode sincronizá-lo e aprovar novas entradas."
+                )}
+              </div>
             )}
+            <p className="note">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v6M12 7.5v.01" />
+              </svg>
+              Falta algum? Pede ao Administrador para o aprovar. Por segurança,
+              não é possível colar o endereço de um Add-on.
+            </p>
           </section>
         </div>
+        <dialog
+          ref={dialog}
+          className="z-sheet sheet addon-dialog"
+          onCancel={() => setEditing(null)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditing(null);
+          }}
+          aria-labelledby="addon-config-title"
+        >
+          <button
+            className="z-icon-btn z-sheet__close"
+            onClick={() => setEditing(null)}
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+          <form
+            className="z-sheet__body"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editing) return;
+              void mutate(editing.id, async () => {
+                if (installing)
+                  await save({
+                    addons: [
+                      ...installed,
+                      { id: editing.id, enabled: true, config },
+                    ],
+                  });
+                else await update(editing.id, { config });
+                setEditing(null);
+                setAnnouncement("Configuração guardada.");
+              });
+            }}
+          >
+            <div className="sh-head">
+              <span className="tok" aria-hidden="true">
+                {editing?.name[0]}
+              </span>
+              <div>
+                <h2 className="z-t2" id="addon-config-title">
+                  Configurar {editing?.name}
+                </h2>
+                <p className="z-foot">
+                  Só tu vês esta configuração. A chave fica guardada na tua
+                  conta.
+                </p>
+              </div>
+            </div>
+            {editing && /torrentio/i.test(editing.name || editing.id) ? (
+              <>
+                <label className="z-field">
+                  <span className="z-label">Serviço Debrid</span>
+                  <select
+                    className="z-input"
+                    aria-label="Serviço Debrid"
+                    value={config.debridProvider || ""}
+                    onChange={(e) =>
+                      setConfig({ ...config, debridProvider: e.target.value })
+                    }
+                  >
+                    <option value="">Nenhum</option>
+                    <option value="realdebrid">Real-Debrid</option>
+                    <option value="alldebrid">AllDebrid</option>
+                    <option value="premiumize">Premiumize</option>
+                  </select>
+                  <p className="z-help">
+                    Com um serviço Debrid, as Fontes em cache começam logo a
+                    reproduzir.
+                  </p>
+                </label>
+                <label
+                  className="z-field"
+                  style={{ opacity: config.debridProvider ? 1 : 0.45 }}
+                >
+                  <span className="z-label">Chave API</span>
+                  <div className="z-input-wrap">
+                    {" "}
+                    <input
+                      className="z-input z-input--mono"
+                      type={showApi ? "text" : "password"}
+                      autoComplete="off"
+                      aria-label="Chave API"
+                      value={config.apiKey || ""}
+                      disabled={!config.debridProvider}
+                      required={!!config.debridProvider}
+                      onChange={(e) =>
+                        setConfig({ ...config, apiKey: e.target.value })
+                      }
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={showApi}
+                      onClick={() => setShowApi(!showApi)}
+                    >
+                      {showApi ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                  <p className="z-help">
+                    {config.debridProvider
+                      ? "Copia a chave da tua conta Debrid, na página da API."
+                      : "Escolhe um serviço Debrid para usar uma chave."}
+                  </p>
+                </label>
+                {[
+                  {
+                    key: "providers",
+                    title: "Fornecedores",
+                    options: providers,
+                    fallback: providers.map(([id]) => id).join(","),
+                  },
+                  {
+                    key: "qualityfilter",
+                    title: "Qualidades a excluir",
+                    options: qualities,
+                    fallback: "",
+                  },
+                ].map((group) => {
+                  const selected = String(config[group.key] ?? group.fallback)
+                    .split(",")
+                    .filter(Boolean);
+                  return (
+                    <fieldset
+                      key={group.key}
+                      className={
+                        group.key === "qualityfilter" ? "q" : undefined
+                      }
+                    >
+                      <legend className="z-label">{group.title}</legend>
+                      <div className="z-chips">
+                        {group.options.map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            className="z-chip"
+                            aria-pressed={selected.includes(id)}
+                            onClick={() => {
+                              if (
+                                group.key === "providers" &&
+                                selected.length === 1 &&
+                                selected.includes(id)
+                              ) {
+                                setError("Escolhe pelo menos um fornecedor.");
+                                return;
+                              }
+                              setConfig({
+                                ...config,
+                                [group.key]: (selected.includes(id)
+                                  ? selected.filter((v) => v !== id)
+                                  : [...selected, id]
+                                ).join(","),
+                              });
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </fieldset>
+                  );
+                })}
+                <label className="z-field">
+                  <span className="z-label">Ordenar Fontes por</span>
+                  <select
+                    className="z-input"
+                    aria-label="Ordenar Fontes por"
+                    value={config.sort || "qualityseeders"}
+                    onChange={(e) =>
+                      setConfig({ ...config, sort: e.target.value })
+                    }
+                  >
+                    <option value="qualityseeders">
+                      Qualidade, depois seeders
+                    </option>
+                    <option value="qualitysize">
+                      Qualidade, depois tamanho
+                    </option>
+                    <option value="seeders">Seeders</option>
+                    <option value="size">Tamanho</option>
+                  </select>
+                </label>
+              </>
+            ) : (
+              editing?.configFields?.map(field)
+            )}
+            {error && (
+              <p className="z-msg" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="sh-actions">
+              <button className="z-btn z-btn--primary" disabled={!!busy}>
+                {installing ? "Guardar e instalar" : "Guardar"}
+              </button>
+              <button
+                type="button"
+                className="z-btn z-btn--ghost"
+                onClick={() => setEditing(null)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </dialog>
       </div>
     </Page>
   );
