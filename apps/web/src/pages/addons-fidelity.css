@@ -282,6 +282,28 @@
   color: var(--text-2);
   line-height: 1.45;
 }
+.addons-fidelity .card > p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  align-self: start;
+}
+.addons-fidelity .more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  margin-top: 22px;
+}
+.addons-fidelity .nm .z-tag {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+.addons-fidelity .cfg-link {
+  justify-self: start;
+}
 .addons-fidelity .card footer {
   display: flex;
   align-items: center;
@@ -398,6 +420,7 @@
     grid-column: 3/-1;
     justify-content: flex-start;
     min-width: 0;
+    flex-wrap: wrap;
   }
   .addons-fidelity .inst .z-switch {
     grid-column: 4;

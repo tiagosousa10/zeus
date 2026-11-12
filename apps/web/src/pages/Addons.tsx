@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { Page } from "../components/Layout";
 import { api } from "../lib/api";
@@ -19,10 +19,10 @@ type Addon = {
   description: string;
   manifestUrl: string;
   version?: string;
-  types?: string[];
   resources?: Array<string | { name: string }>;
   configFields?: ConfigField[];
   configurationRequired?: boolean;
+  configurable?: boolean;
 };
 // Provider and quality keys follow Torrentio's public domain/filter.rs.
 const providers = [
@@ -58,8 +58,44 @@ const resourceNames: Record<string, string> = {
   stream: "Fontes",
   subtitles: "Legendas",
 };
+const badges: Record<string, string> = {
+  stream: "Vídeo",
+  subtitles: "Legendas",
+};
 const resources = (a: Addon) =>
   (a.resources || []).map((r) => (typeof r === "string" ? r : r.name));
+const filters: Array<[string, string, (a: Addon) => boolean]> = [
+  ["", "Tudo", () => true],
+  ["stream", "Vídeo", (a) => resources(a).includes("stream")],
+  ["subtitles", "Legendas", (a) => resources(a).includes("subtitles")],
+  ["free", "Sem chave", (a) => !a.configurationRequired],
+  ["key", "Precisa de chave", (a) => !!a.configurationRequired],
+];
+const PAGE = 60;
+const fold = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+// Sem campos declarados, configura-se na página do próprio Add-on (convenção Stremio).
+const byUrl = (a: Addon) =>
+  !!(a.configurationRequired || a.configurable) &&
+  !a.configFields?.length &&
+  !/torrentio/i.test(a.name || a.id);
+const manifestProblem = (value: string, approved: string) => {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return "Cola o URL completo do manifesto, a começar por https://.";
+  }
+  const host = new URL(approved).hostname;
+  if (url.protocol !== "https:") return "O URL tem de começar por https://.";
+  if (url.hostname !== host) return `O URL tem de ser do domínio ${host}.`;
+  if (!url.pathname.endsWith("/manifest.json"))
+    return "O URL tem de terminar em /manifest.json.";
+  return "";
+};
 export default function Addons() {
   const { state, save, loading, error: stateError } = useMemberState();
   const [catalogue, setCatalogue] = useState<Addon[]>([]),
@@ -73,7 +109,11 @@ export default function Addons() {
     [announcement, setAnnouncement] = useState(""),
     [hot, setHot] = useState(""),
     [dragging, setDragging] = useState(""),
-    [showApi, setShowApi] = useState(false);
+    [showApi, setShowApi] = useState(false),
+    [limit, setLimit] = useState(PAGE),
+    [manifest, setManifest] = useState(""),
+    [manifestError, setManifestError] = useState(""),
+    [showUrl, setShowUrl] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
     list = useRef<HTMLOListElement>(null),
     forge = useRef<HTMLImageElement>(null),
@@ -235,13 +275,15 @@ export default function Addons() {
     });
   };
   const configure = (a: Addon, install = false) => {
-    setConfig(
-      install
-        ? defaults(a)
-        : installed.find((x: any) => x.id === a.id)?.config || {},
-    );
+    const entry = installed.find((x: any) => x.id === a.id);
+    setConfig(install ? defaults(a) : entry?.config || {});
+    setManifest(install ? "" : entry?.manifestUrl || "");
+    setManifestError("");
+    setShowUrl(false);
+    setError("");
     setInstalling(install);
-    setEditing(a);
+    // A linha instalada traz o URL do membro; o link e o domínio vêm do aprovado.
+    setEditing(catalogue.find((c) => c.id === a.id) || a);
   };
   const install = (a: Addon) => {
     if (a.configurationRequired) {
@@ -272,23 +314,13 @@ export default function Addons() {
         );
     });
   };
-  const filtered = catalogue.filter(
-    (a) =>
-      (a.name + " " + a.description)
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .includes(
-          query
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toLowerCase(),
-        ) &&
-      (!kind ||
-        (kind === "movie" || kind === "series"
-          ? a.types?.includes(kind)
-          : resources(a).includes(kind))),
-  );
+  const filtered = useMemo(() => {
+    const q = fold(query.trim()),
+      match = (filters.find(([id]) => id === kind) || filters[0])[2];
+    return catalogue.filter(
+      (a) => match(a) && fold(a.name + " " + a.description).includes(q),
+    );
+  }, [catalogue, query, kind]);
   const field = (f: ConfigField) => (
     <label key={f.key} className={f.type === "checkbox" ? "chk" : "z-field"}>
       {f.type === "checkbox" ? (
@@ -468,6 +500,9 @@ export default function Addons() {
                     </span>
                     <span className="nm">
                       <b>{a.name || a.id}</b>
+                      {installed[i].manifestUrl && (
+                        <span className="z-tag z-tag--gold">Configurado</span>
+                      )}
                       <small>
                         {resources(a)
                           .map((r) => resourceNames[r] || r)
@@ -499,6 +534,16 @@ export default function Addons() {
                           onClick={() => configure(a)}
                         >
                           Configurar
+                        </button>
+                      )}
+                      {byUrl(a) && (
+                        <button
+                          className="z-btn z-btn--secondary z-btn--sm"
+                          onClick={() => configure(a)}
+                        >
+                          {installed[i].manifestUrl
+                            ? "Alterar configuração"
+                            : "Configurar"}
                         </button>
                       )}
                       <button
@@ -559,38 +604,22 @@ export default function Addons() {
                   aria-label="Procurar Add-ons"
                   autoComplete="off"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setLimit(PAGE);
+                  }}
                 />
               </form>
-              <div className="z-chips" role="group" aria-label="Tipo">
-                {[
-                  ["", "Todos"],
-                  ["movie", "Filmes"],
-                  ["series", "Séries"],
-                  ["subtitles", "Legendas"],
-                  ["catalog", "Catálogos"],
-                ].map(([id, label]) => (
+              <div className="z-chips" role="group" aria-label="Filtros">
+                {filters.map(([id, label]) => (
                   <button
                     key={id}
                     className="z-chip"
                     aria-pressed={kind === id}
-                    disabled={
-                      !!id &&
-                      !catalogue.some((a) =>
-                        id === "movie" || id === "series"
-                          ? a.types?.length
-                          : a.resources?.length,
-                      )
-                    }
-                    title={
-                      id &&
-                      !catalogue.some(
-                        (a) => a.types?.length || a.resources?.length,
-                      )
-                        ? "O catálogo ainda não fornece informação de tipos e recursos."
-                        : undefined
-                    }
-                    onClick={() => setKind(id)}
+                    onClick={() => {
+                      setKind(id);
+                      setLimit(PAGE);
+                    }}
                   >
                     {label}
                   </button>
@@ -601,7 +630,7 @@ export default function Addons() {
               </span>
             </div>
             <div className="cat">
-              {filtered.map((a) => (
+              {filtered.slice(0, limit).map((a) => (
                 <article className="card" key={a.id}>
                   <div className="card__top">
                     <span className="tok" aria-hidden="true">
@@ -616,14 +645,23 @@ export default function Addons() {
                   </div>
                   <p>{a.description}</p>
                   <div className="z-tags">
-                    {resources(a).map((r) => (
-                      <span className="z-tag" key={r}>
-                        {resourceNames[r] || r}
+                    {resources(a)
+                      .filter((r) => badges[r])
+                      .map((r) => (
+                        <span className="z-tag" key={r}>
+                          {badges[r]}
+                        </span>
+                      ))}
+                    {a.configurationRequired ? (
+                      <span className="z-tag z-tag--strong">
+                        Precisa de chave
                       </span>
-                    ))}
-                    {(/torrentio/i.test(a.name) ||
-                      !!a.configFields?.length) && (
-                      <span className="z-tag z-tag--gold">Configurável</span>
+                    ) : (
+                      (a.configurable ||
+                        /torrentio/i.test(a.name) ||
+                        !!a.configFields?.length) && (
+                        <span className="z-tag z-tag--gold">Configurável</span>
+                      )
                     )}
                   </div>
                   <footer>
@@ -658,6 +696,19 @@ export default function Addons() {
                 </article>
               ))}
             </div>
+            {filtered.length > limit && (
+              <div className="more">
+                <button
+                  className="z-btn z-btn--secondary"
+                  onClick={() => setLimit(limit + PAGE)}
+                >
+                  Mostrar mais
+                </button>
+                <span className="z-foot z-num">
+                  A mostrar {limit} de {filtered.length}
+                </span>
+              </div>
+            )}
             {!filtered.length && (
               <div className="empty">
                 {catalogue.length ? (
@@ -668,6 +719,7 @@ export default function Addons() {
                       onClick={() => {
                         setQuery("");
                         setKind("");
+                        setLimit(PAGE);
                       }}
                     >
                       Limpar filtros
@@ -691,7 +743,7 @@ export default function Addons() {
                 <path d="M12 11v6M12 7.5v.01" />
               </svg>
               Falta algum? Pede ao Administrador para o aprovar. Por segurança,
-              não é possível colar o endereço de um Add-on.
+              não é possível instalar um Add-on pelo endereço.
             </p>
           </section>
         </div>
@@ -716,15 +768,25 @@ export default function Addons() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!editing) return;
+              let entry: Record<string, unknown> = { config };
+              if (byUrl(editing)) {
+                const url = manifest
+                  .trim()
+                  .replace(/^stremio:\/\//i, "https://");
+                const problem = manifestProblem(url, editing.manifestUrl);
+                setManifestError(problem);
+                if (problem) return;
+                entry = { manifestUrl: url };
+              }
               void mutate(editing.id, async () => {
                 if (installing)
                   await save({
                     addons: [
                       ...installed,
-                      { id: editing.id, enabled: true, config },
+                      { id: editing.id, enabled: true, ...entry },
                     ],
                   });
-                else await update(editing.id, { config });
+                else await update(editing.id, entry);
                 setEditing(null);
                 setAnnouncement("Configuração guardada.");
               });
@@ -875,6 +937,58 @@ export default function Addons() {
                     <option value="seeders">Seeders</option>
                     <option value="size">Tamanho</option>
                   </select>
+                </label>
+              </>
+            ) : editing && byUrl(editing) ? (
+              <>
+                <p className="z-callout z-muted">
+                  Na página de configuração do Add-on escolhe as opções e copia
+                  o URL do manifesto que ela gera. Depois cola-o aqui.
+                </p>
+                <a
+                  className="z-btn z-btn--secondary z-btn--sm cfg-link"
+                  href={editing.manifestUrl.replace(
+                    /\/manifest\.json$/,
+                    "/configure",
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir página de configuração
+                </a>
+                <label className="z-field">
+                  <span className="z-label">URL do manifesto configurado</span>
+                  <div className="z-input-wrap">
+                    <input
+                      className="z-input z-input--mono"
+                      type={showUrl ? "text" : "password"}
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-label="URL do manifesto configurado"
+                      aria-invalid={!!manifestError}
+                      aria-describedby="manifest-help"
+                      placeholder="https://…/manifest.json"
+                      value={manifest}
+                      onChange={(e) => {
+                        setManifest(e.target.value);
+                        setManifestError("");
+                      }}
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={showUrl}
+                      onClick={() => setShowUrl(!showUrl)}
+                    >
+                      {showUrl ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                  <p
+                    id="manifest-help"
+                    className={`z-help${manifestError ? " is-error" : ""}`}
+                  >
+                    {manifestError ||
+                      "Pode conter chaves tuas, por isso fica só na tua conta."}
+                  </p>
                 </label>
               </>
             ) : (
