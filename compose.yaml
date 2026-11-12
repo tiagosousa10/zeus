@@ -1,3 +1,4 @@
+# Apenas para recuperar/migrar instalações anteriores. A Zeus 1.2 usa SQLite e não inicia este serviço.
 name: zeus
 services:
   postgres:
