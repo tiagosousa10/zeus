@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { addonSources } from "../src/modules/addons/streams.js";
+import { addonSources } from "../src/modules/addons/stream-service.js";
 
 const addon = { id: "test.addon", name: "Teste" };
 

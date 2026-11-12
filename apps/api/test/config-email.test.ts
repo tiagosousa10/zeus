@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { configFields, validateConfig } from "../src/modules/addons/config.js";
-import { streamEndpoint } from "../src/modules/addons/streams.js";
+import { streamEndpoint } from "../src/modules/addons/stream-service.js";
 import { sendTransactionalEmail } from "../src/modules/email/service.js";
 test("SDK configuration validates declared fields and encodes JSON without changing origin", () => {
   const fields = configFields([

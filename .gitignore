@@ -13,12 +13,12 @@ apps/api/dist/
 # Local reference originals; shipped artwork lives in apps/web/public/art.
 /images-zeus/
 # Generated installers and browser reports.
-/dist/
+/apps/desktop/dist/
 /coverage/
 /test-results/
 /playwright-report/
-/build/*
-!/build/icon.png
+/apps/desktop/build/*
+!/apps/desktop/build/icon.png
 
 .superpowers/
 

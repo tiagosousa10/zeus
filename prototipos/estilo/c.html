@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<title>MacStream, estilo C</title>
+<title>Zeus, estilo C</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -281,7 +281,7 @@ img.fade.ok{opacity:1}
   <section id="portal" class="screen" aria-label="Portal">
     <canvas id="bg" aria-hidden="true"></canvas>
     <header class="p-top">
-      <span class="wordmark"><span class="wm-glyph"></span>MacStream</span>
+      <span class="wordmark"><span class="wm-glyph"></span>Zeus</span>
       <time class="clock" id="clock"></time>
     </header>
     <div class="p-wrap">
@@ -317,7 +317,7 @@ img.fade.ok{opacity:1}
 
   <section id="cinema" class="screen" aria-label="Cinema" hidden>
     <header class="topbar">
-      <span class="wordmark"><span class="wm-glyph"></span>MacStream</span>
+      <span class="wordmark"><span class="wm-glyph"></span>Zeus</span>
       <nav class="tabs" aria-label="Secções de Cinema">
         <button data-nav="top" aria-current="page" data-focus>Início</button>
         <button data-nav="movies">Filmes</button>
@@ -351,7 +351,7 @@ img.fade.ok{opacity:1}
 
   <section id="tv" class="screen" aria-label="TV" hidden>
     <header class="topbar">
-      <span class="wordmark"><span class="wm-glyph"></span>MacStream</span>
+      <span class="wordmark"><span class="wm-glyph"></span>Zeus</span>
       <nav class="tabs" aria-label="Secções de TV">
         <button data-tv="tv-live" aria-current="page" data-focus>Em directo</button>
         <button data-tv="tv-guide">Guia</button>
@@ -533,7 +533,7 @@ const bg = (() => {
 })();
 
 /* Portal */
-const lastUsed = store.get('macstream-c-last') || 'cinema';
+const lastUsed = store.get('zeus-c-last') || 'cinema';
 $(`[data-last="${lastUsed}"]`)?.removeAttribute('hidden');
 {
   const h = new Date().getHours();
@@ -596,7 +596,7 @@ async function go(to, fromEl) {
     $$('.portal-card .tilt').forEach(t => gsap.set(t, { scale: 1, y: 0, rotationX: 0, rotationY: 0 }));
     $$('.portal-card .glare').forEach(g => gsap.set(g, { opacity: 0 }));
   }
-  if (to !== 'portal') store.set('macstream-c-last', to);
+  if (to !== 'portal') store.set('zeus-c-last', to);
   bg.setActive(to === 'portal');
   inn.hidden = false;
   scrollTo(0, 0);

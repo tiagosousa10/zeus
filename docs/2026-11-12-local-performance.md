@@ -2,17 +2,17 @@
 
 Comparação com `3fc194b`, antes das optimizações. Chrome headless, build de produção, API/Membro simulados, viewport 1440×900 e DPR 2. Nenhum fornecedor IPTV ou torrent externo foi contactado. Os bytes de JavaScript são os conteúdos descomprimidos efectivamente carregados, não todos os ficheiros gerados pelo build.
 
-| Cenário | Antes | Depois | Diferença |
-| --- | ---: | ---: | ---: |
-| JavaScript inicial da TV | 1 059 291 B | 481 559 B | −54,5% |
-| JavaScript do Portal, movimento reduzido | 1 178 143 B | 436 139 B | −63,0% |
-| JavaScript do Portal, animado | 1 178 143 B | 972 383 B | −17,5% |
-| Módulo Three.js | 742 801 B | 536 244 B | −27,8% |
-| Desenhos WebGL/s no Portal | 60,5 | 30,5 | cerca de metade |
-| Píxeis nos buffers dos fundos do Portal | 10 368 000 | 3 999 086 | −61,4% |
-| Píxeis nos buffers, movimento reduzido | 5 184 000 | 1 | buffer mínimo |
-| RSS do processo Node após importar o Motor, mediana | 72,4 MB | 50,1 MB | −30,8% |
-| Importação do módulo do Motor, mediana de 5 execuções | 586,8 ms | 5,3 ms | trabalho adiado até ser necessário |
+| Cenário                                               |       Antes |    Depois |                          Diferença |
+| ----------------------------------------------------- | ----------: | --------: | ---------------------------------: |
+| JavaScript inicial da TV                              | 1 059 291 B | 481 559 B |                             −54,5% |
+| JavaScript do Portal, movimento reduzido              | 1 178 143 B | 436 139 B |                             −63,0% |
+| JavaScript do Portal, animado                         | 1 178 143 B | 972 383 B |                             −17,5% |
+| Módulo Three.js                                       |   742 801 B | 536 244 B |                             −27,8% |
+| Desenhos WebGL/s no Portal                            |        60,5 |      30,5 |                    cerca de metade |
+| Píxeis nos buffers dos fundos do Portal               |  10 368 000 | 3 999 086 |                             −61,4% |
+| Píxeis nos buffers, movimento reduzido                |   5 184 000 |         1 |                      buffer mínimo |
+| RSS do processo Node após importar o Motor, mediana   |     72,4 MB |   50,1 MB |                             −30,8% |
+| Importação do módulo do Motor, mediana de 5 execuções |    586,8 ms |    5,3 ms | trabalho adiado até ser necessário |
 
 As execuções anteriores da importação do Motor variaram entre 326 e 1 384 ms; as posteriores ficaram entre 4,5 e 6,6 ms. Esta medição é apenas `require('./engine.js')`, não o arranque completo do Electron. O custo do WebTorrent continua a existir na primeira reprodução torrent. A duração de trabalho da thread principal no Portal durante uma janela de 2 segundos foi 118 → 54 ms; é uma amostra diagnóstica, dependente da máquina, carga e renderizador gráfico. Não equivale a uma redução garantida de CPU, bateria ou RAM de toda a aplicação.
 

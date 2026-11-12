@@ -47,6 +47,10 @@ export class BoundedCache<T> {
     for (const [key, entry] of this.entries)
       if (entry.expires <= now) this.delete(key);
   }
+  deleteWhere(predicate: (value: T) => boolean) {
+    for (const [key, entry] of this.entries)
+      if (predicate(entry.value)) this.delete(key);
+  }
   clear() {
     this.entries.clear();
     this.total = 0;

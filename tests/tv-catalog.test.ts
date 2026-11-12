@@ -5,7 +5,7 @@ import {
   continueItems,
   orderedEpisodes,
   resumePosition,
-} from "../apps/web/src/pages/tv/catalog-helpers";
+} from "../apps/web/src/features/tv/models/catalog-helpers";
 test("editorial ordering is deterministic and does not mutate pages", () => {
   const items = [
     { id: "b", name: "Beta", added: 4 },

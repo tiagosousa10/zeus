@@ -16,11 +16,10 @@ Validação: 13 ecrãs a 1440 e 375 px, incluindo movimento reduzido, sem erros 
 
 ## Limites
 
-- São protótipos HTML/CSS/JS, sem autenticação, API ou base de dados novas. O MacStream original continua nos ficheiros da raiz e em `renderer/`.
+- São protótipos HTML/CSS/JS, sem autenticação, API ou base de dados novas.
 - O catálogo consulta o Cinemeta; imagens, GSAP, Three.js e vídeo de demonstração dependem de serviços externos. O Cinema tem dados de recurso se o catálogo falhar.
 - O leitor mostra Big Buck Bunny. Fontes, canais, EPG, Motor, sessões, TOTP, Convites e gestão são demonstrações. Não são enviados emails nem feitas instalações reais.
 - Algumas preferências e a lista de títulos ficam no armazenamento do browser. Outros controlos só mantêm estado até recarregar a página; não introduzir credenciais reais.
-- A importação do MacStream é uma proposta visual: a decisão sobre migração de dados continua em aberto.
 - Créditos das obras: `zeus/img/CREDITOS.md`. O Gladiador exige atribuição CC BY 2.0. As imagens originais do Zeus têm resolução limitada.
 
 ## Trabalho posterior

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { PlaybackRecovery } from "../apps/web/src/pages/tv/recovery";
+import { PlaybackRecovery } from "../apps/web/src/features/tv/models/recovery";
 test("five retries, duplicate failures coalesce, playback cancels pending retry", () => {
   const queued: (() => void)[] = [];
   const retries: number[] = [];

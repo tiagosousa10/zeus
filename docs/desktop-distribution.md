@@ -21,7 +21,7 @@ npm run db:migrate
 npm start
 ```
 
-O comando usa `ZEUS_LEGACY_DATABASE_URL`, ou `DATABASE_URL` antigo, ou a ligação local anterior da Zeus. Preservar as chaves e a pasta de dados originais. O destino por omissão é `~/Library/Application Support/Zeus/zeus.sqlite`; `ZEUS_DATABASE_PATH` permite indicar outro destino.
+O comando exige `ZEUS_LEGACY_DATABASE_URL` ou `DATABASE_URL` explicitamente configurado; não existe ligação/password por omissão. O Compose legado exige `ZEUS_LEGACY_POSTGRES_PASSWORD`. Para volumes já existentes, mudar a password dentro do PostgreSQL (por exemplo, `\password zeus` numa sessão administrativa) antes de atualizar as variáveis: alterar apenas o Compose não roda a password guardada. Preservar as chaves e a pasta de dados originais. O destino por omissão é `~/Library/Application Support/Zeus/zeus.sqlite`; `ZEUS_DATABASE_PATH` permite indicar outro destino.
 
 A origem é lida numa transacção `REPEATABLE READ READ ONLY`. São copiados utilizadores, hashes de passwords, sessões, TOTP, códigos de recuperação, estado cifrado, convites e catálogo. Datas, booleanos e JSON são convertidos para o schema SQLite. A migração verifica a abertura dos dados cifrados com as chaves existentes, contagens, foreign keys e integridade antes de publicar atomicamente o novo ficheiro. Não altera nem apaga PostgreSQL e recusa substituir qualquer SQLite existente.
 
@@ -39,13 +39,13 @@ npm run dist:arm     # Apple Silicon
 # ou npm run dist:intel num Mac Intel
 ```
 
-O resultado fica em `dist/Zeus-<versão>-<arquitectura>.dmg`. O frontend/API já estão compilados; Node/Electron e FFmpeg são incluídos. As dependências exclusivas do frontend e de migração são de desenvolvimento. O empacotamento recusa gerar outra arquitectura no mesmo host para evitar incluir um FFmpeg incompatível.
+O resultado fica em `apps/desktop/dist/Zeus-<versão>-<arquitectura>.dmg`. O frontend/API já estão compilados; Node/Electron e FFmpeg são incluídos. As dependências exclusivas do frontend e de migração são de desenvolvimento. O empacotamento recusa gerar outra arquitectura no mesmo host para evitar incluir um FFmpeg incompatível.
 
 Para testar o artefacto:
 
 ```sh
-ZEUS_PACKAGED_APP=dist/mac-arm64/Zeus.app npm run test:desktop
-# Intel: dist/mac/Zeus.app
+ZEUS_PACKAGED_APP=apps/desktop/dist/mac-arm64/Zeus.app npm run test:desktop
+# Intel: apps/desktop/dist/mac/Zeus.app
 ```
 
 O teste cria um perfil temporário, confirma primeiro arranque, conta persistida após reinício, catálogo automático e encerramento dos serviços. O PATH da aplicação exclui instalações externas de Node e Docker. Não toca no perfil real.

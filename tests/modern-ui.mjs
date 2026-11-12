@@ -32,23 +32,31 @@ try {
   );
   // Hold a real foreground query long enough to activate both indicators.
   let releaseSummary;
-  const summaryGate = new Promise((resolve) => { releaseSummary = resolve; });
+  const summaryGate = new Promise((resolve) => {
+    releaseSummary = resolve;
+  });
   await page.route("**/api/iptv/lists/fixture", async (route) => {
     await summaryGate;
     return route.fallback();
   });
   await page.goto("http://127.0.0.1:5191/tv");
-  await expect(page.locator('.zeus-loader[data-loading-scope="local"]')).toBeVisible();
+  await expect(
+    page.locator('.zeus-loader[data-loading-scope="local"]'),
+  ).toBeVisible();
   await page.locator(".zeus-activity").waitFor({ state: "attached" });
   await expect(page.locator(".zeus-activity")).toBeHidden();
   await expect(page.locator(".zeus-loader:visible")).toHaveCount(1);
   // A separate pending action still gets fallback feedback once the page loads.
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("zeus:request", { detail: 1 })));
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("zeus:request", { detail: 1 })),
+  );
   releaseSummary();
   await page.locator(".tv-portal").first().waitFor();
   await expect(page.locator(".zeus-activity")).toBeVisible();
   await expect(page.locator(".zeus-loader:visible")).toHaveCount(1);
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent("zeus:request", { detail: -1 })));
+  await page.evaluate(() =>
+    window.dispatchEvent(new CustomEvent("zeus:request", { detail: -1 })),
+  );
   await expect(page.locator(".zeus-activity")).toBeHidden();
   await page.unroute("**/api/iptv/lists/fixture");
   await page.screenshot({ path: out + "/portals.png" });
@@ -79,11 +87,13 @@ try {
   await page.getByRole("searchbox").fill("Canal 49999");
   await page
     .locator(".universal-results a")
-    .filter({ hasText: "Viagem" }).filter({hasText:"Canal 49999"})
+    .filter({ hasText: "Viagem" })
+    .filter({ hasText: "Canal 49999" })
     .waitFor();
   await page
     .locator(".universal-results a")
-    .filter({ hasText: "Viagem" }).filter({hasText:"Canal 49999"})
+    .filter({ hasText: "Viagem" })
+    .filter({ hasText: "Canal 49999" })
     .click();
   await page.locator(".tv-player").waitFor();
   // Playback is edge-to-edge, unlike ordinary padded dialogs. Check both
@@ -94,7 +104,11 @@ try {
     { width: 1440, height: 810 },
   ]) {
     await page.setViewportSize(viewport);
-    for (const selector of [".tv-player-modal", ".tv-player", ".tv-player video"]) {
+    for (const selector of [
+      ".tv-player-modal",
+      ".tv-player",
+      ".tv-player video",
+    ]) {
       await expect
         .poll(() => page.locator(selector).boundingBox(), {
           message: `${selector} must fill the viewport after resize`,
@@ -189,15 +203,24 @@ try {
   assert.equal(starts, 7, "close cancels retry");
   // A start that never returns must leave the black screen after the watchdog expires.
   const pending = [];
-  await page.route('**/api/iptv/lists/*/play', r => new Promise(resolve => {
-    pending.push(async () => { await r.fulfill({status:502,json:{error:'Timeout fixture'}}).catch(()=>{}); resolve(); });
-  }));
-  await page.locator('.tv-channel-main').first().click();
-  await page.getByText('A ligar ao vídeo…',{exact:true}).waitFor();
+  await page.route(
+    "**/api/iptv/lists/*/play",
+    (r) =>
+      new Promise((resolve) => {
+        pending.push(async () => {
+          await r
+            .fulfill({ status: 502, json: { error: "Timeout fixture" } })
+            .catch(() => {});
+          resolve();
+        });
+      }),
+  );
+  await page.locator(".tv-channel-main").first().click();
+  await page.getByText("A ligar ao vídeo…", { exact: true }).waitFor();
   await page.clock.fastForward(20001);
-  await page.getByText('A tentar novamente · 1/5',{exact:true}).waitFor();
-  await page.getByRole('button',{name:'Fechar',exact:true}).click();
-  await Promise.all(pending.map(release=>release()));
+  await page.getByText("A tentar novamente · 1/5", { exact: true }).waitFor();
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  await Promise.all(pending.map((release) => release()));
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify({

@@ -1,9 +1,9 @@
-import { defaultPrefs } from "../apps/api/src/modules/iptv/prefs";
+import { defaultPrefs } from "../packages/contracts/tv-preferences";
 import {
   preferenceChanges,
   togglePinned,
   toggleVisibility,
-} from "../apps/web/src/pages/tv/helpers";
+} from "../apps/web/src/features/tv/models/helpers";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -12,7 +12,7 @@ import {
   searchVisible,
   encodeView,
   decodeView,
-} from "../apps/web/src/pages/tv/helpers.ts";
+} from "../apps/web/src/features/tv/models/helpers.ts";
 test("queued preference mutations use last successful result and survive rejection", async () => {
   let value = { favorites: [] as string[], progress: 0 };
   const writes: (typeof value)[] = [];

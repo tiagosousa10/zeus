@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rewritePlaylist } from "../src/modules/iptv/hls.js";
+import { rewritePlaylist } from "../src/modules/iptv/services/hls.js";
 
 const master = `#EXTM3U
 #EXT-X-STREAM-INF:BANDWIDTH=800000
@@ -14,17 +14,29 @@ seg2.ts`;
 
 test("every URI is rewritten and nothing upstream is left", () => {
   const seen: string[] = [];
-  const out = rewritePlaylist(master, "https://edge.test/live/x/index.m3u8", (u) => (seen.push(u), `/p/${seen.length}`));
+  const out = rewritePlaylist(
+    master,
+    "https://edge.test/live/x/index.m3u8",
+    (u) => (seen.push(u), `/p/${seen.length}`),
+  );
   assert.deepEqual(seen, [
-    "https://edge.test/live/x/low/index.m3u8", "https://edge.test/live/x/audio/pt.m3u8", "https://keys.test/k?u=user&p=pass",
-    "https://edge.test/live/x/init.mp4", "https://cdn.test/hls/user/pass/seg1.ts", "https://edge.test/live/x/seg2.ts",
+    "https://edge.test/live/x/low/index.m3u8",
+    "https://edge.test/live/x/audio/pt.m3u8",
+    "https://keys.test/k?u=user&p=pass",
+    "https://edge.test/live/x/init.mp4",
+    "https://cdn.test/hls/user/pass/seg1.ts",
+    "https://edge.test/live/x/seg2.ts",
   ]);
   assert.ok(!/edge\.test|cdn\.test|keys\.test|pass/.test(out));
   assert.match(out, /#EXTINF:6\.0,/);
 });
 
 test("CRLF becomes LF; blank lines and tags without URI stay as they are", () => {
-  const out = rewritePlaylist("#EXTM3U\r\n#EXT-X-VERSION:3\r\n\r\n#EXTINF:4,\r\n  a.ts  \r\n", "https://e.test/x/", () => "/r/0");
+  const out = rewritePlaylist(
+    "#EXTM3U\r\n#EXT-X-VERSION:3\r\n\r\n#EXTINF:4,\r\n  a.ts  \r\n",
+    "https://e.test/x/",
+    () => "/r/0",
+  );
   assert.equal(out, "#EXTM3U\n#EXT-X-VERSION:3\n\n#EXTINF:4,\n/r/0\n");
 });
 
@@ -37,8 +49,16 @@ test("lowercase, unquoted and unknown URL attributes and plain comments never le
 #EXTINF:6,
 s.ts`;
   const seen: string[] = [];
-  const out = rewritePlaylist(text, "https://e.test/", (u) => (seen.push(u), `/r/${seen.length}`));
-  assert.deepEqual(seen, ["https://k.test/x/pass", "https://k.test/y/pass", "https://e.test/s.ts"]);
+  const out = rewritePlaylist(
+    text,
+    "https://e.test/",
+    (u) => (seen.push(u), `/r/${seen.length}`),
+  );
+  assert.deepEqual(seen, [
+    "https://k.test/x/pass",
+    "https://k.test/y/pass",
+    "https://e.test/s.ts",
+  ]);
   assert.ok(!/k\.test|a\.test|c\.test|pass/.test(out), out);
   assert.match(out, /#EXT-X-KEY:METHOD=AES-128,URI="\/r\/2"/);
 });
@@ -55,8 +75,20 @@ v1
 #EXTINF:6,
 s1`;
   const marks: string[] = [];
-  rewritePlaylist(text, "https://e.test/", (u, playlist) => (marks.push(`${u.slice(15)}:${playlist}`), "/r"));
-  assert.deepEqual(marks, ["v1:true", "a1:true", "i1:true", "r1:true", "k1:false", "m1:false", "s1:false"]);
+  rewritePlaylist(
+    text,
+    "https://e.test/",
+    (u, playlist) => (marks.push(`${u.slice(15)}:${playlist}`), "/r"),
+  );
+  assert.deepEqual(marks, [
+    "v1:true",
+    "a1:true",
+    "i1:true",
+    "r1:true",
+    "k1:false",
+    "m1:false",
+    "s1:false",
+  ]);
 });
 
 test("protocol- and root-relative values, steering, session data and asset lists are dropped", () => {
@@ -74,7 +106,11 @@ http://[bad
 #EXTINF:6,
 s2.ts`;
   const seen: string[] = [];
-  const out = rewritePlaylist(text, "https://e.test/", (u) => (seen.push(u), `/r/${seen.length}`));
+  const out = rewritePlaylist(
+    text,
+    "https://e.test/",
+    (u) => (seen.push(u), `/r/${seen.length}`),
+  );
   assert.deepEqual(seen, ["https://e.test/s1.ts", "https://e.test/s2.ts"]);
   assert.ok(!/cdn\.test|pass|steer|data\.json|asset|\/\//.test(out), out);
   assert.equal(
@@ -90,23 +126,50 @@ hidden.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=2
 shown.m3u8`;
   const marks: string[] = [];
-  const out = rewritePlaylist(text, "https://e.test/", (u, playlist) => (marks.push(`${u}:${playlist}`), "/r/0"));
+  const out = rewritePlaylist(
+    text,
+    "https://e.test/",
+    (u, playlist) => (marks.push(`${u}:${playlist}`), "/r/0"),
+  );
   assert.deepEqual(marks, ["https://e.test/shown.m3u8:true"]);
   assert.equal(out, "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=2\n/r/0");
 });
 
 test("lone CR, LS and PS split lines like hls.js, and backslash URLs never survive", () => {
   const cases: [string, string, boolean][] = [
-    ["#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\rhttps:\\\\cdn.test\\hls\\u\\pass\\1.ts\n", "https://cdn.test/hls/u/pass/1.ts", false],
-    ["#EXTM3U\n#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z\u2028https:\\\\cdn.test\\u\\pass\\1.ts\n", "https://cdn.test/u/pass/1.ts", false],
-    ["#EXTM3U\n#EXTINF:6,\u2029/\\cdn.test/u/pass/1.ts\n", "https://cdn.test/u/pass/1.ts", false],
-    ["#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\rhttps:\\\\cdn.test\\u\\pass\\v.m3u8\n", "https://cdn.test/u/pass/v.m3u8", true],
+    [
+      "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\rhttps:\\\\cdn.test\\hls\\u\\pass\\1.ts\n",
+      "https://cdn.test/hls/u/pass/1.ts",
+      false,
+    ],
+    [
+      "#EXTM3U\n#EXT-X-PROGRAM-DATE-TIME:2026-11-12T00:00:00Z\u2028https:\\\\cdn.test\\u\\pass\\1.ts\n",
+      "https://cdn.test/u/pass/1.ts",
+      false,
+    ],
+    [
+      "#EXTM3U\n#EXTINF:6,\u2029/\\cdn.test/u/pass/1.ts\n",
+      "https://cdn.test/u/pass/1.ts",
+      false,
+    ],
+    [
+      "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\rhttps:\\\\cdn.test\\u\\pass\\v.m3u8\n",
+      "https://cdn.test/u/pass/v.m3u8",
+      true,
+    ],
   ];
   for (const [text, url, playlist] of cases) {
     const seen: string[] = [];
-    const out = rewritePlaylist(text, "https://edge.test/hls/x/index.m3u8", (u, p) => (seen.push(`${u}:${p}`), "/r/0"));
+    const out = rewritePlaylist(
+      text,
+      "https://edge.test/hls/x/index.m3u8",
+      (u, p) => (seen.push(`${u}:${p}`), "/r/0"),
+    );
     assert.deepEqual(seen, [`${url}:${playlist}`], JSON.stringify(text));
-    assert.ok(!/cdn\.test|pass|\\|[\r\u2028\u2029]/.test(out), JSON.stringify(out));
+    assert.ok(
+      !/cdn\.test|pass|\\|[\r\u2028\u2029]/.test(out),
+      JSON.stringify(out),
+    );
   }
 });
 
@@ -141,9 +204,16 @@ test("EXTINF keeps only its duration, so hls.js never reads the rest of the line
     "e.ts",
   ].join("\n");
   const seen: string[] = [];
-  const out = rewritePlaylist(text, "https://e.test/", (u) => (seen.push(u.slice(15)), `/r/${seen.length}`));
+  const out = rewritePlaylist(
+    text,
+    "https://e.test/",
+    (u) => (seen.push(u.slice(15)), `/r/${seen.length}`),
+  );
   assert.deepEqual(seen, ["a.ts", "b.ts", "c.ts", "d.ts", "e.ts"]);
-  assert.equal(out, "#EXTM3U\n#EXTINF:6,\n/r/1\n#EXTINF:6,\n/r/2\n#EXTINF:6.5,\n/r/3\n/r/4\n#EXTINF:.5,\n/r/5");
+  assert.equal(
+    out,
+    "#EXTM3U\n#EXTINF:6,\n/r/1\n#EXTINF:6,\n/r/2\n#EXTINF:6.5,\n/r/3\n/r/4\n#EXTINF:.5,\n/r/5",
+  );
 });
 
 test("tags with scheme-like text are dropped and ordinary tags are kept as they are", () => {

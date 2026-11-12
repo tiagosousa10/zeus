@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseM3U } from "../apps/web/src/lib/iptv.ts";
+import { parseM3U } from "../apps/web/src/features/tv/services/iptv.ts";
 test("M3U preserves names, groups, ids and relative URLs", () => {
   const c = parseM3U(
     '#EXTM3U\n#EXTINF:-1 tvg-id="rtp" tvg-logo="https://example.org/logo.png" group-title="Notícias",RTP, Portugal\n/live/1.m3u8\n',

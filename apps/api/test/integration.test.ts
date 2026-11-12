@@ -3,13 +3,16 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac } from "node:crypto";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
 process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-integration-"));
 delete process.env.DATABASE_URL;
-process.env.ZEUS_DATABASE_PATH = join(process.env.ZEUS_DATA_DIR!, "test.sqlite");
+process.env.ZEUS_DATABASE_PATH = join(
+  process.env.ZEUS_DATA_DIR!,
+  "test.sqlite",
+);
 process.env.ZEUS_WEB_ORIGIN = "http://127.0.0.1:5174";
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:5174";
 const { db, query, closeDatabase } = await import("../src/db/client.js");
@@ -127,7 +130,10 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
   );
   assert.equal(saved.status, 200, JSON.stringify(saved.body));
   const { seedAddons } = await import("../src/db/seed-addons.js");
-  assert.ok((await query("select id from addon")).length > 300, "Seeds the swept add-on catalogue automatically");
+  assert.ok(
+    (await query("select id from addon")).length > 300,
+    "Seeds the swept add-on catalogue automatically",
+  );
   assert.equal(await seedAddons(db), 0, "Seeding twice adds nothing");
   assert.ok(
     (await a("/addons")).body.addons.some(

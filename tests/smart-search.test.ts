@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseSearch, matchScore } from "../apps/web/src/lib/smart-search";
+import {
+  parseSearch,
+  matchScore,
+} from "../apps/web/src/shared/models/smart-search";
 test("search understands Portuguese types, genres, years and quoted exact titles", () => {
   assert.deepEqual(parseSearch("filmes ação 2024"), {
     text: "",

@@ -20,13 +20,13 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           cache: npm
       - run: npm ci
-      - run: npm run typecheck && npm test
+      - run: npm run format:check && npm run lint && npm run typecheck && npm test
       - name: Prepare notarization key
         if: inputs.signed
         env:
@@ -45,20 +45,20 @@ jobs:
         run: npm run dist -- --${{ matrix.arch }}
       - name: Check packaged app
         env:
-          ZEUS_PACKAGED_APP: dist/${{ matrix.arch == 'arm64' && 'mac-arm64' || 'mac' }}/Zeus.app
+          ZEUS_PACKAGED_APP: apps/desktop/dist/${{ matrix.arch == 'arm64' && 'mac-arm64' || 'mac' }}/Zeus.app
         run: npm run test:desktop
       - name: Verify public-distribution signature
         if: inputs.signed
         env:
-          APP: dist/${{ matrix.arch == 'arm64' && 'mac-arm64' || 'mac' }}/Zeus.app
+          APP: apps/desktop/dist/${{ matrix.arch == 'arm64' && 'mac-arm64' || 'mac' }}/Zeus.app
         run: |
           codesign --verify --deep --strict "$APP"
           xcrun stapler validate "$APP"
           spctl --assess --type execute "$APP"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Zeus-macOS-${{ matrix.arch }}
-          path: dist/*.dmg
+          path: apps/desktop/dist/*.dmg
           if-no-files-found: error
       - name: Remove notarization key
         if: always()

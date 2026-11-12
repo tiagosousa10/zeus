@@ -23,7 +23,9 @@ export function decrypt(value: string) {
   const [iv, tag, body] = value
     .split(".")
     .map((s) => Buffer.from(s, "base64url"));
-  const c = createDecipheriv("aes-256-gcm", key, iv);
+  if (value.split(".").length !== 3 || iv.length !== 12 || tag.length !== 16)
+    throw new Error("Invalid encrypted state");
+  const c = createDecipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   c.setAuthTag(tag);
   return JSON.parse(
     Buffer.concat([c.update(body), c.final()]).toString("utf8"),

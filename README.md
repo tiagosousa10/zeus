@@ -19,7 +19,7 @@ npm ci
 npm start
 ```
 
-`npm start` compila e abre a janela Electron. `iniciar.command` permite duplo clique na pasta do projecto. Para trabalhar no código com recarregamento automático:
+`npm start` compila e abre a janela Electron. `apps/desktop/iniciar.command` permite arrancar com duplo clique. Para trabalhar no código com recarregamento automático:
 
 ```sh
 npm run dev
@@ -49,7 +49,6 @@ No Mac, os dados ficam em `~/Library/Application Support/Zeus/`: `zeus.sqlite`, 
 
 O desktop gere os seus próprios processos e escolhe portas loopback; a porta da API é guardada para preservar links locais entre reinícios. Em desenvolvimento: API 4310, web 5174 e Motor 11471. A base de dados não abre uma porta de rede. A aplicação `.app` usa o perfil guardado e não carrega `.env` do directório de trabalho. O código-fonte pode usar `.env`; `.env.example` documenta as opções, sem segredos fictícios activos.
 
-
 Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperação. Sem configuração, os Convites têm link manual e a recuperação informa que não há envio disponível. Turnstile só fica activo com `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY`. Reiniciar os processos após alterar estas variáveis. Nenhum email real foi enviado durante a implementação.
 
 ## Limites desta versão local
@@ -58,9 +57,14 @@ Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperaç�
 - A TV reproduz exclusivamente através de URLs privados `/api/iptv/play/...`, com proxy HLS/ficheiro/MPEG-TS e remux quando necessário. Uma reprodução por lista. Formatos/codecs incompatíveis, DRM ou limites da subscrição podem impedir a emissão; não há promessa de compatibilidade universal.
 - Os Add-ons do catálogo são serviços de terceiros e podem deixar de responder; os que exigem chave só funcionam com o URL configurado. Os importados pela sincronização comunitária continuam a precisar de aprovação.
 - Não há DVR, multiview nem aplicação Android nesta fase.
-- Não há importação de dados do MacStream; a interface antiga e o seu perfil foram removidos. Do MacStream ficaram apenas o Motor de torrents e a sua lista de trackers públicos.
 - Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A QA isolada usa media H.264/AAC gerada localmente e API simulada; a validação separada do backend com fornecedor privado está documentada em [Plano 2, estado verificado](docs/superpowers/plans/2026-11-12-tv-iptv-2-reproducao.md), sem credenciais nos resultados. Não foram iniciados torrents externos.
 - O DMG está configurado; assinatura/notarização e publicação dependem das credenciais Apple e do lançamento da versão. Os tickets no Linear continuam por sincronizar. Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
+
+## Arquitetura e qualidade
+
+A organização das três aplicações, os contratos partilhados e as regras de dependências estão em [Arquitetura e desenvolvimento](docs/architecture.md). API por funcionalidade com rotas/controllers/modelos/serviços; frontend por funcionalidade com páginas/hooks/componentes/serviços; desktop com composição, controllers e serviços de lifecycle.
+
+ESLint e Prettier estão configurados na raiz. Antes de abrir uma PR, executar `npm run check` (formatação, lint, typecheck, testes e build). Para corrigir estilo: `npm run format`; para correções automáticas de lint: `npm run lint:fix`. O workflow Checks executa estas verificações em PR/push; a distribuição macOS mantém o workflow manual de instaladores.
 
 ## Verificação
 
@@ -78,7 +82,6 @@ npm run test:desktop
 ```
 
 Os testes API e browser usam ficheiros SQLite temporários e não precisam de PostgreSQL. O teste de browser verifica criação do Administrador → TOTP → onboarding e todas as páginas em desktop/mobile. `test:desktop` usa um perfil temporário: confirma primeiro arranque, criação de conta, seed automático, persistência após reinício e encerramento dos processos. Com `ZEUS_PACKAGED_APP=/caminho/Zeus.app`, testa a aplicação empacotada, com Node/Docker externos fora do PATH.
-
 
 `test:visual` inicia servidores isolados nas portas 5181/5182: valida estrutura/cores/overflow do novo portal TV e preserva a comparação exacta de geometria e navegação dos Estados com o HTML aprovado. Capturas e medidas ficam em `/tmp/zeus-fidelity`. `test:tv` usa Vite isolado na porta 5187 e API/Membro simulados: nove ecrãs e portal de entrada a 1440/375, pesquisa compacta de 50 mil itens (90 resultados por página), mudanças de lista, visibilidade, favoritos, episódios, gravações concorrentes, erros/retry e cancelamento. Gera H.264/AAC temporário e confirma frames e avanço de tempo em MP4, HLS, MPEG-TS e MP4 fragmentado local (contrato remux); o remux real da API tem cobertura nos testes API e na validação separada do Plano 2. Capturas ficam em `/tmp/zeus-tv-browser`. Ambos requerem Google Chrome e não alteram a base de dados.
 
@@ -100,7 +103,7 @@ npm run dist:arm    # num Mac Apple Silicon
 npm run dist:intel  # num Mac Intel
 ```
 
-Resultado: `dist/Zeus-1.2.6-arm64.dmg` ou `dist/Zeus-1.2.6-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** gera ambos no GitHub Actions, testa os pacotes e guarda os DMG como artefactos; não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
+Resultado: `apps/desktop/dist/Zeus-1.2.6-arm64.dmg` ou `apps/desktop/dist/Zeus-1.2.6-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** gera ambos no GitHub Actions, testa os pacotes e guarda os DMG como artefactos; não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
 
 ## Interface e reprodução — 1.2.1
 

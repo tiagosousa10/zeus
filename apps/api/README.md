@@ -1,40 +1,16 @@
-# Zeus API
+# API Zeus
 
-Hono em `127.0.0.1:4310`, SQLite/Drizzle, Better Auth 1.7 com TOTP obrigatório. `apps/web` encaminha `/api` para esta porta. As rotas HTTP são os controladores; os serviços concentram autenticação e estado, e `db/schema.ts` define os modelos.
+API Hono local, organizada por funcionalidade em `src/modules`. `src/app.ts` compõe middleware e routers; `src/index.ts` inicia o servidor.
 
-Da raiz:
+Cada módulo mantém perto as suas responsabilidades:
 
-```sh
-node --env-file-if-exists=.env --import tsx apps/api/src/db/setup.ts
-node --env-file-if-exists=.env --import tsx apps/api/src/index.ts
-npx tsc -p apps/api/tsconfig.json
-npx tsx --test apps/api/test/integration.test.ts
-```
+- `routes.ts` regista caminhos, guards e handlers nomeados.
+- `controllers.ts` interpreta e valida entradas HTTP, chama operações e apresenta resultados.
+- `models.ts` define schemas e tipos do domínio; `service.ts` contém operações e integrações. Autenticação separa a configuração Better Auth das operações de conta, e membros separam persistência de validação das definições.
+- IPTV tem `controllers/`, `models/` e `services/`, porque inclui catálogo, guia e reprodução. Os serviços de reprodução recebem identificadores, intervalos e sinais de cancelamento, sem dependência de Hono. O adaptador de media usa `Request`/`Response` nativos para preservar streaming, Range e cancelamento.
 
-A API cria/migra o SQLite e instala o catálogo inicial automaticamente. Os testes usam ficheiros SQLite temporários, sem Docker ou dados do perfil real. Testam concorrência no primeiro arranque, transacções com rollback, Convites de uso único, TOTP/códigos de recuperação, bloqueio de sessões anteriores à configuração TOTP, isolamento, cifragem e autorização.
+`middleware/` aplica política de origem, limites do corpo, headers e tradução de falhas para HTTP. Serviços lançam `DomainError` para falhas esperadas; mensagens internas inesperadas não chegam ao cliente. `db/` mantém schema Drizzle, migrações, transações e persistência SQLite. `lib/` contém infraestrutura partilhada como cifra, fetch protegido e cache limitada.
 
-`db/local.ts` usa `node:sqlite` e o adaptador assíncrono SQLite do Drizzle. Uma fila por ligação isola a duração inteira das transacções assíncronas; pedidos concorrentes não podem entrar na transacção de outro pedido. `db/migrations.ts` mantém o schema versionado por `PRAGMA user_version`, com foreign keys e WAL. A API corre num processo separado da janela Electron.
+`packages/contracts` contém DTOs e regras puras partilhadas com a interface web. O frontend não importa implementação da API. Os schemas Zod e credenciais dos fornecedores permanecem na API.
 
-
-## Contratos
-
-- `GET /api/bootstrap` → `{required}`. `POST` com `{name,email,password}` cria o único Administrador inicial e devolve cookie Better Auth. Password mínimo 12 caracteres.
-- `POST /api/invites/accept` com `{token,name,password}` cria o Membro e devolve cookie.
-- `/api/auth/*` Better Auth: `sign-in/email`, `sign-out`, `two-factor/enable`, `two-factor/verify-totp`, `two-factor/verify-backup-code`, `change-password`, `list-sessions`, `revoke-session`. Registo público e desligar TOTP bloqueados.
-- `GET /api/session` → `{user|null}`, incluindo `role`, `active`, `twoFactorEnabled` e `twoFactorVerified`.
-- `GET /api/state` → `{preferences,library,progress,iptv,addons,onboardingDone}`. `PATCH` substitui as chaves de topo enviadas e preserva as restantes, numa transação por Membro. O estado integral fica cifrado com AES-256-GCM; é devolvido apenas ao próprio Membro.
-- `GET /api/addons` → `{addons}` aprovados. `GET /api/streams?type=movie|series&id=...` consulta apenas Add-ons instalados e aprovados, devolve `{streams,errors}`. Configuração Torrentio: `debridProvider`, `apiKey`, `providers`, `sort`.
-- `GET /api/admin/members`, `PATCH /api/admin/members/:id` com `{active}`; `GET/POST /api/admin/invites`, `DELETE /api/admin/invites/:id`; `GET /api/admin/addons`, `POST /api/admin/addons/sync`, `PATCH /api/admin/addons/:id` com `{status:'approved'|'rejected'}`.
-- `GET /api/config` → `{turnstileSiteKey,emailConfigured}`. Turnstile: corpo `turnstileToken` no bootstrap/convite e header `x-turnstile-token` no login.
-
-## Configuração
-
-`ZEUS_DATA_DIR`, `ZEUS_DATABASE_PATH`, `BETTER_AUTH_SECRET`, `ZEUS_ENCRYPTION_KEY` (64 caracteres hexadecimais), `ZEUS_WEB_ORIGIN`, `BETTER_AUTH_URL`. Para desenvolvimento sem chaves de ambiente, chaves aleatórias são guardadas em `~/Library/Application Support/Zeus/` no Mac com permissões 0600. Preservar estas chaves junto do backup; mudar a chave de cifragem impede ler o estado existente.
-
-`TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` ativam verificação; `RESEND_API_KEY` + `RESEND_FROM` permitem recuperação de password. Convites usam Resend quando configurado, com idempotência e tentativas limitadas em falhas transitórias. Devolvem sempre o link para copiar e `emailSent`; em falha, `deliveryError` explica o resultado. Sem configuração, `emailSent:false` e partilha manual explícita. Sem Resend, recuperação devolve 503.
-
-O catálogo comunitário importado é o arquivo público `https://stremio-community.github.io/stremio-addons-list/catalog.json`. A API tentada do novo diretório não devolveu JSON; o arquivo pode incluir serviços entretanto indisponíveis. Entradas novas ficam sempre pendentes. A aprovação valida o manifesto atual por fetch com DNS fixado. `configFields` declara os campos genéricos do SDK (text, number, password, checkbox, select); a API valida valores e gera o segmento JSON codificado exigido pelo SDK. Add-ons sem campos declarados usam os valores por omissão; configurações que exigem adaptadores adicionais falham explicitamente.
-
-Documentação usada: [Better Auth TOTP](https://better-auth.com/docs/plugins/2fa), [Drizzle adapter](https://better-auth.com/docs/adapters/drizzle). Os dois fatores são verificados também por sessão na API, para impedir que uma sessão aberta antes da adesão a TOTP passe a ter acesso quando outra sessão conclui a adesão.
-
-Instalações PostgreSQL anteriores usam `npm run db:migrate`; ver [migração desktop](../../docs/desktop-distribution.md). A origem é lida numa transacção consistente e não é modificada.
+A suite `npm run test --workspace @zeus/api` exercita as rotas reais com SQLite temporário e integrações simuladas, incluindo autenticação/TOTP, recuperação, isolamento de membros, fornecedores, guia, quotas e cancelamento de reprodução. `npx tsc -p apps/api/tsconfig.json --noEmit` verifica os tipos.

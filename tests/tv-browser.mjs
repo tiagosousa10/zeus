@@ -137,7 +137,7 @@ try {
     },
   });
   // Test adapter exposes only the existing context to exercise difficult lifecycle cases.
-  await page.route("**/src/pages/tv/state.tsx*", async (route) => {
+  await page.route("**/src/features/tv/hooks/state.tsx*", async (route) => {
     const response = await route.fetch();
     await route.fulfill({
       response,
@@ -212,9 +212,7 @@ try {
           .waitFor();
       if (name === "portal") await page.locator(".tv-portal").first().waitFor();
       if (name === "series" || name === "movies") {
-        await page
-          .locator(".tv-bento")
-          .waitFor();
+        await page.locator(".tv-bento").waitFor();
         assert.ok((await page.locator(".tv-poster").count()) > 0);
       }
       if (name === "guide")
@@ -678,7 +676,12 @@ try {
     });
     await first.focus();
     await page.keyboard.press("Enter");
-    if (await page.getByRole("button",{name:"Controlos do leitor"}).getAttribute("aria-expanded") === "false") await page.getByRole("button",{name:"Controlos do leitor"}).click();
+    if (
+      (await page
+        .getByRole("button", { name: "Controlos do leitor" })
+        .getAttribute("aria-expanded")) === "false"
+    )
+      await page.getByRole("button", { name: "Controlos do leitor" }).click();
     await page
       .locator(".tv-programme-capsule")
       .getByText("Guia exclusivo do canal", { exact: true })

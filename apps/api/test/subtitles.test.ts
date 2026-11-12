@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { srtToVtt } from "../src/modules/addons/subtitles.js";
-import { streamEndpoint } from "../src/modules/addons/streams.js";
+import { srtToVtt } from "../src/modules/addons/subtitle-service.js";
+import { streamEndpoint } from "../src/modules/addons/stream-service.js";
 
 test("SRT subtitles become WebVTT the browser can load", () => {
   assert.equal(

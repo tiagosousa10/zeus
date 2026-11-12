@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeXtreamCatalog } from "../src/modules/iptv/xtream.js";
-import { defaultPrefs } from "../src/modules/iptv/prefs.js";
+import { normalizeXtreamCatalog } from "../src/modules/iptv/services/xtream.js";
+import { defaultPrefs } from "../src/modules/iptv/models/prefs.js";
 import {
   sectionsView,
   categoryPage,
@@ -9,8 +9,8 @@ import {
   visibleItem,
   publicItem,
   publicSeriesDetail,
-} from "../src/modules/iptv/views.js";
-import { normalizeM3U } from "../src/modules/iptv/m3u.js";
+} from "../src/modules/iptv/models/views.js";
+import { normalizeM3U } from "../src/modules/iptv/services/m3u.js";
 import { xtreamFixture } from "./fixtures/xtream.js";
 
 const c = normalizeXtreamCatalog(xtreamFixture.catalog, 0);

@@ -1,21 +1,25 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { fakeFetch, xtreamRoutes } from "./fixtures/xtream.js";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
 process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-epg-routes-"));
 delete process.env.DATABASE_URL;
-process.env.ZEUS_DATABASE_PATH = join(process.env.ZEUS_DATA_DIR!, "test.sqlite");
+process.env.ZEUS_DATABASE_PATH = join(
+  process.env.ZEUS_DATA_DIR!,
+  "test.sqlite",
+);
 process.env.ZEUS_WEB_ORIGIN = "http://127.0.0.1:5174";
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:5174";
-const { db, query, closeDatabase } = await import("../src/db/client.js");
+const { closeDatabase } = await import("../src/db/client.js");
 const { app } = await import("../src/app.js");
-const { setProviderFetch } = await import("../src/modules/iptv/provider.js");
+const { setProviderFetch } =
+  await import("../src/modules/iptv/services/provider.js");
 function totp(secret: string) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
   let bits = "";
@@ -85,9 +89,10 @@ test("guide routes enforce visibility, ownership, windows and favorites", async 
   };
   assert.equal((await a("/state", { iptv: [list] }, "PATCH")).status, 200);
   setProviderFetch(fakeFetch(xtreamRoutes));
-  const { setGuideFetch } = await import("../src/modules/iptv/epg.js");
-  const { defaultPrefs } = await import("../src/modules/iptv/prefs.js");
-  const { clearMemoryCache } = await import("../src/modules/iptv/cache.js");
+  const { setGuideFetch } = await import("../src/modules/iptv/services/epg.js");
+  const { defaultPrefs } = await import("../src/modules/iptv/models/prefs.js");
+  const { clearMemoryCache } =
+    await import("../src/modules/iptv/services/cache.js");
   const now = Date.now();
   const xmlDate = (n: number) =>
     new Date(n).toISOString().replace(/[-:T]/g, "").slice(0, 14) + " +0000";
