@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zeus TV — sistema final</title>
+<style>
+  :root {
+    --text: #f5f5f7; --text-2: rgba(235,235,245,.64); --text-3: rgba(235,235,245,.38);
+    --hair: rgba(255,255,255,.1); --accent: #7de3f0; --accent-rgb: 125,227,240; --live: #ff453a;
+    --g1: rgba(30,32,36,.46); --g2: rgba(24,26,30,.62); --g3: rgba(16,18,22,.78);
+    --blur1: blur(22px) saturate(170%); --blur2: blur(30px) saturate(180%); --blur3: blur(40px) saturate(190%);
+    --r-sm: 12px; --r-md: 18px; --r-lg: 24px; --r-xl: 30px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #060708; color: var(--text); font-family: var(--font); padding: 36px 28px 90px; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  h1 { font-size: 32px; letter-spacing: -.02em; }
+  .lead { color: var(--text-2); font-size: 15.5px; line-height: 1.55; margin-top: 8px; max-width: 96ch; }
+  h2.sec { font-size: 22px; letter-spacing: -.01em; margin: 46px 0 6px; display: flex; gap: 10px; align-items: baseline; }
+  h2.sec .n { font: 700 12px var(--mono); color: #000; background: var(--accent); border-radius: 7px; padding: 3px 8px; }
+  p.sub { color: var(--text-2); font-size: 14px; margin-bottom: 14px; max-width: 100ch; line-height: 1.5; }
+  .verify { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+  .verify div { border: 1px solid var(--hair); border-radius: 16px; padding: 14px 16px; font-size: 13.5px; color: var(--text-2); line-height: 1.5; background: rgba(255,255,255,.02); }
+  .verify b { color: var(--text); display: block; margin-bottom: 4px; font-size: 14px; }
+  .verify b::before { content: "✓ "; color: var(--accent); }
+  .verify .fix b::before { content: "↻ "; color: #ffd36b; }
+
+  /* design system */
+  .ds { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 14px; }
+  .tile { border-radius: 20px; border: 1px solid var(--hair); padding: 18px; position: relative; overflow: hidden; isolation: isolate; min-height: 210px; }
+  .tile h4 { font: 600 11px var(--mono); letter-spacing: .25em; color: var(--text-3); text-transform: uppercase; margin-bottom: 12px; }
+  .sw { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw span { width: 64px; font: 10.5px var(--mono); color: var(--text-3); }
+  .sw i { display: block; height: 44px; border-radius: 12px; margin-bottom: 6px; border: 1px solid var(--hair); }
+
+  /* shared components */
+  .aurora { position: absolute !important; inset: 0; z-index: -2; background:
+      radial-gradient(48% 58% at 12% 8%, rgba(var(--a1), .5), transparent 70%),
+      radial-gradient(42% 52% at 88% 0%, rgba(var(--a2), .45), transparent 70%),
+      radial-gradient(60% 50% at 50% 105%, rgba(var(--accent-rgb), .16), transparent 70%), #04070a; }
+  .g1 { background: var(--g1); backdrop-filter: var(--blur1); border: 1px solid rgba(255,255,255,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+  .g2 { background: var(--g2); backdrop-filter: var(--blur2); border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 20px 50px rgba(0,0,0,.45); }
+  .g3 { background: var(--g3); backdrop-filter: var(--blur3); border: 1px solid rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 40px 90px rgba(0,0,0,.7); }
+  .focus { border-color: rgba(var(--accent-rgb), .65) !important; box-shadow: 0 0 0 1px rgba(var(--accent-rgb), .35), 0 0 36px rgba(var(--accent-rgb), .28), inset 0 1px 0 rgba(255,255,255,.18) !important; transform: translateY(-4px) scale(1.02); }
+  .chip { display: inline-block; font-size: 12px; padding: 6px 12px; border-radius: 99px; background: rgba(255,255,255,.06); border: 1px solid var(--hair); color: var(--text-2); white-space: nowrap; }
+  .chip.on { background: rgba(var(--accent-rgb), .9); color: #001417; border-color: transparent; font-weight: 600; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 99px; font-weight: 600; font-size: 13.5px; white-space: nowrap; }
+  .btn.w { background: #f5f5f7; color: #000; } .btn.g { background: rgba(255,255,255,.12); backdrop-filter: blur(16px); border: 1px solid var(--hair); }
+  .ring { position: relative; width: 44px; height: 44px; border-radius: 50%; background: conic-gradient(var(--accent) var(--p), rgba(255,255,255,.13) 0); display: grid; place-items: center; flex: none; }
+  .ring::after { content: ""; position: absolute; inset: 3.5px; border-radius: 50%; background: #0b1416; }
+  .ring b { z-index: 1; font-size: 10.5px; }
+  .live { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--live); box-shadow: 0 0 10px var(--live); margin-right: 6px; vertical-align: 1px; }
+  .lt { display: grid; place-items: center; border-radius: 12px; font-weight: 800; letter-spacing: -.03em; color: #fff; flex: none; }
+  .bar { height: 3px; border-radius: 2px; background: rgba(255,255,255,.14); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .outline { -webkit-text-stroke: 1.5px rgba(255,255,255,.5); color: transparent; font-weight: 800; letter-spacing: -.06em; line-height: .8; }
+  .eyebrow { font: 600 11px var(--mono); letter-spacing: .3em; color: var(--accent); text-transform: uppercase; }
+  .t2 { color: var(--text-2); } .t3 { color: var(--text-3); } .mono { font-family: var(--mono); }
+  .poster { flex: none; background: var(--img) center / cover; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); }
+  .tog { width: 40px; height: 24px; border-radius: 99px; background: rgba(255,255,255,.18); position: relative; flex: none; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+  .tog.on { background: var(--accent); } .tog.on::after { left: 18px; }
+
+  /* screen frame */
+  .scr { position: relative; width: 960px; height: 560px; overflow: hidden; isolation: isolate; background: #000; zoom: 1.29; border-radius: 12px; }
+  .scr * { position: relative; }
+  .abs { position: absolute !important; }
+  .bgimg { position: absolute !important; inset: 0; z-index: -2; background: var(--img) var(--pos, center 25%) / cover; }
+  .shade { position: absolute !important; inset: 0; z-index: -1; }
+  .topbar { position: absolute !important; top: 0; left: 0; right: 0; z-index: 8; display: flex; gap: 8px; align-items: center; padding: 14px 22px; font-size: 12px; }
+  .topbar .logo { font-weight: 600; letter-spacing: .5em; font-size: 12px; margin-right: 6px; }
+  .tabs { display: flex; gap: 2px; padding: 3px; border-radius: 99px; }
+  .tabs span { padding: 5px 12px; border-radius: 99px; color: var(--text-2); white-space: nowrap; }
+  .tabs span.on { background: #f5f5f7; color: #000; font-weight: 600; }
+  .tabs span.dk { background: rgba(255,255,255,.16); color: #fff; }
+  .sp { flex: 1; }
+  .kbd { display: flex; gap: 8px; align-items: center; padding: 6px 12px; border-radius: 99px; color: var(--text-3); }
+  .kbd em { font-style: normal; font: 10.5px var(--mono); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--hair); }
+  .av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#ddd,#8a8a8e); color: #111; font: 600 10.5px var(--font); display: grid; place-items: center; }
+  .note { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 12px 4px 0; }
+  .note div { font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  .note b { color: var(--text); display: block; font-size: 13px; margin-bottom: 2px; }
+  .phones { display: flex; gap: 22px; justify-content: center; }
+  .phone { width: 300px; height: 620px; border-radius: 42px; border: 8px solid #1d1d1f; overflow: hidden; position: relative; isolation: isolate; background: #000; box-shadow: 0 30px 70px rgba(0,0,0,.6); }
+  .phone * { position: relative; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Zeus TV · sistema final</h1>
+  <p class="lead">As tuas escolhas (II em tudo, III nas entradas de Séries e Filmes) num único sistema. Abaixo: verificação de coerência, os blocos partilhados, os 8 ecrãs já harmonizados (com os modais sobre as páginas) e o telemóvel.</p>
+
+  <div class="verify">
+    <div><b>Uma só barra de topo</b>Mesma cápsula de vidro em todos os ecrãs: Cinema/TV, Ao vivo · Séries · Filmes, ⌘K e conta.</div>
+    <div><b>Três níveis de vidro</b>Cartões (nível 1), docas e painéis (nível 2), modais (nível 3). Nunca mais de dois níveis visíveis ao mesmo tempo.</div>
+    <div><b>Uma cor de acção</b>Ciano só para foco, progresso e o botão activo; vermelho só para «em directo». Sem ouro.</div>
+    <div class="fix"><b>Ponte entre II e III</b>Os números em contorno do III (Top 10, «207» das pastas, nº do canal) passam a aparecer também nos ecrãs de vidro, e as entradas III ganham a aurora e os chips de vidro.</div>
+    <div class="fix"><b>Aurora com origem</b>A aurora de fundo tira as cores do conteúdo: bandeira da pasta, capa da série ou do filme. Cada ecrã tem cor própria sem mudar de linguagem.</div>
+    <div><b>Movimento único</b>Foco: sobe 4 px, cresce 2% e acende em ciano. Abrir modal: desfoca o fundo. Cartaz → detalhe: a capa voa para o seu lugar.</div>
+  </div>
+
+  <h2 class="sec"><span class="n">A</span>Blocos partilhados</h2>
+  <p class="sub">Os mesmos componentes servem os 8 ecrãs; mudam a escala e o conteúdo, nunca o estilo.</p>
+  <div class="ds">
+    <div class="tile" style="--a1:30,122,60;--a2:227,75,60"><div class="aurora"></div><h4>Aurora · cor e vidro</h4>
+      <div class="sw"><span><i style="background:#04070a"></i>fundo</span><span><i style="background:var(--accent)"></i>ciano</span><span><i style="background:var(--live)"></i>directo</span><span><i class="g1"></i>vidro 1</span><span><i class="g2"></i>vidro 2</span><span><i class="g3"></i>vidro 3</span></div>
+      <p class="t2" style="font-size:12.5px;margin-top:12px">A aurora usa 2 cores do conteúdo + um brilho ciano em baixo.</p></div>
+    <div class="tile"><h4>Tipografia</h4><p style="font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1">Portugal</p><p style="font-size:15px;font-weight:600;margin-top:8px">Título de cartão · 15</p><p class="t2" style="font-size:12.5px">Texto secundário · 12,5</p><p class="eyebrow" style="margin-top:8px">Etiqueta mono</p><p class="outline" style="font-size:64px;margin-top:10px">207</p></div>
+    <div class="tile"><h4>Controlos</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="btn w">▶ Reproduzir</span><span class="btn g">Detalhes</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><span class="chip on">Todos 207</span><span class="chip">HD</span><span class="chip">Notícias</span></div>
+      <div style="display:flex;gap:14px;align-items:center;margin-top:14px"><div class="ring" style="--p:62%"><b>62%</b></div><span class="tog on"></span><span class="tog"></span><span class="live"></span><span class="t2" style="font-size:12px">Em directo</span></div></div>
+  </div>
+  <div class="ds" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr">
+    <div class="tile" style="--a1:27,79,216;--a2:125,227,240;min-height:170px"><div class="aurora"></div><h4>Cartão de canal</h4><div class="g1 focus" style="border-radius:20px;padding:14px;width:200px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:46px;height:46px;background:#1b4fd8;font-size:12px">RTP1</div><div class="ring" style="--p:62%;width:38px;height:38px"><b>62%</b></div></div><b style="display:block;margin-top:10px">RTP1</b><span class="t2" style="font-size:12px"><i class="live"></i>Telejornal</span></div></div>
+    <div class="tile" style="min-height:170px"><h4>Cartaz com progresso</h4><div style="display:flex;gap:10px"><div class="poster" style="--img:url(./aquiles.webp);width:84px;height:120px;position:relative;overflow:hidden"><div class="abs bar" style="left:0;right:0;bottom:0;border-radius:0"><i style="width:40%"></i></div></div><div class="poster focus" style="--img:url(./medusa.webp);width:84px;height:120px"></div><div style="display:flex;align-items:flex-end;gap:4px"><span class="outline" style="font-size:96px">1</span><div class="poster" style="--img:url(./hefesto.webp);width:64px;height:92px;margin-left:-22px"></div></div></div></div>
+    <div class="tile" style="min-height:170px"><h4>Modal (vidro 3)</h4><div class="g3" style="border-radius:22px;padding:14px;width:260px"><div style="display:flex;gap:8px;align-items:center;font-size:15px;border-bottom:1px solid var(--hair);padding-bottom:10px"><span class="t3">⌕</span>sport<span style="width:2px;height:16px;background:var(--accent)"></span></div><p class="mono t3" style="font-size:9.5px;letter-spacing:.2em;margin:8px 0 4px">CANAIS</p><div style="display:flex;gap:8px;align-items:center;padding:6px;border-radius:10px;background:rgba(var(--accent-rgb),.14);font-size:12.5px"><div class="lt" style="width:26px;height:26px;background:#0d7a3a;font-size:8px;border-radius:7px">ST1</div>Sport TV 1</div></div></div>
+  </div>
+
+  <!-- 1 -->
+  <h2 class="sec"><span class="n">1</span>Portal · Portugal <span class="t3" style="font-size:13px;font-weight:400">II · vidro sobre aurora</span></h2>
+  <div class="scr" style="--a1:30,122,60;--a2:227,75,60"><div class="aurora"></div>
+    <div class="topbar"><span class="logo">ZEUS</span><div class="tabs g1"><span>Cinema</span><span class="dk">TV</span></div><div class="tabs g1"><span class="on">Ao vivo</span><span>Séries</span><span>Filmes</span></div><span class="sp"></span><span class="kbd g1">⌕ Procurar <em>⌘K</em></span><span class="av">GT</span></div>
+    <div class="abs outline" style="right:28px;top:52px;font-size:118px">207</div>
+    <div class="abs" style="left:30px;top:66px"><p class="mono t3" style="font-size:11px">← Portais</p><h3 style="font-size:52px;font-weight:800;letter-spacing:-.04em;margin-top:4px">Portugal</h3></div>
+    <div class="abs" style="left:30px;right:30px;top:146px;display:flex;gap:6px;align-items:center;z-index:2"><span class="g1" style="border-radius:99px;padding:7px 14px;font-size:12px;color:var(--text-3)">⌕ Procurar em Portugal</span><span class="chip on">Todos</span><span class="chip">★ Favoritos 6</span><span class="chip">HD</span><span class="chip">Notícias</span><span class="chip">Desporto</span><span class="chip">Infantis</span><span class="chip">⚙ Pastas</span></div>
+    <div class="abs" style="left:30px;right:30px;top:194px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div class="g1 focus" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#1b4fd8;font-size:13px">RTP1</div><div class="ring" style="--p:62%"><b>62%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">RTP1 <span style="color:var(--accent)">★</span></b><span class="t2" style="font-size:12px"><i class="live"></i>Telejornal</span><p class="t3" style="font-size:11px;margin-top:4px">21:00 · Prós e Contras</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#c9a31b;color:#000;font-size:13px">RTP2</div><div class="ring" style="--p:30%"><b>30%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">RTP2</b><span class="t2" style="font-size:12px">Documentário · Mares</span><p class="t3" style="font-size:11px;margin-top:4px">20:45 · Jornal 2</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#d4272c;font-size:13px">SIC</div><div class="ring" style="--p:75%"><b>75%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">SIC <span style="color:var(--accent)">★</span></b><span class="t2" style="font-size:12px">Jornal da Noite</span><p class="t3" style="font-size:11px;margin-top:4px">21:30 · Novela</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#e8e8e8;color:#111;font-size:13px">TVI</div><div class="ring" style="--p:48%"><b>48%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">TVI</b><span class="t2" style="font-size:12px">Jornal Nacional</span><p class="t3" style="font-size:11px;margin-top:4px">21:15 · Big Brother</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#0a6fb5;font-size:13px">SN</div><div class="ring" style="--p:40%"><b>40%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">SIC Notícias</b><span class="t2" style="font-size:12px">Edição da Noite</span><p class="t3" style="font-size:11px;margin-top:4px">21:00 · Opinião</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#c1121f;font-size:13px">CNN</div><div class="ring" style="--p:66%"><b>66%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">CNN Portugal</b><span class="t2" style="font-size:12px">Directo</span><p class="t3" style="font-size:11px;margin-top:4px">21:00 · Debate</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#0d7a3a;font-size:13px">ST1</div><div class="ring" style="--p:85%"><b>85%</b></div></div><b style="display:block;margin-top:10px;font-size:15px">Sport TV 1 <span style="color:var(--accent)">★</span></b><span class="t2" style="font-size:12px">Benfica – Porto</span><p class="t3" style="font-size:11px;margin-top:4px">22:00 · Resumos</p></div>
+      <div class="g1" style="border-radius:20px;padding:14px"><div style="display:flex;justify-content:space-between"><div class="lt" style="width:50px;height:50px;background:#333;font-size:13px">TF</div><div class="ring" style="--p:0%"><b>—</b></div></div><b style="display:block;margin-top:10px;font-size:15px">TVI Ficção</b><span class="t3" style="font-size:12px">Sem guia</span><p class="t3" style="font-size:11px;margin-top:4px">&nbsp;</p></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Ponte III</b>O «207» em contorno, atrás do título, liga este ecrã às entradas editoriais.</div><div><b>Aurora da pasta</b>Verde e vermelho da bandeira; uma pasta sem bandeira usa o ciano do Zeus.</div><div><b>⚙ Pastas</b>Abre o modal 8 por cima deste ecrã.</div></div>
+
+  <!-- 2 -->
+  <h2 class="sec"><span class="n">2</span>Leitor ao vivo <span class="t3" style="font-size:13px;font-weight:400">II · cápsula e doca</span></h2>
+  <div class="scr"><div class="bgimg" style="--img:url(./zeus-2.webp);--pos:center 30%"></div><div class="shade" style="background:linear-gradient(0deg,rgba(0,0,0,.85),transparent 42%),linear-gradient(180deg,rgba(0,0,0,.5),transparent 20%)"></div>
+    <div class="abs g2" style="left:22px;top:18px;border-radius:99px;padding:7px 16px 7px 7px;display:flex;gap:10px;align-items:center"><div class="lt" style="width:36px;height:36px;border-radius:50%;background:#1b4fd8;font-size:9px">RTP1</div><span style="font-size:13px"><span class="outline" style="font-size:18px;-webkit-text-stroke-width:1px;margin-right:6px">001</span><b>Telejornal</b> <span class="t2">· 20:00 – 21:00</span></span><div class="ring" style="--p:62%;width:30px;height:30px"></div></div>
+    <div class="abs g2" style="right:22px;top:18px;border-radius:99px;padding:8px 14px;font-size:12px;display:flex;gap:12px"><span>Legendas</span><span>Áudio</span><span>⤢</span></div>
+    <div class="abs g2" style="left:50%;transform:translateX(-50%);bottom:20px;border-radius:26px;padding:12px 14px;display:flex;gap:10px;align-items:flex-end">
+      <div style="width:116px;opacity:.55"><div class="poster" style="--img:url(./atena.webp);height:64px;border-radius:12px"></div><p style="font-size:11px;margin-top:6px">002 · RTP2</p></div>
+      <div style="width:150px"><div class="poster focus" style="--img:url(./zeus-2.webp);height:84px;border-radius:12px"></div><p style="font-size:12px;margin-top:6px"><b>001 · RTP1</b> <i class="live" style="margin-left:4px"></i></p><div class="bar" style="margin-top:5px"><i style="width:62%"></i></div></div>
+      <div style="width:116px;opacity:.55"><div class="poster" style="--img:url(./hefesto.webp);height:64px;border-radius:12px"></div><p style="font-size:11px;margin-top:6px">003 · SIC</p></div>
+      <div style="width:116px;opacity:.55"><div class="poster" style="--img:url(./guerreiro.webp);height:64px;border-radius:12px"></div><p style="font-size:11px;margin-top:6px">004 · TVI</p></div>
+      <div style="width:116px;opacity:.55"><div class="poster" style="--img:url(./aquiles.webp);height:64px;border-radius:12px"></div><p style="font-size:11px;margin-top:6px">006 · Sport TV 1</p></div>
+      <div style="align-self:center;padding:0 6px" class="mono t3"><span style="font-size:10px">← →<br>mudar</span></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Mesmo vidro</b>Cápsula e doca usam o vidro de nível 2, como os painéis dos detalhes.</div><div><b>Ponte III</b>Número do canal em contorno («001»), igual ao Top 10 e à pasta.</div><div><b>Calma</b>Tudo desaparece ao fim de 3 s; volta com o rato, o toque ou as setas.</div></div>
+
+  <!-- 3 -->
+  <h2 class="sec"><span class="n">3</span>Séries <span class="t3" style="font-size:13px;font-weight:400">III · editorial, com aurora e chips de vidro</span></h2>
+  <div class="scr" style="--a1:120,60,30;--a2:200,90,40"><div class="aurora"></div><div class="bgimg" style="--img:url(./aquiles.webp);--pos:center 12%;mask-image:linear-gradient(0deg,transparent 35%,#000 75%);-webkit-mask-image:linear-gradient(0deg,transparent 35%,#000 75%);opacity:.85"></div><div class="shade" style="background:linear-gradient(90deg,rgba(0,0,0,.75),transparent 60%)"></div>
+    <div class="topbar"><span class="logo">ZEUS</span><div class="tabs g1"><span>Cinema</span><span class="dk">TV</span></div><div class="tabs g1"><span>Ao vivo</span><span class="on">Séries</span><span>Filmes</span></div><span class="sp"></span><span class="kbd g1">⌕ Procurar <em>⌘K</em></span><span class="av">GT</span></div>
+    <div class="abs" style="left:30px;top:70px"><p class="eyebrow">Nº 1 na tua lista esta semana</p><h3 style="font-size:96px;font-weight:800;letter-spacing:-.06em;line-height:.9;margin-top:8px">TRÓIA</h3><p class="t2" style="font-size:13px;margin:10px 0 12px">2025 · 2 temporadas · Drama histórico · ★ 8,1</p><span class="btn w">▶ Continuar T1 · E4</span> <span class="btn g">Episódios</span></div>
+    <div class="abs" style="left:30px;top:304px;display:flex;gap:6px"><span class="chip on">Todas 4 812</span><span class="chip">Netflix 640</span><span class="chip">HBO 312</span><span class="chip">Anime 1 204</span><span class="chip">Portuguesas 96</span><span class="chip">+18</span></div>
+    <div class="abs" style="left:30px;top:350px"><p style="font-size:14px;font-weight:600;margin-bottom:8px">Top 10 · Séries</p><div style="display:flex;align-items:flex-end">
+      <span class="outline" style="font-size:150px">1</span><div class="poster focus" style="--img:url(./aquiles.webp);width:104px;height:150px;margin-left:-24px"></div>
+      <span class="outline" style="font-size:150px;margin-left:16px">2</span><div class="poster" style="--img:url(./medusa.webp);width:104px;height:150px;margin-left:-24px"></div>
+      <span class="outline" style="font-size:150px;margin-left:16px">3</span><div class="poster" style="--img:url(./hefesto.webp);width:104px;height:150px;margin-left:-24px"></div>
+      <span class="outline" style="font-size:150px;margin-left:16px">4</span><div class="poster" style="--img:url(./ulisses.webp);width:104px;height:150px;margin-left:-24px"></div>
+      <span class="outline" style="font-size:150px;margin-left:16px">5</span><div class="poster" style="--img:url(./conselho.webp);width:104px;height:150px;margin-left:-24px"></div></div></div>
+  </div>
+  <div class="note"><div><b>Harmonizado</b>Mantém o título gigante e o Top 10, mas com a barra, os chips e os botões de vidro dos outros ecrãs.</div><div><b>Aurora da capa</b>Cores tiradas da capa da série em destaque.</div><div><b>Depois</b>Por baixo seguem filas em cartões de vidro: Continuar a ver, Recentes, categorias.</div></div>
+
+  <!-- 4 -->
+  <h2 class="sec"><span class="n">4</span>Detalhe de série <span class="t3" style="font-size:13px;font-weight:400">II · painel de vidro</span></h2>
+  <div class="scr"><div class="bgimg" style="--img:url(./aquiles.webp);--pos:center 15%;filter:blur(20px) saturate(1.3);transform:scale(1.12)"></div><div class="shade" style="background:rgba(0,0,0,.35)"></div>
+    <div class="topbar"><span class="logo">ZEUS</span><div class="tabs g1"><span>Cinema</span><span class="dk">TV</span></div><div class="tabs g1"><span>Ao vivo</span><span class="on">Séries</span><span>Filmes</span></div><span class="sp"></span><span class="kbd g1">⌕ Procurar <em>⌘K</em></span><span class="av">GT</span></div>
+    <div class="abs g2" style="left:30px;right:30px;top:66px;bottom:26px;border-radius:30px;padding:26px;display:grid;grid-template-columns:190px 1fr;gap:26px">
+      <div><div class="poster" style="--img:url(./aquiles.webp);width:190px;height:274px;border-radius:18px;box-shadow:0 22px 50px rgba(0,0,0,.6)"></div><span class="btn w" style="margin-top:14px;width:100%;justify-content:center">▶ T1 · E4 · 22 min</span><span class="btn g" style="margin-top:8px;width:100%;justify-content:center">☆ Favorito</span></div>
+      <div><p class="eyebrow">Drama histórico · Netflix</p><h3 style="font-size:38px;font-weight:800;letter-spacing:-.04em;margin:4px 0">A Queda de Tróia</h3><div style="display:flex;gap:6px;margin:6px 0 12px"><span class="chip">2025</span><span class="chip">2 temporadas</span><span class="chip">★ 8,1</span><span class="chip">16+</span></div><p class="t2" style="font-size:13px;line-height:1.5;max-width:520px">Dez anos de cerco, um cavalo de madeira e o fim de uma cidade.</p>
+        <div class="tabs g1" style="display:inline-flex;margin-top:14px"><span class="on">Temporada 1</span><span>Temporada 2</span></div>
+        <div style="display:flex;gap:12px;margin-top:14px">
+          <div style="width:160px;opacity:.6"><div class="poster" style="--img:url(./guerreiro.webp);height:90px"></div><p style="font-size:12px;margin-top:6px">1 · O Juramento ✓</p></div>
+          <div style="width:160px;opacity:.6"><div class="poster" style="--img:url(./hermes.webp);height:90px"></div><p style="font-size:12px;margin-top:6px">3 · A Praia ✓</p></div>
+          <div style="width:160px"><div class="poster focus" style="--img:url(./aquiles.webp);height:90px"></div><p style="font-size:12px;margin-top:6px"><b>4 · A Ira de Aquiles</b></p><div class="bar" style="margin-top:5px"><i style="width:58%"></i></div></div>
+          <div style="width:160px"><div class="poster" style="--img:url(./ulisses.webp);height:90px"></div><p style="font-size:12px;margin-top:6px">5 · A Embaixada</p></div>
+        </div></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Mesmo painel</b>O vidro de nível 2 é o mesmo da doca do leitor e do detalhe de filme.</div><div><b>Episódios</b>Cartões com o foco ciano e progresso; vistos ficam esbatidos.</div><div><b>Transição</b>A capa vem do cartaz do Top 10 para o seu lugar.</div></div>
+
+  <!-- 5 -->
+  <h2 class="sec"><span class="n">5</span>Filmes <span class="t3" style="font-size:13px;font-weight:400">III · mosaico «bento» com vidro</span></h2>
+  <div class="scr" style="--a1:60,90,140;--a2:220,180,120"><div class="aurora"></div>
+    <div class="topbar"><span class="logo">ZEUS</span><div class="tabs g1"><span>Cinema</span><span class="dk">TV</span></div><div class="tabs g1"><span>Ao vivo</span><span>Séries</span><span class="on">Filmes</span></div><span class="sp"></span><span class="kbd g1">⌕ Procurar <em>⌘K</em></span><span class="av">GT</span></div>
+    <div class="abs" style="left:24px;right:24px;top:62px;bottom:22px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:10px">
+      <div style="grid-row:span 2;border-radius:22px;overflow:hidden;position:relative;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent 55%),url(./zeus-6.webp) center 20%/cover;padding:22px;display:flex;flex-direction:column;justify-content:flex-end" class="focus"><p class="eyebrow">Estreia</p><h3 style="font-size:52px;font-weight:800;letter-spacing:-.05em;line-height:.95">Titãs</h3><p class="t2" style="font-size:12.5px;margin:6px 0 10px">2026 · 2 h 08 · Acção · ★ 7,6</p><div style="display:flex;gap:8px"><span class="btn w">▶ Reproduzir</span><span class="btn g">Detalhes</span></div></div>
+      <div class="poster" style="--img:url(./guerreiro.webp);border-radius:22px"></div>
+      <div class="poster" style="--img:url(./medusa.webp);border-radius:22px;grid-column:span 2;background-position:center 30%"></div>
+      <div class="g1" style="border-radius:22px;padding:18px;display:flex;flex-direction:column;justify-content:space-between"><span class="eyebrow" style="color:var(--text-3)">Categoria</span><div><span class="outline" style="font-size:54px">2310</span><b style="display:block;font-size:22px;letter-spacing:-.02em;margin-top:6px">Acção</b></div></div>
+      <div class="poster" style="--img:url(./zeus-3.webp);border-radius:22px"></div>
+      <div class="g1" style="border-radius:22px;padding:18px;display:flex;flex-direction:column;justify-content:space-between"><span class="eyebrow" style="color:var(--text-3)">Categoria</span><div><span class="outline" style="font-size:54px">412</span><b style="display:block;font-size:22px;letter-spacing:-.02em;margin-top:6px">Estreias</b></div></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Harmonizado</b>Os cartões de categoria são de vidro e trazem a contagem em contorno.</div><div><b>Aurora</b>Tirada da capa em destaque.</div><div><b>Depois</b>Por baixo: filas de cartazes por categoria e «Continuar a ver».</div></div>
+
+  <!-- 6 -->
+  <h2 class="sec"><span class="n">6</span>Detalhe de filme <span class="t3" style="font-size:13px;font-weight:400">II · cartão flutuante</span></h2>
+  <div class="scr"><div class="bgimg" style="--img:url(./zeus-6.webp);--pos:28% 20%"></div><div class="shade" style="background:linear-gradient(270deg,rgba(0,0,0,.65),transparent 60%)"></div>
+    <div class="topbar"><span class="logo">ZEUS</span><div class="tabs g1"><span>Cinema</span><span class="dk">TV</span></div><div class="tabs g1"><span>Ao vivo</span><span>Séries</span><span class="on">Filmes</span></div><span class="sp"></span><span class="kbd g1">⌕ Procurar <em>⌘K</em></span><span class="av">GT</span></div>
+    <div class="abs g2" style="right:30px;top:66px;bottom:26px;width:390px;border-radius:30px;padding:26px">
+      <p class="eyebrow">Filme · Estreias</p><h3 style="font-size:46px;font-weight:800;letter-spacing:-.05em;margin:6px 0">Titãs</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"><span class="chip">2026</span><span class="chip">2 h 08</span><span class="chip">★ 7,6</span><span class="chip">12+</span><span class="chip">1080p</span></div>
+      <p class="t2" style="font-size:13.5px;line-height:1.55">Quando os Titãs regressam do Tártaro, Zeus tem uma noite para reunir os deuses antes que o Olimpo caia.</p>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:22px"><div class="ring" style="--p:27%;width:70px;height:70px"><b style="font-size:18px">▶</b></div><div><b style="font-size:15px">Continuar</b><p class="t2" style="font-size:12.5px">34 de 128 min</p></div></div>
+      <div style="display:flex;gap:8px;margin-top:20px"><span class="btn g">Do início</span><span class="btn g">☆ Favorito</span></div>
+      <p class="mono t3" style="font-size:10px;letter-spacing:.2em;margin-top:20px">ELENCO</p><div style="display:flex;gap:8px;margin-top:8px"><div class="poster" style="--img:url(./zeus-2.webp);width:38px;height:38px;border-radius:50%"></div><div class="poster" style="--img:url(./atena.webp);width:38px;height:38px;border-radius:50%"></div><div class="poster" style="--img:url(./hermes.webp);width:38px;height:38px;border-radius:50%"></div><div class="poster" style="--img:url(./hefesto.webp);width:38px;height:38px;border-radius:50%"></div></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Mesmo anel</b>O anel «Continuar» é o mesmo dos canais (progresso do programa).</div><div><b>Cartão</b>Vidro nível 2, igual ao detalhe de série; a imagem fica livre à esquerda.</div><div><b>Elenco</b>Só quando a lista o traz.</div></div>
+
+  <!-- 7 -->
+  <h2 class="sec"><span class="n">7</span>Pesquisa ⌘K <span class="t3" style="font-size:13px;font-weight:400">II · modal por cima de qualquer ecrã</span></h2>
+  <div class="scr" style="--a1:60,90,140;--a2:220,180,120"><div class="aurora" style="filter:blur(6px) brightness(.55)"></div>
+    <div class="abs" style="left:24px;right:24px;top:62px;bottom:22px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:10px;filter:blur(8px) brightness(.4)"><div class="poster" style="--img:url(./zeus-6.webp);grid-row:span 2;border-radius:22px"></div><div class="poster" style="--img:url(./guerreiro.webp);border-radius:22px"></div><div class="poster" style="--img:url(./medusa.webp);border-radius:22px;grid-column:span 2"></div><div class="poster" style="--img:url(./zeus-3.webp);border-radius:22px"></div><div class="poster" style="--img:url(./hefesto.webp);border-radius:22px"></div><div class="poster" style="--img:url(./atena.webp);border-radius:22px"></div></div>
+    <div class="abs g3" style="left:50%;transform:translateX(-50%);top:56px;width:620px;border-radius:26px;overflow:hidden">
+      <div style="display:flex;gap:12px;align-items:center;padding:18px 22px;font-size:22px;border-bottom:1px solid var(--hair)"><span class="t3">⌕</span>sport<span style="width:2px;height:24px;background:var(--accent)"></span><span class="sp"></span><span class="chip on">Tudo 268</span><span class="chip">Só Portugal</span></div>
+      <div style="padding:10px 12px 14px">
+        <p class="mono t3" style="font-size:10px;letter-spacing:.2em;padding:6px 10px">CANAIS · 214</p>
+        <div style="display:flex;gap:12px;align-items:center;padding:9px 10px;border-radius:14px;background:rgba(var(--accent-rgb),.14);box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.4)"><div class="lt" style="width:36px;height:36px;background:#0d7a3a;font-size:9px">ST1</div><span style="font-size:14px"><b>Sport</b> TV 1 <span class="t2">· Portugal · Benfica – Porto</span></span><span class="sp"></span><div class="ring" style="--p:85%;width:28px;height:28px"></div><span class="mono t3" style="font-size:11px">↵</span></div>
+        <div style="display:flex;gap:12px;align-items:center;padding:9px 10px"><div class="lt" style="width:36px;height:36px;background:#1f3e8a;font-size:9px">EUR</div><span style="font-size:14px">Euro<b>sport</b> 1 <span class="t2">· Espanha · Ciclismo</span></span></div>
+        <p class="mono t3" style="font-size:10px;letter-spacing:.2em;padding:10px 10px 6px">SÉRIES · 12</p>
+        <div style="display:flex;gap:12px;align-items:center;padding:9px 10px"><div class="poster" style="--img:url(./guerreiro.webp);width:36px;height:50px;border-radius:8px"></div><span style="font-size:14px">Gladiadores <span class="t2">· 3 temporadas</span></span></div>
+        <p class="mono t3" style="font-size:10px;letter-spacing:.2em;padding:10px 10px 6px">FILMES · 42</p>
+        <div style="display:flex;gap:12px;align-items:center;padding:9px 10px"><div class="poster" style="--img:url(./zeus-3.webp);width:36px;height:50px;border-radius:8px"></div><span style="font-size:14px">O Raio <span class="t2">· 2026 · Desporto</span></span></div>
+      </div>
+      <div style="display:flex;gap:16px;padding:10px 22px;border-top:1px solid var(--hair)" class="mono t3"><span style="font-size:10.5px">↑↓ navegar</span><span style="font-size:10.5px">↵ abrir</span><span style="font-size:10.5px">esc fechar</span></div>
+    </div>
+  </div>
+  <div class="note"><div><b>Modal nível 3</b>Vidro mais denso; o ecrã por baixo desfoca e escurece.</div><div><b>Mesma linha</b>O resultado em foco usa o mesmo realce ciano dos cartões.</div><div><b>Abre em todo o lado</b>⌘K ou o botão «Procurar» da barra.</div></div>
+
+  <!-- 8 -->
+  <h2 class="sec"><span class="n">8</span>Gerir pastas <span class="t3" style="font-size:13px;font-weight:400">II · folha modal sobre o portal</span></h2>
+  <div class="scr" style="--a1:30,122,60;--a2:227,75,60"><div class="aurora" style="filter:brightness(.55)"></div>
+    <div class="abs" style="left:30px;right:30px;top:194px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;filter:blur(8px) brightness(.45)"><div class="g1" style="height:120px;border-radius:20px"></div><div class="g1" style="height:120px;border-radius:20px"></div><div class="g1" style="height:120px;border-radius:20px"></div><div class="g1" style="height:120px;border-radius:20px"></div><div class="g1" style="height:120px;border-radius:20px"></div><div class="g1" style="height:120px;border-radius:20px"></div></div>
+    <div class="abs g3" style="left:50%;transform:translateX(-50%);top:40px;bottom:0;width:700px;border-radius:30px 30px 0 0;padding:22px 24px">
+      <div style="width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:-8px auto 14px"></div>
+      <div style="display:flex;align-items:baseline;gap:12px"><h3 style="font-size:28px;font-weight:800;letter-spacing:-.03em">Pastas</h3><span class="tabs g1" style="font-size:12px"><span class="on">Ao vivo 42</span><span>Séries 25</span><span>Filmes 38</span></span><span class="sp"></span><span class="btn w" style="padding:8px 16px">Concluído</span></div>
+      <p class="t2" style="font-size:12.5px;margin:6px 0 14px">Arrasta para ordenar. Fixa até 4 (aparecem primeiro, em grande). Esconde as que não vês.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div class="g1 focus" style="border-radius:18px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:linear-gradient(90deg,#1e7a3c 40%,#e34b3c 40%)"></span><span class="mono" style="font-size:10.5px;color:var(--accent)">FIXADA</span></div><b style="display:block;font-size:16px;margin-top:10px">Portugal</b><span class="outline" style="font-size:30px;-webkit-text-stroke-width:1px">207</span></div>
+        <div class="g1" style="border-radius:18px;padding:14px;border-color:rgba(var(--accent-rgb),.45)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:radial-gradient(circle,#7de3f0,#1c4f57)"></span><span class="mono" style="font-size:10.5px;color:var(--accent)">FIXADA</span></div><b style="display:block;font-size:16px;margin-top:10px">Exclusivos</b><span class="outline" style="font-size:30px;-webkit-text-stroke-width:1px">112</span></div>
+        <div class="g1" style="border-radius:18px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:linear-gradient(135deg,#1b8a3f 40%,#f6d743 40% 60%,#1b8a3f 60%)"></span><span class="tog on"></span></div><b style="display:block;font-size:16px;margin-top:10px">Brasil</b><span class="outline" style="font-size:30px;-webkit-text-stroke-width:1px">595</span></div>
+        <div class="g1" style="border-radius:18px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:linear-gradient(180deg,#c22 25%,#f2c230 25% 75%,#c22 75%)"></span><span class="tog on"></span></div><b style="display:block;font-size:16px;margin-top:10px">Espanha</b><span class="outline" style="font-size:30px;-webkit-text-stroke-width:1px">345</span></div>
+        <div class="g1" style="border-radius:18px;padding:14px;opacity:.42"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:linear-gradient(90deg,#2547a6 33%,#eee 33% 66%,#d22 66%)"></span><span class="tog"></span></div><b style="display:block;font-size:16px;margin-top:10px">França</b><span class="t3" style="font-size:12px">escondida</span></div>
+        <div class="g1" style="border-radius:18px;padding:14px;opacity:.42"><div style="display:flex;justify-content:space-between;align-items:center"><span style="width:34px;height:24px;border-radius:6px;background:#3a2a2a"></span><span class="tog"></span></div><b style="display:block;font-size:16px;margin-top:10px">Adultos</b><span class="t3" style="font-size:12px">escondida por omissão</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="note"><div><b>Folha modal</b>Sobe de baixo, vidro nível 3, com o portal desfocado por trás.</div><div><b>Por secção</b>Separadores Ao vivo · Séries · Filmes na própria folha.</div><div><b>Adultos</b>Pastas com nomes de conteúdo adulto começam escondidas; podes mostrá-las aqui.</div></div>
+
+  <!-- mobile -->
+  <h2 class="sec"><span class="n">M</span>Telemóvel</h2>
+  <p class="sub">A mesma linguagem a 375 px: barra compacta, cartões em lista, doca do leitor na horizontal.</p>
+  <div class="phones">
+    <div class="phone" style="--a1:30,122,60;--a2:227,75,60"><div class="aurora"></div>
+      <div style="padding:46px 16px 0;display:flex;gap:6px;align-items:center"><span style="font-weight:600;letter-spacing:.45em;font-size:11px">ZEUS</span><span class="sp"></span><span class="tabs g1" style="font-size:10.5px"><span class="on">Ao vivo</span><span>Séries</span><span>Filmes</span></span></div>
+      <div style="padding:18px 16px 0;position:relative"><span class="outline abs" style="right:12px;top:6px;font-size:76px">207</span><h3 style="font-size:32px;font-weight:800;letter-spacing:-.04em">Portugal</h3></div>
+      <div style="padding:12px 16px 0;display:flex;gap:6px;overflow:hidden"><span class="chip on">Todos</span><span class="chip">★ 6</span><span class="chip">HD</span><span class="chip">Notícias</span></div>
+      <div style="padding:12px 16px;display:grid;gap:8px">
+        <div class="g1 focus" style="border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center"><div class="lt" style="width:44px;height:44px;background:#1b4fd8;font-size:11px">RTP1</div><div style="flex:1"><b style="font-size:14px">RTP1</b><p class="t2" style="font-size:11.5px"><i class="live"></i>Telejornal</p></div><div class="ring" style="--p:62%;width:34px;height:34px"></div></div>
+        <div class="g1" style="border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center"><div class="lt" style="width:44px;height:44px;background:#d4272c;font-size:11px">SIC</div><div style="flex:1"><b style="font-size:14px">SIC</b><p class="t2" style="font-size:11.5px">Jornal da Noite</p></div><div class="ring" style="--p:75%;width:34px;height:34px"></div></div>
+        <div class="g1" style="border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center"><div class="lt" style="width:44px;height:44px;background:#e8e8e8;color:#111;font-size:11px">TVI</div><div style="flex:1"><b style="font-size:14px">TVI</b><p class="t2" style="font-size:11.5px">Jornal Nacional</p></div><div class="ring" style="--p:48%;width:34px;height:34px"></div></div>
+        <div class="g1" style="border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center"><div class="lt" style="width:44px;height:44px;background:#0d7a3a;font-size:11px">ST1</div><div style="flex:1"><b style="font-size:14px">Sport TV 1</b><p class="t2" style="font-size:11.5px">Benfica – Porto</p></div><div class="ring" style="--p:85%;width:34px;height:34px"></div></div>
+      </div>
+    </div>
+    <div class="phone"><div class="abs" style="inset:0;background:url(./zeus-2.webp) center 30%/cover;z-index:-2"></div><div class="abs" style="inset:0;z-index:-1;background:linear-gradient(0deg,rgba(0,0,0,.9),transparent 45%)"></div>
+      <div class="g2" style="margin:50px 14px 0;border-radius:99px;padding:6px 12px 6px 6px;display:flex;gap:8px;align-items:center"><div class="lt" style="width:30px;height:30px;border-radius:50%;background:#1b4fd8;font-size:8px">RTP1</div><span style="font-size:12px;flex:1"><b>Telejornal</b></span><div class="ring" style="--p:62%;width:24px;height:24px"></div></div>
+      <div class="abs g2" style="left:12px;right:12px;bottom:22px;border-radius:22px;padding:10px;display:flex;gap:8px;overflow:hidden">
+        <div style="width:98px;flex:none"><div class="poster focus" style="--img:url(./zeus-2.webp);height:56px;border-radius:10px"></div><p style="font-size:10.5px;margin-top:5px"><b>001 RTP1</b></p></div>
+        <div style="width:98px;flex:none;opacity:.55"><div class="poster" style="--img:url(./hefesto.webp);height:56px;border-radius:10px"></div><p style="font-size:10.5px;margin-top:5px">003 SIC</p></div>
+        <div style="width:98px;flex:none;opacity:.55"><div class="poster" style="--img:url(./guerreiro.webp);height:56px;border-radius:10px"></div><p style="font-size:10.5px;margin-top:5px">004 TVI</p></div>
+      </div>
+    </div>
+    <div class="phone"><div class="abs" style="inset:0;background:url(./aquiles.webp) center 15%/cover;filter:blur(18px) saturate(1.3);transform:scale(1.15);z-index:-2"></div><div class="abs" style="inset:0;background:rgba(0,0,0,.4);z-index:-1"></div>
+      <div style="padding:52px 16px 0;text-align:center"><div class="poster" style="--img:url(./aquiles.webp);width:150px;height:216px;margin:0 auto;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.6)"></div><h3 style="font-size:24px;font-weight:800;letter-spacing:-.03em;margin-top:14px">A Queda de Tróia</h3><p class="t2" style="font-size:11.5px">2025 · 2 temporadas · ★ 8,1</p><span class="btn w" style="margin-top:12px">▶ T1 · E4</span></div>
+      <div class="g2" style="margin:16px 12px 0;border-radius:20px;padding:12px"><div class="tabs g1" style="display:inline-flex;font-size:11px"><span class="on">T1</span><span>T2</span></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px"><div class="poster focus" style="--img:url(./aquiles.webp);width:84px;height:48px;border-radius:10px"></div><div style="flex:1"><b style="font-size:12.5px">4 · A Ira de Aquiles</b><div class="bar" style="margin-top:6px"><i style="width:58%"></i></div></div></div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
