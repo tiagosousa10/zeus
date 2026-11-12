@@ -1,20 +1,16 @@
 import { chromium } from "@playwright/test";
-import postgres from "postgres";
-import { readFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { createHmac, randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
-const schema = "browser_" + randomBytes(6).toString("hex");
-const dbUrl = "postgres://zeus:zeus_local@127.0.0.1:55439/zeus";
-const control = postgres(dbUrl, { max: 1, onnotice: () => {} });
-await control.unsafe(`create schema ${schema}`);
-const u = new URL(dbUrl);
-u.searchParams.set("options", `-c search_path=${schema}`);
-const db = postgres(u.toString(), { max: 1, onnotice: () => {} });
-await db.unsafe(readFileSync("apps/api/src/db/setup.sql", "utf8"));
+const dataDir = mkdtempSync(join(tmpdir(), "zeus-browser-"));
 const env = {
   ...process.env,
-  DATABASE_URL: u.toString(),
+  DATABASE_URL: "",
+  ZEUS_DATA_DIR: dataDir,
+  ZEUS_DATABASE_PATH: join(dataDir, "zeus.sqlite"),
   ZEUS_WEB_ORIGIN: "http://127.0.0.1:5175",
   BETTER_AUTH_URL: "http://127.0.0.1:5175",
   BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
@@ -171,8 +167,6 @@ try {
 } finally {
   await browser?.close();
   children.forEach((c) => c.kill("SIGTERM"));
-  await db.end();
   await new Promise((r) => setTimeout(r, 300));
-  await control.unsafe(`drop schema ${schema} cascade`);
-  await control.end();
+  rmSync(dataDir, { recursive: true, force: true });
 }

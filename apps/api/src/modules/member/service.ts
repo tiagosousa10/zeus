@@ -1,4 +1,6 @@
-import { sql } from "../../db/client.js";
+import { eq } from "drizzle-orm";
+import { memberState } from "../../db/schema.js";
+import { db } from "../../db/client.js";
 import { encrypt, decrypt } from "../../lib/crypto.js";
 import { mergeLists } from "./public-state.js";
 export const emptyState = () => ({
@@ -11,8 +13,10 @@ export const emptyState = () => ({
   onboardingDone: false,
 });
 export async function getState(userId: string) {
-  const [row] =
-    await sql`select ciphertext from member_state where user_id=${userId}`;
+  const [row] = await db
+    .select()
+    .from(memberState)
+    .where(eq(memberState.userId, userId));
   return row ? { ...emptyState(), ...decrypt(row.ciphertext) } : emptyState();
 }
 export async function patchState(
@@ -20,10 +24,11 @@ export async function patchState(
   patch: Record<string, unknown>,
   publicListUpdates = false,
 ) {
-  return sql.begin(async (tx) => {
-    await tx`select pg_advisory_xact_lock(hashtext(${userId}))`;
-    const [row] =
-      await tx`select ciphertext from member_state where user_id=${userId}`;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(memberState)
+      .where(eq(memberState.userId, userId));
     const previous = row ? decrypt(row.ciphertext) : emptyState();
     const state = {
       ...emptyState(),
@@ -32,7 +37,14 @@ export async function patchState(
     };
     if (publicListUpdates && patch.iptv !== undefined)
       state.iptv = mergeLists(previous.iptv ?? [], patch.iptv);
-    await tx`insert into member_state(user_id,ciphertext) values(${userId},${encrypt(state)}) on conflict(user_id) do update set ciphertext=excluded.ciphertext,updated_at=now()`;
+    const ciphertext = encrypt(state);
+    await tx
+      .insert(memberState)
+      .values({ userId, ciphertext })
+      .onConflictDoUpdate({
+        target: memberState.userId,
+        set: { ciphertext, updatedAt: new Date() },
+      });
     return state;
   });
 }

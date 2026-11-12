@@ -1,26 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 async function main() {
   require("./local-config.cjs").ensureLocalConfig();
   const children: ChildProcess[] = [];
-  const db = spawnSync(
-    "docker",
-    ["compose", "up", "-d", "--wait", "postgres"],
-    { stdio: "inherit" },
-  );
-  if (db.status) process.exit(db.status || 1);
-  const setup = spawnSync(
-    process.execPath,
-    [
-      "--env-file-if-exists=.env",
-      "--import",
-      "tsx",
-      "apps/api/src/db/setup.ts",
-    ],
-    { stdio: "inherit" },
-  );
-  if (setup.status) process.exit(setup.status || 1);
   function run(cmd: string, args: string[]) {
     const p = spawn(cmd, args, { stdio: "inherit" });
     children.push(p);

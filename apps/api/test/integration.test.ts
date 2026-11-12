@@ -1,25 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { createHmac, randomBytes } from "node:crypto";
-import postgres from "postgres";
 delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
-const base =
-  process.env.DATABASE_URL || "postgres://zeus:zeus_local@127.0.0.1:55439/zeus";
-const schema = "test_" + randomBytes(6).toString("hex");
-const control = postgres(base, { max: 1 });
-await control.unsafe(`create schema ${schema}`);
-const url = new URL(base);
-url.searchParams.set("options", `-c search_path=${schema}`);
-process.env.DATABASE_URL = url.toString();
+process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-integration-"));
+delete process.env.DATABASE_URL;
+process.env.ZEUS_DATABASE_PATH = join(process.env.ZEUS_DATA_DIR!, "test.sqlite");
 process.env.ZEUS_WEB_ORIGIN = "http://127.0.0.1:5174";
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:5174";
-const { sql } = await import("../src/db/client.js");
-await sql.unsafe(
-  readFileSync(new URL("../src/db/setup.sql", import.meta.url), "utf8"),
-);
+const { db, query, closeDatabase } = await import("../src/db/client.js");
 const { app } = await import("../src/app.js");
 function totp(secret: string) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -134,16 +127,16 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
   );
   assert.equal(saved.status, 200, JSON.stringify(saved.body));
   const { seedAddons } = await import("../src/db/seed-addons.js");
-  assert.ok((await seedAddons(sql)) > 300, "Seeds the swept add-on catalogue");
-  assert.equal(await seedAddons(sql), 0, "Seeding twice adds nothing");
+  assert.ok((await query("select id from addon")).length > 300, "Seeds the swept add-on catalogue automatically");
+  assert.equal(await seedAddons(db), 0, "Seeding twice adds nothing");
   assert.ok(
     (await a("/addons")).body.addons.some(
       (x: any) =>
         Array.isArray(x.resources) && x.resources.includes("subtitles"),
     ),
   );
-  await sql`insert into addon (id, name, manifest_url, status, configuration_required, configurable, resources)
-    values ('test.keyed', 'Keyed', 'https://keyed.example.com/manifest.json', 'approved', true, true, '["stream","subtitles"]')`;
+  await query(`insert into addon (id, name, manifest_url, status, configuration_required, configurable, resources)
+    values ('test.keyed', 'Keyed', 'https://keyed.example.com/manifest.json', 'approved', true, true, '["stream","subtitles"]')`);
   assert.equal(
     (await a("/state", { addons: [{ id: "test.keyed" }] }, "PATCH")).status,
     400,
@@ -181,7 +174,7 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
   );
   assert.equal(keyed.status, 200, JSON.stringify(keyed.body));
   assert.ok(
-    (await sql`select ciphertext from member_state`).every(
+    (await query("select ciphertext from member_state")).every(
       (r) => !r.ciphertext.includes("secret-key-123"),
     ),
   );
@@ -220,7 +213,7 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
   assert.deepEqual((await b("/state")).body.preferences, {});
   assert.equal((await b("/admin/members")).status, 403);
   assert.equal((await anonymous("/state")).status, 401);
-  const raw = await sql`select ciphertext from member_state`;
+  const raw = await query("select ciphertext from member_state");
   assert.ok(raw.every((r) => !r.ciphertext.includes("private-admin-key")));
   const members = await a("/admin/members");
   const id = members.body.members.find(
@@ -249,7 +242,5 @@ test("bootstrap, mandatory TOTP, invitations, member isolation and authorization
   assert.equal((await login("/state")).status, 200);
 });
 test.after(async () => {
-  await sql.end();
-  await control.unsafe(`drop schema ${schema} cascade`);
-  await control.end();
+  await closeDatabase();
 });

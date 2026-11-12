@@ -17,7 +17,7 @@ export function createAuth(database: any = db) {
       "http://127.0.0.1:5174",
       "http://localhost:5174",
     ],
-    database: drizzleAdapter(database, { provider: "pg", schema }),
+    database: drizzleAdapter(database, { provider: "sqlite", schema }),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 12,

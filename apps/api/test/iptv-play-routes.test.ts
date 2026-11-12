@@ -6,7 +6,6 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHmac, randomBytes } from "node:crypto";
-import postgres from "postgres";
 import { fakeFetch, xtreamRoutes } from "./fixtures/xtream.js";
 import { fakeUpstream, type FakeResource } from "./fixtures/upstream.js";
 import { normalizeM3U } from "../src/modules/iptv/m3u.js";
@@ -14,20 +13,11 @@ delete process.env.RESEND_API_KEY;
 delete process.env.RESEND_FROM;
 delete process.env.TURNSTILE_SECRET_KEY;
 process.env.ZEUS_DATA_DIR = mkdtempSync(join(tmpdir(), "zeus-iptv-play-"));
-const base =
-  process.env.DATABASE_URL || "postgres://zeus:zeus_local@127.0.0.1:55439/zeus";
-const schema = "test_" + randomBytes(6).toString("hex");
-const control = postgres(base, { max: 1 });
-await control.unsafe(`create schema ${schema}`);
-const url = new URL(base);
-url.searchParams.set("options", `-c search_path=${schema}`);
-process.env.DATABASE_URL = url.toString();
+delete process.env.DATABASE_URL;
+process.env.ZEUS_DATABASE_PATH = join(process.env.ZEUS_DATA_DIR!, "test.sqlite");
 process.env.ZEUS_WEB_ORIGIN = "http://127.0.0.1:5174";
 process.env.BETTER_AUTH_URL = "http://127.0.0.1:5174";
-const { sql } = await import("../src/db/client.js");
-await sql.unsafe(
-  readFileSync(new URL("../src/db/setup.sql", import.meta.url), "utf8"),
-);
+const { db, query, closeDatabase } = await import("../src/db/client.js");
 const { app } = await import("../src/app.js");
 const { setProviderFetch } = await import("../src/modules/iptv/provider.js");
 const { findSession, setSessionClock } =
@@ -729,7 +719,5 @@ test("playback starts through the API and HLS never reveals the provider", async
 });
 
 test.after(async () => {
-  await sql.end();
-  await control.unsafe(`drop schema ${schema} cascade`);
-  await control.end();
+  await closeDatabase();
 });

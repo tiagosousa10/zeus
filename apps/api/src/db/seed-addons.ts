@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
-import type { Sql } from "postgres";
+import seed from "./addons-seed.json";
+import { addon } from "./schema.js";
+import type { openLocalDatabase } from "./local.js";
 import { configFields } from "../modules/addons/config.js";
 
 type SeedAddon = {
@@ -14,22 +15,30 @@ type SeedAddon = {
 };
 
 // Varredura dos registos públicos do Stremio (filmes, séries e legendas), validada em 2026-11-12.
-export async function seedAddons(sql: Sql) {
-  const seed: SeedAddon[] = JSON.parse(
-    readFileSync(new URL("./addons-seed.json", import.meta.url), "utf8"),
-  );
-  const rows = seed.map((a) => ({
+export async function seedAddons(
+  db: ReturnType<typeof openLocalDatabase>["db"],
+) {
+  const rows = (seed as SeedAddon[]).map((a) => ({
     id: a.id,
     name: a.name,
     description: a.description,
-    manifest_url: a.manifestUrl,
+    manifestUrl: a.manifestUrl,
     status: "approved",
-    config_fields: JSON.stringify(configFields(a.config)),
-    configuration_required: a.configurationRequired,
+    configFields: configFields(a.config),
+    configurationRequired: a.configurationRequired,
     configurable: a.configurable,
-    resources: JSON.stringify(a.resources),
+    resources: a.resources,
   }));
-  const inserted =
-    await sql`insert into addon ${sql(rows)} on conflict do nothing returning id`;
-  return inserted.length;
+  return db.transaction(async (tx) => {
+    let count = 0;
+    for (let i = 0; i < rows.length; i += 50) {
+      const inserted = await tx
+        .insert(addon)
+        .values(rows.slice(i, i + 50))
+        .onConflictDoNothing()
+        .returning({ id: addon.id });
+      count += inserted.length;
+    }
+    return count;
+  });
 }
