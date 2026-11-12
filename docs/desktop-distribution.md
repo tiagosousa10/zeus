@@ -21,7 +21,7 @@ npm run db:migrate
 npm start
 ```
 
-O comando usa `ZEUS_LEGACY_DATABASE_URL`, ou `DATABASE_URL` antigo, ou a ligação local anterior da Zeus. Preservar as chaves e a pasta de dados originais. O destino por omissão é `~/Library/Application Support/Zeus/zeus.sqlite`; `ZEUS_DATABASE_PATH` permite indicar outro destino.
+O comando exige `ZEUS_LEGACY_DATABASE_URL` ou `DATABASE_URL` explicitamente configurado; não existe ligação/password por omissão. O Compose legado exige `ZEUS_LEGACY_POSTGRES_PASSWORD`. Para volumes já existentes, mudar a password dentro do PostgreSQL (por exemplo, `\password zeus` numa sessão administrativa) antes de atualizar as variáveis: alterar apenas o Compose não roda a password guardada. Preservar as chaves e a pasta de dados originais. O destino por omissão é `~/Library/Application Support/Zeus/zeus.sqlite`; `ZEUS_DATABASE_PATH` permite indicar outro destino.
 
 A origem é lida numa transacção `REPEATABLE READ READ ONLY`. São copiados utilizadores, hashes de passwords, sessões, TOTP, códigos de recuperação, estado cifrado, convites e catálogo. Datas, booleanos e JSON são convertidos para o schema SQLite. A migração verifica a abertura dos dados cifrados com as chaves existentes, contagens, foreign keys e integridade antes de publicar atomicamente o novo ficheiro. Não altera nem apaga PostgreSQL e recusa substituir qualquer SQLite existente.
 

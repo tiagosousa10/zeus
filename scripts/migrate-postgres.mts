@@ -8,10 +8,11 @@ import {
 const require = createRequire(import.meta.url);
 require("../apps/desktop/src/local-config.cjs").ensureLocalConfig();
 const { config } = await import("../apps/api/src/lib/config.js");
-const source =
-  process.env.ZEUS_LEGACY_DATABASE_URL ||
-  process.env.DATABASE_URL ||
-  "postgres://zeus:zeus_local@127.0.0.1:55439/zeus";
+const source = process.env.ZEUS_LEGACY_DATABASE_URL || process.env.DATABASE_URL;
+if (!source)
+  throw new Error(
+    "ZEUS_LEGACY_DATABASE_URL é obrigatório para migrar (ou DATABASE_URL explícito).",
+  );
 const sql = postgres(source, { max: 1, connect_timeout: 5 });
 try {
   const snapshot = await sql.begin(
