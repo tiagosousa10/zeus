@@ -1,3 +1,4 @@
+import { loadThree } from "../lib/graphics";
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useMemberState } from "../lib/session";
@@ -44,7 +45,7 @@ export default function Onboarding() {
   useEffect(() => {
     let cancelled = false;
     let dispose = () => {};
-    Promise.all([import("three"), import("../lib/fx.js")])
+    Promise.all([loadThree(), import("../lib/fx.js")])
       .then(([THREE, fx]) => {
         if (cancelled || !cloudCanvas.current || !boltCanvas.current) return;
         Object.assign(window, { THREE, gsap });

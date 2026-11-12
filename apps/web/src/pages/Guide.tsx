@@ -14,7 +14,7 @@ export default function Guide() {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches)
       cleanup = mountGuide(el);
     else
-      void import("three").then((THREE) => {
+      void import("../lib/three-runtime").then((THREE) => {
         if (cancelled) return;
         Object.assign(window, { THREE });
         cleanup = mountGuide(el);
