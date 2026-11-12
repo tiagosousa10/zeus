@@ -7,11 +7,14 @@ import {
   formatTime,
   metadata,
   safeMediaURL,
+  progressRatio,
   type ProgressEntry,
   type Stream,
   type StreamResponse,
 } from "../lib/catalog";
 import "./cinema.css";
+import "./cinema-reference.css";
+import { cursorLight, lightning, ICON } from "../lib/fx.js";
 type MotorStats = {
   ok: boolean;
   numPeers?: number;
@@ -39,6 +42,42 @@ export default function Player() {
     host = useRef<HTMLDivElement>(null);
   const stateRef = useRef({ progress, save, meta: meta.data });
   stateRef.current = { progress, save, meta: meta.data };
+  const hlsPlayer = useRef<Hls | null>(null);
+  const audioPreferences = useRef<string[]>([]);
+  audioPreferences.current = Array.isArray(state.preferences.audioLanguages)
+    ? state.preferences.audioLanguages.map(String)
+    : [String(state.preferences.language || "pt-PT"), "original"];
+  const applyAudio = useCallback(() => {
+    const hls = hlsPlayer.current;
+    if (hls?.audioTracks.length) {
+      const index = preferredTrack(
+        hls.audioTracks.map((t) => ({
+          language: t.lang || "",
+          original: t.default,
+        })),
+        audioPreferences.current,
+        hls.audioTrack,
+      );
+      if (index >= 0 && index !== hls.audioTrack) hls.audioTrack = index;
+      return;
+    }
+    const native = (video.current as NativeAudioVideo | null)?.audioTracks;
+    if (!native?.length) return;
+    const list = Array.from(native);
+    const index = preferredTrack(
+      list.map((t) => ({ language: t.language, original: t.kind === "main" })),
+      audioPreferences.current,
+      list.findIndex((t) => t.enabled),
+    );
+    if (index >= 0) list.forEach((track, i) => (track.enabled = i === index));
+  }, []);
+  useEffect(() => {
+    applyAudio();
+  }, [
+    state.preferences.audioLanguages,
+    state.preferences.language,
+    applyAudio,
+  ]);
   const [source, setSource] = useState<Stream>();
   const [mediaURL, setMediaURL] = useState("");
   const [error, setError] = useState("");
@@ -62,6 +101,7 @@ export default function Player() {
   const [statsOpen, setStatsOpen] = useState(false),
     [stats, setStats] = useState<MotorStats>();
   const [activeSubtitle, setActiveSubtitle] = useState(-1);
+  const [episodeSeason, setEpisodeSeason] = useState(season || 1);
   const subtitleSize =
     state.preferences.subtitleSize === "large"
       ? "140%"
@@ -265,12 +305,17 @@ export default function Player() {
     const element = video.current;
     if (!element || !mediaURL || stateLoading) return;
     let hls: Hls | undefined;
+    const native = (element as NativeAudioVideo).audioTracks;
+    native?.addEventListener("addtrack", applyAudio);
+    element.addEventListener("loadedmetadata", applyAudio);
     if (
       /\.m3u8(?:$|\?)/i.test(mediaURL) &&
       !element.canPlayType("application/vnd.apple.mpegurl") &&
       Hls.isSupported()
     ) {
       hls = new Hls();
+      hlsPlayer.current = hls;
+      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, applyAudio);
       hls.loadSource(mediaURL);
       hls.attachMedia(element);
       hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -286,7 +331,10 @@ export default function Player() {
       element.load();
     }
     return () => {
+      native?.removeEventListener("addtrack", applyAudio);
+      element.removeEventListener("loadedmetadata", applyAudio);
       hls?.destroy();
+      hlsPlayer.current = null;
       element.pause();
       element.removeAttribute("src");
       element.load();
@@ -313,20 +361,27 @@ export default function Player() {
   useEffect(() => {
     const element = video.current;
     if (!element || !tracks.length) return;
-    const language = String(state.preferences.language || "pt-PT").split(
-      "-",
-    )[0];
+    const languages = Array.isArray(state.preferences.subtitleLanguages)
+      ? state.preferences.subtitleLanguages.map(String)
+      : [String(state.preferences.language || "pt-PT")];
     const index =
       state.preferences.subtitles === false
         ? -1
-        : tracks.findIndex((track) =>
-            track.lang.toLowerCase().startsWith(language),
+        : preferredTrack(
+            tracks.map((track) => ({ language: track.lang })),
+            languages,
+            -1,
           );
     Array.from(element.textTracks).forEach((track, i) => {
       track.mode = i === index ? "showing" : "disabled";
     });
     setActiveSubtitle(index);
-  }, [source, state.preferences.language, state.preferences.subtitles]);
+  }, [
+    source,
+    state.preferences.language,
+    state.preferences.subtitles,
+    state.preferences.subtitleLanguages,
+  ]);
   useEffect(() => {
     if (
       !ended ||
@@ -437,9 +492,25 @@ export default function Player() {
   const showControls = !idle || paused || !!menu || !!error;
   return (
     <main
-      className={`zeus-player ${paused && current > 0 ? "is-paused" : ""} ${!showControls ? "is-idle" : ""}`}
+      className={`zeus-player p ${paused && current > 0 ? "is-paused is-stone" : ""} ${!showControls ? "is-idle" : ""}`}
       ref={host}
-      style={{ "--subtitle-size": subtitleSize } as React.CSSProperties}
+      style={
+        {
+          "--subtitle-size": subtitleSize,
+          "--subtitle-color":
+            state.preferences.subtitleColor === "#ffe45c"
+              ? "#ffe45c"
+              : "#ffffff",
+          "--subtitle-bg":
+            state.preferences.subtitleBackground === "caixa"
+              ? "rgba(0,0,0,.8)"
+              : "transparent",
+          "--subtitle-shadow":
+            (state.preferences.subtitleBackground || "sombra") === "sombra"
+              ? "0 2px 3px #000, 0 0 4px #000"
+              : "none",
+        } as React.CSSProperties
+      }
       onPointerMove={wake}
       onPointerDown={wake}
       onFocus={wake}
@@ -521,19 +592,22 @@ export default function Player() {
           />
         ))}
       </video>
-      <div className="player-shade" />
+      <div className="p-shade" />
       {paused && current > 0 && !error && (
-        <section className="player-pause">
-          <img src="/art/img/medusa.webp" alt="" />
-          <div>
-            <p className="cinema-eyebrow">O tempo parou.</p>
-            <h1>{meta.data?.name}</h1>
-            <p>
+        <section className="p-pause" aria-labelledby="pz-title">
+          <Medusa />
+          <div className="p-copy">
+            <p className="z-foot">O tempo parou.</p>
+            <h2 className="z-t1" id="pz-title">
+              {meta.data?.name}
+            </h2>
+            <p className="p-at">
               {formatTime(current)} de {formatTime(duration)}
             </p>
-            <div className="cinema-actions">
+            <p className="z-lede">{meta.data?.description}</p>
+            <div className="t-actions">
               <button className="z-btn z-btn--primary" onClick={play}>
-                ▶ Retomar
+                Retomar
               </button>
               <a href={back} className="z-btn z-btn--ghost">
                 Detalhes do título
@@ -542,19 +616,22 @@ export default function Player() {
           </div>
         </section>
       )}
-      <header className={`player-top ${!showControls ? "is-hidden" : ""}`}>
-        <a className="z-icon-btn" href={back} aria-label="Voltar ao título">
-          ←
+      <header className={"p-top p-ui"}>
+        <a className="p-b" href={back} aria-label="Voltar ao título">
+          <PlayerIcon name="left" />
         </a>
-        <div>
-          <strong>{meta.data?.name ?? "Leitor"}</strong>
-          <small>
+        <div className="p-top__t">
+          <b>{meta.data?.name ?? "Leitor"}</b>
+          <span>
             {season && `T${season} · E${episode} · `}
             {source?.addonName || source?.addon || source?.name}
-          </small>
+          </span>
         </div>
+        <span className="p-src">
+          {source?.name || source?.addonName || "Fonte"}
+        </span>
         <button
-          className="z-icon-btn"
+          className="p-b"
           aria-label="Ajuda de teclado"
           onClick={() => openMenu("help")}
         >
@@ -590,7 +667,13 @@ export default function Player() {
       )}
       {menu && (
         <section
-          className="player-popover"
+          className={
+            menu === "episodes"
+              ? "p-eps player-popover"
+              : menu === "help"
+                ? "p-help z-panel"
+                : "p-pop"
+          }
           aria-label={
             menu === "speed"
               ? "Velocidade"
@@ -613,7 +696,7 @@ export default function Player() {
               <h2>Velocidade</h2>
               {[0.5, 0.75, 1, 1.25, 1.5, 2].map((value) => (
                 <button
-                  className="player-option"
+                  className="p-opt"
                   aria-pressed={speed === value}
                   key={value}
                   onClick={() => {
@@ -638,7 +721,7 @@ export default function Player() {
                 </p>
               )}
               <button
-                className="player-option"
+                className="p-opt"
                 aria-pressed={activeSubtitle === -1}
                 onClick={() => {
                   if (video.current)
@@ -652,7 +735,7 @@ export default function Player() {
               </button>
               {tracks.map((track, index) => (
                 <button
-                  className="player-option"
+                  className="p-opt"
                   key={track.id}
                   aria-pressed={activeSubtitle === index}
                   onClick={() => {
@@ -673,18 +756,55 @@ export default function Player() {
           )}
           {menu === "episodes" && (
             <>
-              <h2>Episódios</h2>
-              {episodes.map((item) => (
-                <a
-                  className="player-option"
-                  key={item.id}
-                  href={`/titulo?id=${id}&type=series&s=${item.season}&e=${item.episode}`}
-                  aria-current={item.id === videoId ? "true" : undefined}
-                >
-                  T{item.season}:E{item.episode} ·{" "}
-                  {item.name ?? item.title ?? "Episódio"}
-                </a>
-              ))}
+              <div className="p-eps__head">
+                <h2 className="z-t2">Episódios</h2>
+              </div>
+              <div className="z-tabs" role="tablist" aria-label="Temporadas">
+                {[...new Set(episodes.map((item) => item.season))].map(
+                  (value) => (
+                    <button
+                      key={value}
+                      role="tab"
+                      aria-selected={episodeSeason === value}
+                      onClick={() => setEpisodeSeason(value)}
+                    >
+                      Temporada {value}
+                    </button>
+                  ),
+                )}
+              </div>
+              <ol>
+                {episodes
+                  .filter((item) => item.season === episodeSeason)
+                  .map((item) => (
+                    <li key={item.id}>
+                      <a
+                        className="p-ep"
+                        href={`/titulo?id=${id}&type=series&s=${item.season}&e=${item.episode}`}
+                        aria-current={item.id === videoId ? "true" : undefined}
+                      >
+                        <div className="p-ep__art">
+                          {item.thumbnail && (
+                            <img src={item.thumbnail} alt="" loading="lazy" />
+                          )}
+                          <span className="z-progress">
+                            <i
+                              style={{
+                                transform: `scaleX(${progressRatio(progress[item.id])})`,
+                              }}
+                            />
+                          </span>
+                        </div>
+                        <div>
+                          <b>{item.name ?? item.title ?? "Episódio"}</b>
+                          <span>
+                            T{item.season}:E{item.episode}
+                          </span>
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+              </ol>
             </>
           )}
           {menu === "help" && (
@@ -711,8 +831,8 @@ export default function Player() {
         </section>
       )}
       {statsOpen && (
-        <section className="player-stats">
-          <h2>REPRODUÇÃO</h2>
+        <section className="p-stats">
+          <h2>MOTOR ZEUS</h2>
           <dl>
             <dt>Resolução</dt>
             <dd>
@@ -768,127 +888,237 @@ export default function Player() {
         </aside>
       )}
       <footer
-        className={`player-controls ${!showControls ? "is-hidden" : ""}`}
+        className={"p-bar p-ui"}
         onPointerEnter={() => {
           clearTimeout(idleTimer.current);
           setIdle(false);
         }}
         onPointerLeave={wake}
       >
-        <input
-          className="player-timeline"
-          type="range"
-          min="0"
-          max={duration || 1}
-          step=".1"
-          value={Math.min(current, duration || 1)}
-          disabled={!duration}
-          aria-label="Posição no vídeo"
-          aria-valuetext={`${formatTime(current)} de ${formatTime(duration)}`}
-          onChange={(event) => {
-            if (video.current) {
-              video.current.currentTime = Number(event.target.value);
-              setCurrent(Number(event.target.value));
-            }
-          }}
-        />
-        <div className="player-times">
-          <span>{formatTime(current)}</span>
-          <span>−{formatTime(duration - current)}</span>
-        </div>
-        <div className="player-buttons">
-          <button
-            className="z-icon-btn"
-            onClick={toggle}
-            aria-label={paused ? "Reproduzir" : "Pausar"}
-          >
-            {paused ? "▶" : "Ⅱ"}
-          </button>
-          <button
-            className="z-icon-btn player-skip"
-            onClick={() => seek(-10)}
-            aria-label="Recuar 10 segundos"
-          >
-            ↶10
-          </button>
-          <button
-            className="z-icon-btn player-skip"
-            onClick={() => seek(10)}
-            aria-label="Avançar 10 segundos"
-          >
-            10↷
-          </button>
-          <button
-            className="z-icon-btn"
-            onClick={() => {
-              if (video.current) video.current.muted = !video.current.muted;
-            }}
-            aria-label={muted ? "Activar som" : "Silenciar"}
-          >
-            {muted ? "◌" : "♪"}
-          </button>
+        <div className="p-scrub">
+          <div className="p-track">
+            <i
+              className="p-played"
+              style={{
+                transform: `scaleX(${duration ? current / duration : 0})`,
+              }}
+            />
+          </div>
+          <span
+            className="p-knob"
+            style={{ left: `${duration ? (current / duration) * 100 : 0}%` }}
+          />
           <input
-            className="player-volume"
+            className="player-timeline"
             type="range"
             min="0"
-            max="1"
-            step=".05"
-            value={muted ? 0 : volume}
-            aria-label="Volume"
+            max={duration || 1}
+            step=".1"
+            value={Math.min(current, duration || 1)}
+            disabled={!duration}
+            aria-label="Posição no vídeo"
+            aria-valuetext={`${formatTime(current)} de ${formatTime(duration)}`}
             onChange={(event) => {
               if (video.current) {
-                video.current.volume = Number(event.target.value);
-                video.current.muted = false;
+                video.current.currentTime = Number(event.target.value);
+                setCurrent(Number(event.target.value));
               }
             }}
           />
-          <span className="player-spacer" />
+        </div>
+        <div className="p-times">
+          <span>{formatTime(current)}</span>
+          <span>−{formatTime(duration - current)}</span>
+        </div>
+        <div className="p-ctrls">
           <button
-            className="z-icon-btn"
+            className="p-b"
+            onClick={toggle}
+            aria-label={paused ? "Reproduzir" : "Pausar"}
+          >
+            <PlayerIcon name={paused ? "play" : "pause"} />
+          </button>
+          <button
+            className="p-b p-b--skip"
+            onClick={() => seek(-10)}
+            aria-label="Recuar 10 segundos"
+          >
+            <PlayerIcon name="back10" />
+          </button>
+          <button
+            className="p-b p-b--skip"
+            onClick={() => seek(10)}
+            aria-label="Avançar 10 segundos"
+          >
+            <PlayerIcon name="forward10" />
+          </button>
+          <div className="p-vol">
+            <button
+              className="p-b"
+              onClick={() => {
+                if (video.current) video.current.muted = !video.current.muted;
+              }}
+              aria-label={muted ? "Activar som" : "Silenciar"}
+            >
+              <PlayerIcon name={muted ? "mute" : "volume"} />
+            </button>
+            <input
+              className="player-volume"
+              type="range"
+              min="0"
+              max="1"
+              step=".05"
+              value={muted ? 0 : volume}
+              aria-label="Volume"
+              onChange={(event) => {
+                if (video.current) {
+                  video.current.volume = Number(event.target.value);
+                  video.current.muted = false;
+                }
+              }}
+            />
+          </div>
+          <span className="p-sp" />
+          <button
+            className="p-b"
             aria-label="Legendas"
             aria-expanded={menu === "subtitles"}
             onClick={() => openMenu("subtitles")}
           >
-            CC
+            <PlayerIcon name="subs" />
           </button>
           <button
-            className="z-icon-btn"
+            className="p-b"
             aria-label="Velocidade"
             aria-expanded={menu === "speed"}
             onClick={() => openMenu("speed")}
           >
-            {speed}×
+            <PlayerIcon name="speed" />
           </button>
           {episodes.length > 0 && (
             <button
-              className="z-icon-btn"
+              className="p-b"
               aria-label="Episódios"
               aria-expanded={menu === "episodes"}
               onClick={() => openMenu("episodes")}
             >
-              ▤
+              <PlayerIcon name="episodes" />
             </button>
           )}
           <button
-            className="z-icon-btn"
+            className="p-b"
             aria-label="Estado da reprodução"
             aria-pressed={statsOpen}
             onClick={() => setStatsOpen(!statsOpen)}
           >
-            ⓘ
+            <PlayerIcon name="info" />
           </button>
           <button
-            className="z-icon-btn"
+            className="p-b"
             aria-label="Ecrã inteiro"
             onClick={fullscreen}
           >
-            ⛶
+            <PlayerIcon name="full" />
           </button>
         </div>
       </footer>
-      <p className={`player-osd ${osd ? "is-visible" : ""}`} role="status">
+      <p className={`p-osd ${osd ? "is-on" : ""}`} role="status">
         {osd}
       </p>
     </main>
   );
+}
+
+function Medusa() {
+  const ref = useRef<HTMLDivElement>(null);
+  const bolts = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const el = ref.current!;
+    el.innerHTML =
+      '<img src="/art/img/medusa.webp" alt="" width="2341" height="2400">';
+    const light = cursorLight(el, {
+      size: 0.5,
+      rest: [0.5, 0.45],
+      orbit: [0.5, 0.46, 0.12, 0.1],
+    });
+    const sky = lightning(bolts.current!, {
+      palette: "warm",
+      every: [9000, 16000],
+      first: [8000, 12000],
+      area: { x: [0.55, 0.9], y: [0.1, 0.3] },
+      onFrame: (I: number) => el.style.setProperty("--I", String(I)),
+    });
+    return () => {
+      sky.destroy();
+      light.destroy();
+      el.replaceChildren();
+    };
+  }, []);
+  return (
+    <>
+      <canvas className="z-bolts" ref={bolts} aria-hidden="true" />
+      <div className="p-medusa" ref={ref} aria-hidden="true" />
+    </>
+  );
+}
+function PlayerIcon({ name }: { name: string }) {
+  const paths: Record<string, string> = {
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>',
+    back10:
+      '<path d="M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8"/><text x="12" y="15" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">10</text>',
+    forward10:
+      '<path d="M20 8V3m0 5h-5m5 0a9 9 0 1 0 1 8"/><text x="12" y="15" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">10</text>',
+    volume:
+      '<path d="M11 5 6 9H3v6h3l5 4zM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
+    mute: '<path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6m0-6-5 6"/>',
+    subs: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M6 11h3m3 0h6M6 15h7m3 0h2"/>',
+    speed: '<circle cx="12" cy="12" r="9"/><path d="m12 12 4-5M5 17h14"/>',
+    episodes:
+      '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
+    full: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
+  };
+  const icon = (ICON as Record<string, string>)[name];
+  return icon ? (
+    <span className="player-svg" dangerouslySetInnerHTML={{ __html: icon }} />
+  ) : (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: paths[name] || paths.full }}
+    />
+  );
+}
+
+type NativeAudioTrack = { language: string; kind?: string; enabled: boolean };
+type NativeAudioVideo = HTMLVideoElement & {
+  audioTracks?: ArrayLike<NativeAudioTrack> & EventTarget;
+};
+function preferredTrack(
+  tracks: { language: string; original?: boolean }[],
+  languages: string[],
+  current: number,
+) {
+  for (const language of languages) {
+    if (language === "original") {
+      const original = tracks.findIndex((t) => t.original);
+      return original >= 0 ? original : current;
+    }
+    const normalized = language.toLowerCase().replace("_", "-");
+    const exact = tracks.findIndex(
+      (t) => t.language.toLowerCase().replace("_", "-") === normalized,
+    );
+    if (exact >= 0) return exact;
+    const base = normalized.split("-")[0];
+    const match = tracks.findIndex(
+      (t) => t.language.toLowerCase().split(/[-_]/)[0] === base,
+    );
+    if (match >= 0) return match;
+  }
+  return -1;
 }

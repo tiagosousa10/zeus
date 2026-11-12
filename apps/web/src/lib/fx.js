@@ -1083,6 +1083,7 @@ export function rows(rootEl = document, opts = {}) {
   function wire(row) {
     row.dataset.wired = "";
     row._render = opts.render;
+    row._previews = opts.previews !== false;
     const track = row.querySelector(".z-track");
     let body = row.querySelector(".z-row__body");
     if (!body) {
@@ -1152,7 +1153,13 @@ export function rows(rootEl = document, opts = {}) {
     if (HOVER) {
       track.addEventListener("mouseover", (e) => {
         const card = e.target.closest(".z-card");
-        if (!card || card === pvCard || card.contains(e.relatedTarget)) return;
+        if (
+          row._previews === false ||
+          !card ||
+          card === pvCard ||
+          card.contains(e.relatedTarget)
+        )
+          return;
         clearTimeout(pvTimer);
         pvTimer = setTimeout(() => showPreview(card), 450);
       });
@@ -1166,7 +1173,13 @@ export function rows(rootEl = document, opts = {}) {
     row._upd = upd;
     upd();
   }
-  const refresh = () => $$(".z-row:not([data-wired])", rootEl).forEach(wire);
+  const refresh = () => {
+    $$(".z-row:not([data-wired])", rootEl).forEach(wire);
+    $$(".z-row[data-wired]", rootEl).forEach((row) => {
+      row._previews = opts.previews !== false;
+    });
+    if (opts.previews === false) hide(true);
+  };
   refresh();
   return { refresh, hide };
 }

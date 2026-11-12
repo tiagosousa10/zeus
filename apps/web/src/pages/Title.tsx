@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import gsap from "gsap";
 import { Page } from "../components/Layout";
 import { api } from "../lib/api";
 import { useMemberState } from "../lib/session";
@@ -17,6 +16,8 @@ import {
   type StreamResponse,
 } from "../lib/catalog";
 import "./cinema.css";
+import "./cinema-reference.css";
+import { cursorLight, lightning } from "../lib/fx.js";
 export default function Title() {
   const params = new URLSearchParams(location.search),
     id = params.get("id") ?? "",
@@ -30,7 +31,19 @@ export default function Title() {
   const [cacheOnly, setCacheOnly] = useState(false);
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [dock, setDock] = useState(false);
+  const playButton = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (!playButton.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setDock(!entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(playButton.current);
+    return () => observer.disconnect();
+  }, []);
   const figure = useRef<HTMLDivElement>(null);
+  const bolts = useRef<HTMLCanvasElement>(null);
   const meta = useQuery({
     queryKey: ["meta", type, id],
     queryFn: ({ signal }) => metadata(type, id, signal),
@@ -62,21 +75,33 @@ export default function Title() {
     setSeason(current.season);
   }, [videos, stateLoading]);
   useEffect(() => {
-    if (
-      !figure.current ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches
-    )
-      return;
-    const ctx = gsap.context(
-      () =>
-        gsap.fromTo(
-          figure.current,
-          { opacity: 0, x: 35 },
-          { opacity: 1, x: 0, duration: 1.6, ease: "power3.out" },
-        ),
-      figure,
+    const el = figure.current;
+    if (!el) return;
+    el.innerHTML =
+      '<img src="/art/img/guerreiro.webp" alt="" width="1741" height="2400">';
+    const light = cursorLight(el, {
+      size: 0.56,
+      rest: [0.3, 0.3],
+      orbit: [0.38, 0.36, 0.1, 0.09],
+    });
+    const sky = lightning(bolts.current!, {
+      palette: "warm",
+      every: [7000, 14000],
+      first: [5200, 8000],
+      area: { x: [0.72, 0.94], y: [0.12, 0.34] },
+      onFrame: (I: number) => el.style.setProperty("--I", String(I)),
+    });
+    const observer = new IntersectionObserver(
+      ([entry]) => sky.setAmbient(entry.isIntersecting),
+      { threshold: 0.35 },
     );
-    return () => ctx.revert();
+    observer.observe(el.parentElement!);
+    return () => {
+      observer.disconnect();
+      sky.destroy();
+      light.destroy();
+      el.replaceChildren();
+    };
   }, []);
   const videoId = meta.data ? playbackKey(meta.data, episode) : id;
   const sources = useQuery({
@@ -174,53 +199,72 @@ export default function Title() {
     location.href = `/leitor?${query}`;
   }
   return (
-    <Page>
-      <section className="title-hero">
+    <Page className="title-page">
+      <canvas className="t-bolts" ref={bolts} aria-hidden="true" />
+      <section className="t-hero">
         {meta.data && (
-          <img className="title-backdrop" src={backdrop(meta.data)} alt="" />
+          <div className="z-art t-back">
+            <img className="is-on" src={backdrop(meta.data)} alt="" />
+          </div>
         )}
-        <div
-          className="title-warrior"
-          ref={figure}
-          onPointerMove={(event) => {
-            const box = event.currentTarget.getBoundingClientRect();
-            event.currentTarget.style.setProperty(
-              "--light-x",
-              `${((event.clientX - box.left) / box.width) * 100}%`,
-            );
-            event.currentTarget.style.setProperty(
-              "--light-y",
-              `${((event.clientY - box.top) / box.height) * 100}%`,
-            );
-          }}
-        >
-          <img src="/art/img/guerreiro.webp" alt="" />
-          <div />
-        </div>
-        <div className="title-copy">
-          <a href="/cinema" className="cinema-back">
-            ← Cinema
-          </a>
-          <p className="cinema-eyebrow">CADA HISTÓRIA, UMA EPOPEIA</p>
-          <h1>
-            {meta.data?.name ??
-              (meta.isPending ? "A abrir o título…" : "Título indisponível")}
+        <div className="t-warrior" ref={figure} aria-hidden="true" />
+        <div className="z-vignette" />
+        <div className="t-copy">
+          <h1 className="t-title">
+            {meta.data ? (
+              <>
+                <span className="t-logo">
+                  <img
+                    src={
+                      meta.data.logo ||
+                      `https://images.metahub.space/logo/medium/${id}/img`
+                    }
+                    alt={meta.data.name}
+                    onError={(e) => {
+                      e.currentTarget.parentElement!.hidden = true;
+                      (
+                        e.currentTarget.parentElement!
+                          .nextElementSibling as HTMLElement
+                      ).hidden = false;
+                    }}
+                  />
+                </span>
+                <span hidden>{meta.data.name}</span>
+              </>
+            ) : meta.isPending ? (
+              "A abrir o título…"
+            ) : (
+              "Título indisponível"
+            )}
           </h1>
-          <p className="cinema-meta">
-            {meta.data?.releaseInfo}{" "}
-            {meta.data?.imdbRating && `· IMDb ${meta.data.imdbRating}`}{" "}
-            {meta.data?.runtime && `· ${meta.data.runtime}`}
-          </p>
-          <p className="cinema-synopsis">{meta.data?.description}</p>
+          <div className="z-meta t-meta">
+            {meta.data?.imdbRating && (
+              <span className="z-pill">IMDb {meta.data.imdbRating}</span>
+            )}
+            <span className="z-num">{meta.data?.releaseInfo}</span>
+            <span>
+              {type === "series" ? "Série" : mediaDuration(meta.data?.runtime)}
+            </span>
+            <span className="t-genres">
+              {meta.data?.genres?.slice(0, 3).map(genreName).join(", ")}
+            </span>
+          </div>
+          <p className="t-syn">{meta.data?.description}</p>
           {meta.data?.cast?.length && (
-            <p className="cinema-cast">
+            <p className="t-cast">
               <strong>Elenco</strong> {meta.data.cast.slice(0, 4).join(", ")}
             </p>
           )}
-          <div className="cinema-actions">
-            <a className="z-btn z-btn--primary" href="#fontes">
-              ▶ Escolher Fonte{" "}
-              {episode && `T${episode.season}:E${episode.episode}`}
+          <div className="t-actions">
+            <a
+              className="z-btn z-btn--primary t-play"
+              ref={playButton}
+              href="#fontes"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z" />
+              </svg>{" "}
+              Reproduzir {episode && `T${episode.season}:E${episode.episode}`}
             </a>
             <button
               className="z-btn z-btn--secondary"
@@ -230,7 +274,7 @@ export default function Title() {
             >
               {library.some((item) => item.id === id)
                 ? "✓ Na minha lista"
-                : "+ A minha lista"}
+                : "A minha lista"}
             </button>
             {meta.data?.trailers?.[0]?.source && (
               <a
@@ -239,13 +283,21 @@ export default function Title() {
                 rel="noreferrer"
                 href={`https://www.youtube.com/watch?v=${encodeURIComponent(meta.data.trailers[0].source)}`}
               >
-                Trailer ↗
+                Trailer
               </a>
             )}
           </div>
         </div>
+        <a
+          className="t-credit"
+          href="https://commons.wikimedia.org/wiki/File:Borghese_Gladiator,_Louvre_Museum,_Paris_2_October_2014.jpg"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Foto: Ryan Bauman, CC BY 2.0
+        </a>
       </section>
-      <div className="cinema-content">
+      <div className="t-body">
         {meta.isError && (
           <div role="alert" className="cinema-message">
             {meta.error.message}
@@ -256,41 +308,41 @@ export default function Title() {
         )}
         {videos.length > 0 && (
           <section className="title-episodes">
-            <div className="cinema-results-head">
-              <h2>Episódios</h2>
-              <label className="cinema-select">
-                Temporada
-                <select
-                  value={season ?? ""}
-                  onChange={(event) => setSeason(Number(event.target.value))}
-                >
-                  {[...new Set(videos.map((item) => item.season))].map(
-                    (value) => (
-                      <option key={value} value={value}>
-                        Temporada {value}
-                      </option>
-                    ),
-                  )}
-                </select>
-              </label>
+            <div className="t-sec-head">
+              <h2 className="z-t2">Episódios</h2>
+              <div className="z-tabs" role="tablist" aria-label="Temporadas">
+                {[...new Set(videos.map((item) => item.season))].map(
+                  (value) => (
+                    <button
+                      key={value}
+                      role="tab"
+                      aria-selected={season === value}
+                      onClick={() => setSeason(value)}
+                    >
+                      Temporada {value}
+                    </button>
+                  ),
+                )}
+              </div>
             </div>
-            <div className="cinema-track">
+            <div className="t-eps">
               {videos
                 .filter((item) => item.season === season)
                 .map((item) => (
                   <article
-                    className={`title-episode ${episode?.id === item.id ? "is-current" : ""}`}
+                    className={`t-ep ${episode?.id === item.id ? "is-current" : ""}`}
                     key={item.id}
                   >
                     <button
+                      className="t-ep__btn"
                       onClick={() => setEpisode(item)}
                       aria-pressed={episode?.id === item.id}
                     >
-                      <div className="title-episode__image">
+                      <div className="t-ep__art">
                         {item.thumbnail && (
                           <img src={item.thumbnail} alt="" loading="lazy" />
                         )}
-                        <span>E{item.episode}</span>
+                        <span className="t-ep__no">E{item.episode}</span>
                         <progress
                           value={
                             progress[item.id]?.completed
@@ -301,10 +353,10 @@ export default function Title() {
                           aria-label="Progresso"
                         />
                       </div>
-                      <strong>
+                      <strong className="t-ep__name">
                         {item.name ?? item.title ?? `Episódio ${item.episode}`}
                       </strong>
-                      <p>{item.overview}</p>
+                      <p className="t-ep__desc">{item.overview}</p>
                     </button>
                     <button
                       className="title-seen"
@@ -321,38 +373,74 @@ export default function Title() {
           </section>
         )}
         <section className="title-sources" id="fontes">
-          <div className="cinema-results-head">
-            <div>
-              <p className="cinema-eyebrow">O CAMINHO ATÉ À HISTÓRIA</p>
-              <h2>
-                Fontes{" "}
-                {episode && (
-                  <small>
-                    · T{episode.season}:E{episode.episode}
-                  </small>
-                )}
-              </h2>
-            </div>
-            <div className="cinema-filters">
-              <label className="cinema-select">
-                Ordenar
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value)}
-                >
-                  <option value="quality">Qualidade</option>
-                  <option value="seeders">Seeders</option>
-                  <option value="size">Tamanho</option>
-                </select>
-              </label>
-              <label className="cinema-checkbox">
-                <input
-                  type="checkbox"
-                  checked={cacheOnly}
-                  onChange={(event) => setCacheOnly(event.target.checked)}
-                />
+          <div className="t-sec-head">
+            <h2 className="z-t2">Fontes</h2>
+            {episode && (
+              <span className="t-for">
+                T{episode.season}:E{episode.episode}
+              </span>
+            )}
+            <div className="t-tools">
+              <div
+                className="z-seg"
+                role="radiogroup"
+                aria-label="Ordenar fontes por"
+              >
+                {[
+                  ["quality", "Qualidade"],
+                  ["size", "Tamanho"],
+                  ["seeders", "Seeders"],
+                ].map(([value, label]) => (
+                  <label key={value}>
+                    <input
+                      type="radio"
+                      name="sort"
+                      value={value}
+                      checked={sort === value}
+                      onChange={() => setSort(value)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <button
+                className="z-switch"
+                type="button"
+                role="switch"
+                aria-checked={cacheOnly}
+                onClick={() => setCacheOnly(!cacheOnly)}
+              >
                 Só em cache
-              </label>
+              </button>
+            </div>
+          </div>
+          <div className="t-addons">
+            <div className="t-addons__row">
+              <p className="t-addons__status z-num" role="status">
+                {sources.isFetching
+                  ? "A perguntar aos Add-ons…"
+                  : `${shown.length} fontes disponíveis`}
+              </p>
+              <ul className="t-pips">
+                {[
+                  ...new Set(
+                    (sources.data?.streams ?? []).map(
+                      (s) => s.addonName || s.addon || s.name || "Add-on",
+                    ),
+                  ),
+                ].map((name) => (
+                  <li className="t-pip" data-state="ok" key={name}>
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="t-bar">
+              <i
+                style={{
+                  transform: `scaleX(${sources.isFetching ? 0.15 : 1})`,
+                }}
+              />
             </div>
           </div>
           {sources.isFetching && (
@@ -388,18 +476,18 @@ export default function Title() {
               </a>
             </div>
           )}
-          <ol className="title-source-list">
+          <ol className="t-srcs">
             {shown.map(({ stream, facts }, index) => (
               <li
                 key={`${stream.name}:${stream.infoHash ?? stream.url}:${index}`}
               >
                 <button
-                  className="title-source"
+                  className="t-src"
                   onClick={() =>
                     play(stream, (sources.data?.streams ?? []).indexOf(stream))
                   }
                 >
-                  <span className="title-source__quality">
+                  <span className="t-q">
                     {facts.quality || "Vídeo"}
                     <small>
                       {stream.addonName ||
@@ -408,8 +496,8 @@ export default function Title() {
                         "Add-on"}
                     </small>
                   </span>
-                  <span className="title-source__details">
-                    <span className="title-source__chips">
+                  <span className="t-details">
+                    <span className="t-chips">
                       {[
                         facts.hdr,
                         facts.codec,
@@ -426,14 +514,24 @@ export default function Title() {
                           </span>
                         ))}
                     </span>
-                    <span className="title-source__description">
+                    <span className="t-raw">
                       {stream.title ||
                         stream.description ||
                         stream.behaviorHints?.filename ||
                         stream.name}
                     </span>
                   </span>
-                  <span className="title-source__play">▶</span>
+                  <span className="t-src__end">
+                    <span className="t-go">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M7 4.9v14.2c0 .8.9 1.3 1.6.9l11-7.1a1 1 0 0 0 0-1.8l-11-7.1C7.9 3.6 7 4.1 7 4.9z" />
+                      </svg>
+                    </span>
+                  </span>
                 </button>
               </li>
             ))}
@@ -441,17 +539,42 @@ export default function Title() {
         </section>
         <p role="status">{notice}</p>
       </div>
-      <footer className="cinema-credit">
-        Gladiador Borghese. Fotografia de{" "}
-        <a
-          href="https://commons.wikimedia.org/wiki/File:Borghese_Gladiator,_Louvre_Museum,_Paris_2_October_2014.jpg"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Ryan Bauman, CC BY 2.0
+
+      <div className="t-dock" data-off={!dock ? "" : undefined}>
+        <span className="t-dock__t">
+          {meta.data?.name}
+          {episode && (
+            <small>
+              T{episode.season}:E{episode.episode}
+            </small>
+          )}
+        </span>
+        <a className="z-btn z-btn--primary z-btn--sm" href="#fontes">
+          Reproduzir
         </a>
-        .
-      </footer>
+      </div>
     </Page>
   );
+}
+
+const genreName = (genre: string) =>
+  ({
+    Action: "Acção",
+    Adventure: "Aventura",
+    Animation: "Animação",
+    Comedy: "Comédia",
+    Crime: "Crime",
+    Documentary: "Documentário",
+    Fantasy: "Fantasia",
+    Horror: "Terror",
+    Mystery: "Mistério",
+    Romance: "Romance",
+    "Sci-Fi": "Ficção científica",
+    War: "Guerra",
+    History: "História",
+    Family: "Família",
+  })[genre] || genre;
+function mediaDuration(value?: string) {
+  const n = parseInt(value || "");
+  return n ? `${Math.floor(n / 60)} h${n % 60 ? ` ${n % 60} min` : ""}` : value;
 }
