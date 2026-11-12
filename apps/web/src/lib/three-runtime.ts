@@ -1,0 +1,20 @@
+// Keep the graphics surface explicit so the bundler can remove unused loaders,
+// geometries and animation systems instead of retaining the entire namespace.
+export {
+  Camera,
+  CanvasTexture,
+  Color,
+  LinearFilter,
+  Mesh,
+  PerspectiveCamera,
+  PlaneGeometry,
+  Scene,
+  ShaderMaterial,
+  Sprite,
+  SpriteMaterial,
+  TextureLoader,
+  Vector2,
+  Vector3,
+  Vector4,
+  WebGLRenderer,
+} from "three";
