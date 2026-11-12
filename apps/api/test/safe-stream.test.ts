@@ -44,7 +44,10 @@ const big = Buffer.alloc(3 * 1024 * 1024, 7);
 let closed: Promise<void>;
 let markClosed: () => void;
 const server = http.createServer((req, res) => {
-  if (req.url === "/big") {
+  if (req.url === "/agent") {
+    res.writeHead(req.headers["user-agent"] ? 200 : 404);
+    res.end(req.headers["user-agent"] ?? "");
+  } else if (req.url === "/big") {
     res.writeHead(200, {
       "content-type": "video/mp2t",
       "content-length": big.length,
@@ -155,6 +158,24 @@ test("safeStream exposes the final URL after redirects", async () => {
     const res = await safeStream(`${base}/hop`);
     assert.equal(res.url, `${base}/dir/final`);
     assert.equal(await res.text(), "ok");
+  } finally {
+    restore();
+  }
+});
+
+// Real IPTV providers may disguise requests without a User-Agent as missing media.
+test("both guarded transports identify Zeus and preserve explicit User-Agent headers", async () => {
+  const restore = loopback();
+  try {
+    for (const load of [safeFetch, safeStream]) {
+      const response = await load(`${base}/agent`);
+      assert.equal(response.status, 200);
+      assert.equal(await response.text(), "Zeus/1.1.3");
+      for (const key of ["User-Agent", "user-agent"]) {
+        const custom = await load(`${base}/agent`, { headers: { [key]: "CustomPlayer/2" } });
+        assert.equal(await custom.text(), "CustomPlayer/2");
+      }
+    }
   } finally {
     restore();
   }

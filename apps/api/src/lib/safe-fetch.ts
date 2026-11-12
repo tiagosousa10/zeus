@@ -86,7 +86,13 @@ async function guardedGet(
         url,
         {
           method: "GET",
-          headers: { "accept-encoding": "identity", ...options.headers },
+          // Some IPTV servers return 404 for anonymous HTTP clients.
+          // Headers normalizes casing so an explicit caller agent always wins.
+          headers: Object.fromEntries(new Headers({
+            "accept-encoding": "identity",
+            "user-agent": "Zeus/1.1.3",
+            ...Object.fromEntries(new Headers(options.headers)),
+          })),
           lookup: ((_host: any, opts: any, cb: any) =>
             opts.all
               ? cb(null, [chosen])
