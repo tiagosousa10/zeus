@@ -11,6 +11,7 @@ module.exports = {
   },
   files: [
     "apps/desktop/src/**/*",
+    "packages/local-config/**/*",
     "apps/desktop/build/icon.png",
     "package.json",
     "apps/web/dist/**/*",

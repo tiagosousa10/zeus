@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 async function main() {
+  process.env.ZEUS_DEVELOPMENT = "1";
   require("../apps/desktop/src/local-config.cjs").ensureLocalConfig();
   const children: ChildProcess[] = [];
   function run(cmd: string, args: string[]) {
