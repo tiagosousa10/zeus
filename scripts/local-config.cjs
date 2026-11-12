@@ -7,8 +7,10 @@ const {
 const { join } = require("node:path");
 const { homedir } = require("node:os");
 const { randomBytes } = require("node:crypto");
-function ensureLocalConfig() {
-  if (process.loadEnvFile && existsSync(".env")) process.loadEnvFile(".env");
+function ensureLocalConfig({ loadEnv = true } = {}) {
+  const envFile = join(__dirname, "..", ".env");
+  if (loadEnv && process.loadEnvFile && existsSync(envFile))
+    process.loadEnvFile(envFile);
   const dir =
     process.env.ZEUS_DATA_DIR ||
     join(

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireMember } from "../auth/middleware.js";
-const engine = "http://127.0.0.1:11471";
+const engine = process.env.ZEUS_MOTOR_URL || "http://127.0.0.1:11471";
 const engineHeaders = () => ({
   "X-Zeus-Motor-Token": process.env.ZEUS_MOTOR_TOKEN || "",
 });

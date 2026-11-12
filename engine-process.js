@@ -7,6 +7,12 @@ const engine = startEngine({
   port: parseInt(process.env.MS_PORT || "11471", 10),
   ffmpegPath: process.env.MS_FFMPEG || null,
 });
+engine.server.once("listening", () =>
+  process.parentPort.postMessage({
+    ready: true,
+    port: engine.server.address().port,
+  }),
+);
 function shutdown() {
   try {
     engine.stop();

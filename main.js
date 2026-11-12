@@ -10,18 +10,33 @@ const {
   powerSaveBlocker,
   powerMonitor,
   nativeImage,
+  nativeTheme,
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
 app.setName("Zeus");
-app.setPath("userData", path.join(app.getPath("appData"), "Zeus"));
+nativeTheme.themeSource = "dark";
+app.setPath(
+  "userData",
+  process.env.ZEUS_DATA_DIR || path.join(app.getPath("appData"), "Zeus"),
+);
+process.env.ZEUS_DATA_DIR = app.getPath("userData");
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.quit();
+app.on("second-instance", () => {
+  const window = BrowserWindow.getAllWindows()[0];
+  if (window) {
+    if (window.isMinimized()) window.restore();
+    window.focus();
+  }
+});
 let frontendURL = "http://127.0.0.1:4310/";
 let apiProcess = null;
-let apiOwned = false;
+let quitting = false;
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
-app.commandLine.appendSwitch("disk-cache-size", String(512 * 1024 * 1024));
+app.commandLine.appendSwitch("disk-cache-size", String(64 * 1024 * 1024));
 
 const STATE_FILE = () =>
   path.join(app.getPath("userData"), "window-state.json");
@@ -38,6 +53,7 @@ function saveWinState(win) {
       bounds: win.getNormalBounds(),
       max: win.isMaximized(),
       zoom: win.webContents.getZoomFactor(),
+      uiScaleVersion: 2,
     };
     fs.writeFileSync(STATE_FILE(), JSON.stringify(st));
   } catch (e) {}
@@ -106,8 +122,8 @@ function createWindow() {
     minHeight: 600,
     backgroundColor: "#0b0f19",
     title: "Zeus",
-    titleBarStyle: "hidden",
-    trafficLightPosition: { x: 14, y: 20 },
+    // Let macOS reserve the title bar outside web content, at every zoom level.
+    titleBarStyle: "default",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -116,17 +132,13 @@ function createWindow() {
   });
 
   win.webContents.on("did-finish-load", () => {
-    // Ecrãs grandes: interface maior (Cmd +/− ajusta à mão)
+    // Standard desktop density; Cmd +/− remains available.
     win.webContents.setZoomFactor(
-      useSaved && saved.zoom
-        ? saved.zoom
-        : Math.min(1.4, Math.max(1, wa.width / 1440)),
+      useSaved && saved.uiScaleVersion === 2 && saved.zoom ? saved.zoom : 1,
     );
-    // Os "semáforos" desenhados no HTML ficam escondidos (usamos os reais) e o cabeçalho arrasta a janela
+    // macOS owns the title bar; page headers remain ordinary interactive content.
     win.webContents.insertCSS(`
       [title="Controlos de Janela macOS"] { visibility: hidden; }
-      header { -webkit-app-region: drag; }
-      header button, header input, header select, header kbd, header a { -webkit-app-region: no-drag; }
     `);
   });
 
@@ -140,125 +152,169 @@ function createWindow() {
   win.loadURL(frontendURL);
 }
 
-app.whenReady().then(async () => {
-  try {
-    require("./scripts/local-config.cjs").ensureLocalConfig();
-    // The API needs the saved local key to read member data on every launch.
-    if (process.loadEnvFile && fs.existsSync(path.join(__dirname, ".env")))
-      process.loadEnvFile(path.join(__dirname, ".env"));
-    const response = await fetch("http://127.0.0.1:4310/api/health").catch(
-      () => null,
+function waitReady(child) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(
+      () => finish(new Error("Um serviço local da Zeus não arrancou a tempo.")),
+      30000,
     );
-    if (response && response.ok) {
-      const existingPage = await fetch("http://127.0.0.1:4310/").catch(
-        () => null,
+    const exit = () =>
+      finish(
+        new Error(
+          "Não foi possível iniciar a Zeus. Confirma a migração dos dados antigos e tenta novamente.",
+        ),
       );
-      if (
-        !existingPage ||
-        !existingPage.headers.get("content-type")?.includes("text/html")
-      )
-        frontendURL = "http://127.0.0.1:5174/";
+    const message = (data) => {
+      if (data?.ready) finish(null, data);
+    };
+    function finish(error, value) {
+      clearTimeout(timeout);
+      child.removeListener("exit", exit);
+      child.removeListener("message", message);
+      if (error) reject(error);
+      else resolve(value);
     }
-    if (!response || !response.ok) {
+    child.on("exit", exit);
+    child.on("message", message);
+  });
+}
+async function availablePort() {
+  // Keep local invitation/recovery URLs valid across restarts of this profile.
+  const portFile = path.join(app.getPath("userData"), "api-port.json");
+  let preferred = 0;
+  if (fs.existsSync(portFile)) {
+    preferred = JSON.parse(fs.readFileSync(portFile, "utf8")).port;
+    if (!Number.isInteger(preferred) || preferred < 1024 || preferred > 65535)
+      throw new Error("A configuração da porta local da Zeus é inválida.");
+  }
+  const server = require("node:net").createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(preferred, "127.0.0.1", resolve);
+  });
+  const port = server.address().port;
+  await new Promise((resolve) => server.close(resolve));
+  if (!preferred)
+    fs.writeFileSync(portFile, JSON.stringify({ port }), { mode: 0o600 });
+  return port;
+}
+
+if (primary)
+  app.whenReady().then(async () => {
+    try {
+      // A packaged app uses its saved profile, never a .env from the Finder's working directory.
+      require("./scripts/local-config.cjs").ensureLocalConfig({
+        loadEnv: !app.isPackaged,
+      });
+      if (
+        process.env.DATABASE_URL &&
+        !fs.existsSync(
+          process.env.ZEUS_DATABASE_PATH ||
+            path.join(process.env.ZEUS_DATA_DIR, "zeus.sqlite"),
+        )
+      ) {
+        throw new Error(
+          "Os dados PostgreSQL ainda precisam de ser migrados. Na pasta do projecto executa npm run db:migrate; os dados originais serão preservados.",
+        );
+      }
+      engine = utilityProcess.fork(
+        path.join(__dirname, "engine-process.js"),
+        [],
+        {
+          env: {
+            ...process.env,
+            MS_PORT: "0",
+            MS_FFMPEG: resolveFfmpeg() || "",
+          },
+          serviceName: "Zeus Motor",
+        },
+      );
+      const motor = await waitReady(engine);
+      const port = await availablePort();
+      frontendURL = `http://127.0.0.1:${port}`;
       apiProcess = utilityProcess.fork(
         path.join(__dirname, "apps/api/dist/index.mjs"),
         [],
         {
           env: {
             ...process.env,
-            PORT: "4310",
-            ZEUS_WEB_ORIGIN: "http://127.0.0.1:4310",
-            BETTER_AUTH_URL: "http://127.0.0.1:4310",
+            PORT: String(port),
+            ZEUS_WEB_ORIGIN: frontendURL,
+            BETTER_AUTH_URL: frontendURL,
             ZEUS_WEB_DIST: path.join(__dirname, "apps/web/dist"),
-            ZEUS_DATA_DIR: process.env.ZEUS_DATA_DIR,
+            ZEUS_MOTOR_URL: `http://127.0.0.1:${motor.port}`,
+            ZEUS_FFMPEG_PATH: resolveFfmpeg() || "",
           },
           serviceName: "Zeus API",
         },
       );
-      apiOwned = true;
+      await waitReady(apiProcess);
+      for (const child of [engine, apiProcess])
+        child.on("exit", () => {
+          if (!quitting) {
+            require("electron").dialog.showErrorBox(
+              "Zeus",
+              "Um serviço local terminou. Volta a abrir a aplicação.",
+            );
+            app.quit();
+          }
+        });
+    } catch (error) {
+      require("electron").dialog.showErrorBox("Zeus", error.message);
+      app.quit();
+      return;
     }
-    let ready = false;
-    for (let i = 0; i < 80; i++) {
-      const r = await fetch("http://127.0.0.1:4310/api/health").catch(
-        () => null,
-      );
-      if (r && r.ok) {
-        ready = true;
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 125));
-    }
-    if (!ready)
-      throw new Error(
-        "A API do Zeus não arrancou. Confirma que o PostgreSQL está ligado.",
-      );
-  } catch (e) {
-    require("electron").dialog.showErrorBox("Zeus", e.message);
-    app.quit();
-    return;
-  }
-  const existingMotor = await fetch("http://127.0.0.1:11471/status", {
-    headers: process.env.ZEUS_MOTOR_TOKEN
-      ? { "X-Zeus-Motor-Token": process.env.ZEUS_MOTOR_TOKEN }
-      : {},
-  }).catch(() => null);
-  if (!existingMotor || !existingMotor.ok)
-    engine = utilityProcess.fork(
-      path.join(__dirname, "engine-process.js"),
-      [],
-      {
-        env: {
-          ...process.env,
-          MS_PORT: "11471",
-          MS_FFMPEG: resolveFfmpeg() || "",
-        },
-        serviceName: "Zeus Motor",
-      },
-    );
+    // Com bateria: sem upload, para poupar energia e calor
+    const sendBattery = () => {
+      try {
+        if (engine)
+          engine.postMessage({ battery: powerMonitor.isOnBatteryPower() });
+      } catch (e) {}
+    };
+    powerMonitor.on("on-battery", sendBattery);
+    powerMonitor.on("on-ac", sendBattery);
+    setTimeout(sendBattery, 2500);
 
-  // Com bateria: sem upload, para poupar energia e calor
-  const sendBattery = () => {
     try {
-      if (engine)
-        engine.postMessage({ battery: powerMonitor.isOnBatteryPower() });
+      const icon = nativeImage.createFromPath(
+        path.join(__dirname, "build", "icon.png"),
+      );
+      if (!icon.isEmpty() && app.dock) app.dock.setIcon(icon);
     } catch (e) {}
-  };
-  powerMonitor.on("on-battery", sendBattery);
-  powerMonitor.on("on-ac", sendBattery);
-  setTimeout(sendBattery, 2500);
 
-  try {
-    const icon = nativeImage.createFromPath(
-      path.join(__dirname, "build", "icon.png"),
-    );
-    if (!icon.isEmpty() && app.dock) app.dock.setIcon(icon);
-  } catch (e) {}
-
-  createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    createWindow();
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
   });
-});
 
 app.on("window-all-closed", () => {
   app.quit();
 });
-app.on("before-quit", () => {
-  if (apiOwned && apiProcess) {
-    try {
-      apiProcess.kill();
-    } catch {}
-  }
-  if (engine) {
-    const e = engine;
-    engine = null;
-    try {
-      e.postMessage("stop");
-    } catch (x) {}
-    setTimeout(() => {
+app.on("before-quit", (event) => {
+  if (quitting) return;
+  quitting = true;
+  event.preventDefault();
+  if (awakeId !== null) powerSaveBlocker.stop(awakeId);
+  const stop = (child) =>
+    new Promise((resolve) => {
+      if (!child?.pid) return resolve();
+      const timeout = setTimeout(() => {
+        try {
+          child.kill();
+        } catch {}
+        resolve();
+      }, 2000);
+      child.once("exit", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
       try {
-        e.kill();
-      } catch (x) {}
-    }, 1500);
-  }
+        child.postMessage("stop");
+      } catch {
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+  Promise.all([stop(apiProcess), stop(engine)]).finally(() => app.exit(0));
 });

@@ -3,7 +3,8 @@ import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import ffmpeg from "ffmpeg-static";
+import bundledFfmpeg from "ffmpeg-static";
+const ffmpeg = process.env.ZEUS_FFMPEG_PATH || bundledFfmpeg?.replace("app.asar/", "app.asar.unpacked/");
 import type { PlaySession } from "./sessions.js";
 
 // ffmpeg only receives this local capability URL; all provider access stays in safeStream.
