@@ -453,42 +453,6 @@
   display: block;
   margin-bottom: 8px;
 }
-.account-fidelity .drop {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  max-width: 640px;
-  padding: 36px 24px;
-  border-radius: var(--r-lg);
-  border: 1.5px dashed rgba(var(--leaf-rgb), 0.4);
-  background: rgba(var(--leaf-rgb), 0.04);
-  text-align: center;
-  cursor: pointer;
-  transition:
-    background 0.25s,
-    border-color 0.25s;
-}
-.account-fidelity .drop:hover,
-.account-fidelity .drop.is-over {
-  background: rgba(var(--leaf-rgb), 0.1);
-  border-color: var(--accent);
-}
-.account-fidelity .drop:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.account-fidelity .drop input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.account-fidelity .drop svg {
-  width: 34px;
-  height: 34px;
-  color: var(--accent);
-}
 .account-fidelity .found {
   max-width: 640px;
   margin-top: 14px;
@@ -565,7 +529,4 @@
 }
 .account-fidelity .z-field > .z-label {
   margin-bottom: 0;
-}
-.account-fidelity .drop[aria-disabled="true"] {
-  cursor: default;
 }

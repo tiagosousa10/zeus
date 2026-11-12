@@ -14,10 +14,8 @@ const {
 const path = require("path");
 const fs = require("fs");
 
-const legacy = process.env.ZEUS_LEGACY === "1";
-// Keep the existing MacStream profile; do not silently migrate or erase it.
-app.setName(legacy ? "MacStream" : "Zeus");
-app.setPath("userData", path.join(app.getPath("appData"), "MacStream"));
+app.setName("Zeus");
+app.setPath("userData", path.join(app.getPath("appData"), "Zeus"));
 let frontendURL = "http://127.0.0.1:4310/";
 let apiProcess = null;
 let apiOwned = false;
@@ -107,7 +105,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: "#0b0f19",
-    title: legacy ? "MacStream" : "Zeus",
+    title: "Zeus",
     titleBarStyle: "hidden",
     trafficLightPosition: { x: 14, y: 20 },
     webPreferences: {
@@ -139,68 +137,65 @@ function createWindow() {
 
   if (useSaved && saved.max) win.maximize();
   win.on("close", () => saveWinState(win));
-  if (legacy) win.loadFile(path.join(__dirname, "renderer", "index.html"));
-  else win.loadURL(frontendURL);
+  win.loadURL(frontendURL);
 }
 
 app.whenReady().then(async () => {
-  if (!legacy) {
-    try {
-      require("./scripts/local-config.cjs").ensureLocalConfig();
-      // The API needs the saved local key to read member data on every launch.
-      if (process.loadEnvFile && fs.existsSync(path.join(__dirname, ".env")))
-        process.loadEnvFile(path.join(__dirname, ".env"));
-      const response = await fetch("http://127.0.0.1:4310/api/health").catch(
+  try {
+    require("./scripts/local-config.cjs").ensureLocalConfig();
+    // The API needs the saved local key to read member data on every launch.
+    if (process.loadEnvFile && fs.existsSync(path.join(__dirname, ".env")))
+      process.loadEnvFile(path.join(__dirname, ".env"));
+    const response = await fetch("http://127.0.0.1:4310/api/health").catch(
+      () => null,
+    );
+    if (response && response.ok) {
+      const existingPage = await fetch("http://127.0.0.1:4310/").catch(
         () => null,
       );
-      if (response && response.ok) {
-        const existingPage = await fetch("http://127.0.0.1:4310/").catch(
-          () => null,
-        );
-        if (
-          !existingPage ||
-          !existingPage.headers.get("content-type")?.includes("text/html")
-        )
-          frontendURL = "http://127.0.0.1:5174/";
-      }
-      if (!response || !response.ok) {
-        apiProcess = utilityProcess.fork(
-          path.join(__dirname, "apps/api/dist/index.mjs"),
-          [],
-          {
-            env: {
-              ...process.env,
-              PORT: "4310",
-              ZEUS_WEB_ORIGIN: "http://127.0.0.1:4310",
-              BETTER_AUTH_URL: "http://127.0.0.1:4310",
-              ZEUS_WEB_DIST: path.join(__dirname, "apps/web/dist"),
-              ZEUS_DATA_DIR: process.env.ZEUS_DATA_DIR,
-            },
-            serviceName: "Zeus API",
-          },
-        );
-        apiOwned = true;
-      }
-      let ready = false;
-      for (let i = 0; i < 80; i++) {
-        const r = await fetch("http://127.0.0.1:4310/api/health").catch(
-          () => null,
-        );
-        if (r && r.ok) {
-          ready = true;
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 125));
-      }
-      if (!ready)
-        throw new Error(
-          "A API do Zeus não arrancou. Confirma que o PostgreSQL está ligado.",
-        );
-    } catch (e) {
-      require("electron").dialog.showErrorBox("Zeus", e.message);
-      app.quit();
-      return;
+      if (
+        !existingPage ||
+        !existingPage.headers.get("content-type")?.includes("text/html")
+      )
+        frontendURL = "http://127.0.0.1:5174/";
     }
+    if (!response || !response.ok) {
+      apiProcess = utilityProcess.fork(
+        path.join(__dirname, "apps/api/dist/index.mjs"),
+        [],
+        {
+          env: {
+            ...process.env,
+            PORT: "4310",
+            ZEUS_WEB_ORIGIN: "http://127.0.0.1:4310",
+            BETTER_AUTH_URL: "http://127.0.0.1:4310",
+            ZEUS_WEB_DIST: path.join(__dirname, "apps/web/dist"),
+            ZEUS_DATA_DIR: process.env.ZEUS_DATA_DIR,
+          },
+          serviceName: "Zeus API",
+        },
+      );
+      apiOwned = true;
+    }
+    let ready = false;
+    for (let i = 0; i < 80; i++) {
+      const r = await fetch("http://127.0.0.1:4310/api/health").catch(
+        () => null,
+      );
+      if (r && r.ok) {
+        ready = true;
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 125));
+    }
+    if (!ready)
+      throw new Error(
+        "A API do Zeus não arrancou. Confirma que o PostgreSQL está ligado.",
+      );
+  } catch (e) {
+    require("electron").dialog.showErrorBox("Zeus", e.message);
+    app.quit();
+    return;
   }
   const existingMotor = await fetch("http://127.0.0.1:11471/status", {
     headers: process.env.ZEUS_MOTOR_TOKEN
@@ -217,27 +212,9 @@ app.whenReady().then(async () => {
           MS_PORT: "11471",
           MS_FFMPEG: resolveFfmpeg() || "",
         },
-        serviceName: "MacStream Engine",
+        serviceName: "Zeus Motor",
       },
     );
-
-  // A app é nativa: sem restrições CORS (resolve o Xtream/IPTV e os add-ons Stremio)
-  if (legacy)
-    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-      // O motor local já envia CORS; não gastar tempo do processo principal em cada pedaço de vídeo
-      if (details.url.startsWith("http://127.0.0.1:11471/"))
-        return callback({});
-      const h = details.responseHeaders || {};
-      for (const k of Object.keys(h)) {
-        if (k.toLowerCase().startsWith("access-control-allow-")) delete h[k];
-      }
-      h["Access-Control-Allow-Origin"] = ["*"];
-      h["Access-Control-Allow-Headers"] = ["*"];
-      h["Access-Control-Allow-Methods"] = ["GET, POST, OPTIONS"];
-      const out = { responseHeaders: h };
-      if (details.method === "OPTIONS") out.statusLine = "HTTP/1.1 200 OK";
-      callback(out);
-    });
 
   // Com bateria: sem upload, para poupar energia e calor
   const sendBattery = () => {

@@ -161,7 +161,6 @@ export default function Account() {
               ["seguranca", "Segurança"],
               ["tmdb", "Chave TMDB"],
               ["leitor", "Leitor"],
-              ["importar", "Importar do MacStream"],
             ].map(([id, label]) => (
               <a
                 key={id}
@@ -834,30 +833,6 @@ export default function Account() {
               <p className="save-note">
                 As preferências são guardadas na tua conta.
               </p>
-            </section>
-            <section className="sec" id="importar">
-              <h2 className="z-t2">Importar dados do MacStream</h2>
-              <p className="z-callout">
-                A migração ainda está por decidir. Os dados do MacStream
-                continuam intactos; a importação estará disponível quando for
-                definida.
-              </p>
-              <div className="drop" aria-disabled="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" />
-                  <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
-                </svg>
-                <b>Exportação do MacStream</b>
-                <span className="z-foot">Importação ainda indisponível.</span>
-              </div>
             </section>
             <div className="actions">
               <button

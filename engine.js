@@ -21,7 +21,7 @@ const VIDEO_RE = /\.(mp4|m4v|webm|mov|mkv|avi|ogv|ts|m2ts)$/i;
 const MIME = { mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mkv: 'video/x-matroska', avi: 'video/x-msvideo', ogv: 'video/ogg', ts: 'video/mp2t', m2ts: 'video/mp2t' };
 
 function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null } = {}) {
-  const DL_DIR = cacheDir || path.join(os.tmpdir(), 'macstream-cache');
+  const DL_DIR = cacheDir || path.join(os.tmpdir(), 'zeus-cache');
   try { fs.rmSync(DL_DIR, { recursive: true, force: true }); } catch (e) {}
   fs.mkdirSync(DL_DIR, { recursive: true });
 
@@ -322,7 +322,7 @@ function startEngine({ port = 11471, ffmpegPath = null, cacheDir, token = null }
       return serveTranscode(req, res, parts[1], parseInt(parts[2], 10), parseFloat(u.searchParams.get('start') || '0') || 0, parseInt(u.searchParams.get('audio') || '0', 10) || 0);
     }
 
-    json(res, 200, { ok: true, engine: 'MacStream interno' });
+    json(res, 200, { ok: true, engine: 'Zeus Motor' });
   });
 
   server.on('error', (e) => console.error('[engine] servidor:', e.message));
