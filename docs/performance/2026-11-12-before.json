@@ -1,0 +1,111 @@
+{
+  "measuredAt": "2026-11-12T18:40:53.119Z",
+  "environment": "Headless Chrome, production build, local synthetic API, 1440x900 DPR2; CPU/heap are diagnostic samples, not device-wide guarantees.",
+  "screens": [
+    {
+      "path": "/tv",
+      "motion": "reduce",
+      "jsBytes": 1059291,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-DKOtYlET.js": 333933,
+        "/assets/TV-BDoV4_8f.js": 146495,
+        "/assets/hls-CJWfdge_.js": 578137
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 0,
+      "taskMilliseconds": 2,
+      "jsHeapBytes": 5344656,
+      "errors": []
+    },
+    {
+      "path": "/tv#section=movie",
+      "motion": "reduce",
+      "jsBytes": 1059291,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-DKOtYlET.js": 333933,
+        "/assets/TV-BDoV4_8f.js": 146495,
+        "/assets/hls-CJWfdge_.js": 578137
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 0,
+      "taskMilliseconds": 1,
+      "jsHeapBytes": 5747480,
+      "errors": []
+    },
+    {
+      "path": "/portal",
+      "motion": "reduce",
+      "jsBytes": 1178143,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-DKOtYlET.js": 333933,
+        "/assets/Portal-ZJGjf7Vu.js": 6328,
+        "/assets/gsap-Dm7UF3sG.js": 69976,
+        "/assets/fx-vEQbMfWb.js": 24379,
+        "/assets/three.module-CeVBJVoU.js": 742801
+      },
+      "drawsPerSecond": 0,
+      "canvasPixels": 5184000,
+      "taskMilliseconds": 26,
+      "jsHeapBytes": 5408924,
+      "errors": []
+    },
+    {
+      "path": "/portal",
+      "motion": "no-preference",
+      "jsBytes": 1178143,
+      "assets": {
+        "/assets/rolldown-runtime-XKyaHtl9.js": 726,
+        "/assets/index-DKOtYlET.js": 333933,
+        "/assets/Portal-ZJGjf7Vu.js": 6328,
+        "/assets/gsap-Dm7UF3sG.js": 69976,
+        "/assets/fx-vEQbMfWb.js": 24379,
+        "/assets/three.module-CeVBJVoU.js": 742801
+      },
+      "drawsPerSecond": 60.5,
+      "canvasPixels": 10368000,
+      "taskMilliseconds": 118,
+      "jsHeapBytes": 6497984,
+      "errors": []
+    }
+  ],
+  "motor": [
+    {
+      "milliseconds": 1383.651,
+      "rss": 72531968,
+      "heap": 10221536,
+      "modules": 216,
+      "torrentLoaded": true
+    },
+    {
+      "milliseconds": 593.391125,
+      "rss": 72400896,
+      "heap": 10267376,
+      "modules": 216,
+      "torrentLoaded": true
+    },
+    {
+      "milliseconds": 586.799958,
+      "rss": 72138752,
+      "heap": 10235304,
+      "modules": 216,
+      "torrentLoaded": true
+    },
+    {
+      "milliseconds": 343.534125,
+      "rss": 72384512,
+      "heap": 10283264,
+      "modules": 216,
+      "torrentLoaded": true
+    },
+    {
+      "milliseconds": 325.904542,
+      "rss": 71942144,
+      "heap": 10238320,
+      "modules": 216,
+      "torrentLoaded": true
+    }
+  ]
+}
