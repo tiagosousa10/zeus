@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { normalizeXtreamCatalog } from "../src/modules/iptv/xtream.js";
 import { defaultPrefs } from "../src/modules/iptv/prefs.js";
 import { sectionsView, categoryPage, searchIndex, visibleItem, publicItem, publicSeriesDetail } from "../src/modules/iptv/views.js";
+import { normalizeM3U } from "../src/modules/iptv/m3u.js";
 import { xtreamFixture } from "./fixtures/xtream.js";
 
 const c = normalizeXtreamCatalog(xtreamFixture.catalog, 0);
@@ -75,4 +76,14 @@ test("series detail sent to the browser has no sources", () => {
   const d = publicSeriesDetail({ id: "s", categoryId: "c", name: "T", adult: false, cast: [], episodes: [], seasons: [{ number: 1, name: "Temporada 1", episodes: [{ id: "e", season: 1, number: 1, title: "x", container: "mp4", source: "http://p.test/u/p/1.mp4" }] }] });
   assert.equal(JSON.stringify(d).includes("p.test"), false);
   assert.equal("episodes" in d, false);
+});
+
+test("M3U series pages carry no episodes or sources", () => {
+  const m = normalizeM3U(`#EXTM3U
+#EXTINF:-1 group-title="Séries",Tróia S01E01
+http://p.test/series/u/p/1.mp4`, "http://p.test/l.m3u", 0);
+  const page = categoryPage(m, defaultPrefs(), "series", m.series.categories[0].id, 0, 10)!;
+  assert.equal(page.items.length, 1);
+  assert.equal(JSON.stringify(page).includes("p.test"), false);
+  assert.equal("episodes" in page.items[0], false);
 });

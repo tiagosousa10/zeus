@@ -7,9 +7,10 @@ const hash = (s: string) => createHash("sha256").update(s).digest("hex").slice(0
 interface Entry { section: Section; group: string; name: string; logo?: string; epgId?: string; url: string; categoryId: string; id: string }
 
 function sectionOf(path: string, group: string): Section {
-  if (path.includes("/live/") || /\.(m3u8|ts)$/i.test(path)) return "live";
+  if (path.includes("/live/")) return "live";
   if (path.includes("/movie/")) return "movie";
   if (path.includes("/series/")) return "series";
+  if (/\.(m3u8|ts)$/i.test(path)) return "live";
   const words = cleanFolderName(group).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().split(/[^a-z0-9]+/);
   if (words.some((w) => ["filmes", "filme", "movies", "movie", "vod"].includes(w))) return "movie";
   if (words.some((w) => ["series", "serie"].includes(w))) return "series";
