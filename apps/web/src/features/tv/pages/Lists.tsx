@@ -56,10 +56,25 @@ export default function Lists() {
     });
   }
   return (
-    <Modal title="Listas IPTV" onClose={tv.closeModal}>
+    <Modal title="Configuração da TV" onClose={tv.closeModal}>
       <p>As tuas listas privadas. Só tu tens acesso às credenciais.</p>
       {editing === undefined ? (
         <>
+          {tv.lists.length > 0 && (
+            <label className="tv-list-selection">
+              Lista IPTV ativa
+              <select
+                value={tv.listId}
+                onChange={(e) => tv.setListId(e.target.value)}
+              >
+                {tv.lists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="tv-list-cards">
             {tv.lists.map((list) => (
               <article className="tv-list-card" key={list.id}>

@@ -153,6 +153,12 @@ try {
     await page.locator(".tv-app").waitFor();
     await settleTV(page);
   };
+  const accountMenu = page.getByRole("button", { name: /^Menu da conta/ });
+  const openTVSettings = async () => {
+    await accountMenu.click();
+    await page.getByRole("menuitem", { name: "Configuração da TV" }).click();
+    await page.getByRole("dialog", { name: "Configuração da TV" }).waitFor();
+  };
   const noOverflow = async (label) =>
     assert.equal(
       await page.evaluate(() => document.documentElement.scrollWidth),
@@ -219,6 +225,14 @@ try {
         await page.locator(".tv-guide-row").first().waitFor();
       await settleTV(page);
       assert.equal(
+        await page
+          .locator(".tv-main")
+          .getByRole("combobox", { name: /Lista IPTV/ })
+          .count(),
+        0,
+        `${name}: list selection belongs in settings`,
+      );
+      assert.equal(
         await page.evaluate(() => document.documentElement.scrollWidth),
         width,
         `${name} overflow`,
@@ -238,6 +252,26 @@ try {
       }
     }
     await goto("");
+    await openTVSettings();
+    await noOverflow("TV settings");
+    await modalBoundaryTrap();
+    await page.screenshot({ path: `${directory}/settings-${width}.png` });
+    await page.keyboard.press("Escape");
+    assert.ok(
+      await accountMenu.evaluate((e) => e === document.activeElement),
+      "settings Esc restores the visible account menu button",
+    );
+    for (const listId of ["other", "fixture"]) {
+      await openTVSettings();
+      await page
+        .getByRole("combobox", { name: "Lista IPTV ativa" })
+        .selectOption(listId);
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      await page.waitForFunction(
+        (id) => window.__tvFixture.listId === id,
+        listId,
+      );
+    }
     const foldersOpener = page.getByRole("button", {
       name: "Gerir pastas",
       exact: true,
@@ -263,6 +297,7 @@ try {
       .getByRole("combobox", { name: "Procurar canais, séries e filmes" })
       .waitFor();
     await settleTV(page);
+    await page.locator(".tv-result").first().waitFor();
     assert.equal(await page.locator(".tv-result").count(), 90);
     await noOverflow("search");
     await modalBoundaryTrap();
@@ -312,8 +347,9 @@ try {
   const pendingCategory = fixture.holdNextCategory();
   await page.goto("http://127.0.0.1:5187/tv?race=1#section=live&category=pt");
   await pendingCategory.started;
+  await openTVSettings();
   await page
-    .getByRole("combobox", { name: "Lista IPTV" })
+    .getByRole("combobox", { name: "Lista IPTV ativa" })
     .selectOption("other");
   await page.locator(".tv-portal").filter({ hasText: "Portugal" }).click();
   await page
@@ -330,8 +366,9 @@ try {
     0,
   );
   fixture.setDelay(0);
+  await openTVSettings();
   await page
-    .getByRole("combobox", { name: "Lista IPTV" })
+    .getByRole("combobox", { name: "Lista IPTV ativa" })
     .selectOption("fixture");
   await page.locator(".tv-portal").filter({ hasText: "Portugal" }).click();
   await page.locator(".tv-channel").first().waitFor();
@@ -791,7 +828,7 @@ try {
       }),
   );
   // Public list editor never hydrates stored secrets; blank replacements preserve them.
-  await page.getByRole("button", { name: "Listas IPTV", exact: true }).click();
+  await openTVSettings();
   await page
     .getByRole("button", { name: "Editar", exact: true })
     .first()
@@ -834,7 +871,7 @@ try {
     .click();
   assert.equal(await page.locator('[name="password"]').inputValue(), "");
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Listas IPTV", exact: true }).click();
+  await openTVSettings();
   await page
     .getByRole("button", { name: "＋ Adicionar lista", exact: true })
     .click();

@@ -21,10 +21,12 @@ const SearchIcon = () => (
 export function Nav({
   module,
   sections,
+  onTVSettings,
   className = "z-nav",
 }: {
   module?: "cinema" | "tv";
   sections?: ReactNode;
+  onTVSettings?: () => void;
   className?: string;
 } = {}) {
   const { user } = useSession();
@@ -235,6 +237,21 @@ export function Nav({
             {motorLabel}
           </span>
         </div>
+        {onTVSettings && (
+          <button
+            className="z-menu__item"
+            role="menuitem"
+            onClick={() => {
+              setOpen(null);
+              host.current
+                ?.querySelector<HTMLElement>("[data-nav-menu]")
+                ?.focus();
+              onTVSettings();
+            }}
+          >
+            Configuração da TV
+          </button>
+        )}
         {[
           ["conta", "Conta"],
           ["addons", "Add-ons"],

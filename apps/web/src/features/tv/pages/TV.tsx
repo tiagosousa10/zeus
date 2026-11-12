@@ -28,6 +28,7 @@ export function TVApp({ modules = {} }: { modules?: TVModules }) {
       <Nav
         module="tv"
         className="tv-header"
+        onTVSettings={tv.openLists}
         sections={
           <nav
             className="tv-capsule tv-sections app-header-sections"
@@ -46,41 +47,22 @@ export function TVApp({ modules = {} }: { modules?: TVModules }) {
         }
       />
       <main className="tv-main">
-        <div className="tv-listbar">
-          {tv.lists.length > 0 && (
-            <label>
-              <span className="tv-list-label">Lista IPTV</span>
-              <select
-                aria-label="Lista IPTV"
-                value={tv.listId}
-                onChange={(e) => tv.setListId(e.target.value)}
-              >
-                {tv.lists.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <button onClick={tv.openLists}>Listas IPTV</button>
-          {modules.guide && tv.section === "live" && (
-            <div className="tv-toolbar">
-              <button
-                aria-pressed={!tv.view.guide}
-                onClick={() => tv.navigate({ section: "live" })}
-              >
-                Portais
-              </button>
-              <button
-                aria-pressed={!!tv.view.guide}
-                onClick={() => tv.navigate({ section: "live", guide: true })}
-              >
-                Guia
-              </button>
-            </div>
-          )}
-        </div>
+        {modules.guide && tv.section === "live" && !tv.view.detailId && (
+          <div className="tv-toolbar tv-view-switch">
+            <button
+              aria-pressed={!tv.view.guide}
+              onClick={() => tv.navigate({ section: "live" })}
+            >
+              Portais
+            </button>
+            <button
+              aria-pressed={!!tv.view.guide}
+              onClick={() => tv.navigate({ section: "live", guide: true })}
+            >
+              Guia
+            </button>
+          </div>
+        )}
         {tv.error && <p role="alert">{tv.error}</p>}
         {tv.loading ? (
           <Skeleton />
