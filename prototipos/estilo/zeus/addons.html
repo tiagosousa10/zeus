@@ -284,7 +284,7 @@ const state = new Map([['com.linvo.cinemeta', { on: true }], ['com.stremio.torre
 const DEBRID = { realdebrid: 'Real-Debrid', alldebrid: 'AllDebrid', premiumize: 'Premiumize' };
 const PROV = ['YTS', 'EZTV', 'RARBG', '1337x', 'The Pirate Bay', 'KickassTorrents', 'TorrentGalaxy', 'MagnetDL', 'Nyaa', 'Rutor', 'Comando', 'Torrent9'];
 const QUAL = ['4K', 'Remux', 'HDR', 'Dolby Vision', '1080p', '720p', '480p', '3D', 'Screener', 'CAM', 'Desconhecida'];
-const tor = { debrid: 'realdebrid', key: 'XK4P7Q2M9RT5WZ8B3NJ6HC1VDLYF0SGA', prov: new Set(PROV.slice(0, 8)), qual: new Set(['3D', 'Screener', 'CAM', 'Desconhecida']), sort: 'quality' };
+const tor = { debrid: 'realdebrid', key: 'YOUR_DEBRID_API_KEY', prov: new Set(PROV.slice(0, 8)), qual: new Set(['3D', 'Screener', 'CAM', 'Desconhecida']), sort: 'quality' };
 const gen = new Map([['org.stremio.opensubtitlesv3', Object.fromEntries(OS_CFG.map(f => [f.key, f.default]))]]);
 
 const GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
