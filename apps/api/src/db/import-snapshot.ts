@@ -44,10 +44,17 @@ export async function importSnapshot(
       const [iv, tag, body] = String(row.ciphertext)
         .split(".")
         .map((value) => Buffer.from(value, "base64url"));
+      if (
+        String(row.ciphertext).split(".").length !== 3 ||
+        iv.length !== 12 ||
+        tag.length !== 16
+      )
+        throw new Error("Invalid encrypted state");
       const decipher = createDecipheriv(
         "aes-256-gcm",
         Buffer.from(keys.encryptionKey, "hex"),
         iv,
+        { authTagLength: 16 },
       );
       decipher.setAuthTag(tag);
       JSON.parse(
