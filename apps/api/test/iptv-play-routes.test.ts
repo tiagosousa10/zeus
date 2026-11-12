@@ -110,6 +110,12 @@ const upstream: Record<string, FakeResource> = {
     body: "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg1.ts\n#EXTINF:6.0,\nhttps://cdn.test/segredo-123/seg2.ts\n#EXTINF:6.0,\nodd\n#EXTINF:6.0,\nsplit\n#EXTINF:6.0,\nblank\n#EXTINF:6.0,\nranged\n#EXTINF:6.0,\njson\n#EXTINF:6.0,\nhtml\n#EXTINF:6.0,\nspaces\n#EXTINF:6.0,\nsub.vtt\n",
   },
   [`${EDGE}/low/seg1.ts`]: { headers: { "content-type": "video/mp2t" }, body: "SEGMENT-1", open: true },
+  ...Object.fromEntries(
+    ["avc1x", "vc1.64"].map((p) => [
+      `https://tv.example.test/live/u/${p}/101.m3u8`,
+      { body: '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS="avc1.64001f,mp4a.40.2"\nv.m3u8\n' },
+    ]),
+  ),
   [`${ORIGIN}/102.m3u8`]: { status: 509, body: "max connections https://tv.example.test" },
 };
 const links = (text: string) => text.split("\n").filter((l) => l.startsWith("/api/iptv/play/"));
@@ -130,7 +136,9 @@ test("playback starts through the API and HLS never reveals the provider", async
 
   const list = { id: "l1", name: "Casa", type: "xtream", url: "https://tv.example.test/", username: "u", password: "segredo-123" };
   const local = { id: "l2", name: "Local", type: "m3u", url: "http://127.0.0.1/" };
-  assert.equal((await a("/state", { iptv: [list, local] }, "PATCH")).status, 200);
+  const short = { id: "l3", name: "Curta", type: "xtream", url: "https://tv.example.test/", username: "u", password: "avc1x" };
+  const inner = { ...short, id: "l4", password: "vc1.64" };
+  assert.equal((await a("/state", { iptv: [list, local, short, inner] }, "PATCH")).status, 200);
   setProviderFetch(fakeFetch(xtreamRoutes));
   const fake = fakeUpstream(upstream);
   setUpstreamFetch(fake);
@@ -237,6 +245,14 @@ test("playback starts through the API and HLS never reveals the provider", async
   assert.equal(episode.status, 200, episode.text);
   assert.equal(episode.body.url, `/api/iptv/play/${episode.body.token}/remux.mp4`);
   assert.ok(![mp4, mkv, episode].some((r) => leaks(r.text)));
+
+  // Credentials count only when 6+ characters long and as whole tokens, so they never collide with CODECS.
+  for (const id of ["l3", "l4"]) {
+    const started = await a(`/iptv/lists/${id}/play`, { section: "live", id: "101" });
+    const codecs = await a(started.body.url.slice(4));
+    assert.equal(codecs.status, 200, `${id}: ${codecs.text}`);
+    assert.match(codecs.text, /CODECS="avc1\.64001f,mp4a\.40\.2"/);
+  }
 
   const resource = await a("/iptv/resource?listId=l2");
   assert.deepEqual([resource.status, resource.body.error], [502, "Não foi possível carregar a lista."]);

@@ -12,7 +12,7 @@ export interface PlaySession {
   resources: Map<string, string>;
   playlists: Set<string>;
   // Provider credentials and hosts: no playlist the API returns may contain them.
-  secrets: string[];
+  secrets: { credentials: string[]; hosts: string[] };
   onEnd: Set<() => void>;
 }
 
@@ -68,7 +68,7 @@ export function createSession(
   listId: string,
   upstream: Upstream,
   account: Account,
-  secrets: string[] = [],
+  secrets: PlaySession["secrets"] = { credentials: [], hosts: [] },
 ): PlaySession {
   sweep();
   for (const e of entries.values()) if (!e.session.ended && e.session.listId === listId) finish(e);

@@ -61,16 +61,25 @@ playRoutes.post("/lists/:listId/play", async (c) => {
   }
 });
 
-function secretsFor(list: IPTVList, upstream: Upstream): string[] {
-  const values = [list.username, list.password].filter((v): v is string => !!v && v.length >= 3);
-  values.push(new URL(list.url).hostname, new URL(upstream.url).hostname);
-  return [...new Set(values.flatMap((v) => [v, encodeURIComponent(v)]).map((v) => v.toLowerCase()))];
+const forms = (values: string[]) => [...new Set(values.flatMap((v) => [v, encodeURIComponent(v)]).map((v) => v.toLowerCase()))];
+
+function secretsFor(list: IPTVList, upstream: Upstream): PlaySession["secrets"] {
+  return {
+    credentials: forms([list.username, list.password].filter((v): v is string => !!v && v.length >= 6)),
+    hosts: forms([new URL(list.url).hostname, new URL(upstream.url).hostname]),
+  };
 }
 
-// Our own links hold a random token that could contain a short secret by chance, so they are left out.
+const escapeRegExp = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Our own links hold a random token that could contain a secret by chance, so they are left out. Credentials
+// match only as whole tokens, so short or common ones never collide with attributes such as CODECS.
 const leaksSecret = (s: PlaySession, text: string): boolean => {
   const rest = text.replace(/\/api\/iptv\/play\/[\w-]+\/r\/\d+/g, "").toLowerCase();
-  return s.secrets.some((secret) => rest.includes(secret));
+  return (
+    s.secrets.hosts.some((host) => rest.includes(host)) ||
+    s.secrets.credentials.some((c) => new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(c)}(?:[^a-z0-9]|$)`).test(rest))
+  );
 };
 
 class UpstreamStatus extends Error {
