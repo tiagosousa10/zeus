@@ -62,6 +62,31 @@ export function streamEndpoint(
         throw new Error("Fornecedores inválidos.");
       parts.push(`providers=${config.providers}`);
     }
+    if (config.qualityfilter !== undefined && config.qualityfilter !== "") {
+      // Torrentio's public Quality::key values (domain/filter.rs).
+      const qualities = new Set([
+        "brremux",
+        "hdrall",
+        "dolbyvision",
+        "dolbyvisionwithhdr",
+        "threed",
+        "nonthreed",
+        "4k",
+        "1080p",
+        "720p",
+        "480p",
+        "other",
+        "scr",
+        "cam",
+        "unknown",
+      ]);
+      if (
+        typeof config.qualityfilter !== "string" ||
+        !config.qualityfilter.split(",").every((value) => qualities.has(value))
+      )
+        throw new Error("Qualidades inválidas.");
+      parts.push(`qualityfilter=${config.qualityfilter}`);
+    }
     if (parts.length) directory += "/" + parts.join("|");
   }
   base.pathname = `${directory}/stream/${encodeURIComponent(type)}/${encodeURIComponent(id)}.json`;

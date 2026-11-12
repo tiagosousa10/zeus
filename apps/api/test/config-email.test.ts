@@ -105,3 +105,42 @@ test("Resend retries transient failures with stable idempotency and no real netw
     else process.env.RESEND_FROM = beforeFrom;
   }
 });
+
+test("Torrentio quality exclusions reach the stream URL without accepting extra options", () => {
+  const endpoint = streamEndpoint(
+    "https://torrentio.strem.fun/manifest.json",
+    {
+      providers: "yts,nyaasi",
+      qualityfilter: "threed,scr,cam,unknown",
+      sort: "qualityseeders",
+    },
+    "series",
+    "tt123:1:2",
+  );
+  assert.equal(new URL(endpoint).origin, "https://torrentio.strem.fun");
+  assert.match(
+    decodeURIComponent(endpoint),
+    /qualityfilter=threed,scr,cam,unknown\/stream\/series\/tt123:1:2\.json$/,
+  );
+  for (const value of [
+    "cam|realdebrid=injected",
+    "cam/stream/movie/tt1",
+    "cam,invalid",
+    ["cam"],
+    "cam,",
+    false,
+    0,
+    null,
+  ]) {
+    assert.throws(
+      () =>
+        streamEndpoint(
+          "https://torrentio.strem.fun/manifest.json",
+          { qualityfilter: value },
+          "movie",
+          "tt1",
+        ),
+      /Qualidades inválidas/,
+    );
+  }
+});
