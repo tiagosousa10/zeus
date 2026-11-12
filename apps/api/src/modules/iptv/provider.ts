@@ -86,8 +86,13 @@ export async function fetchSeries(list: IPTVList, base: TVSeries): Promise<TVSer
 }
 
 const count = (v: unknown): number | undefined => {
+  if (typeof v !== "number" && typeof v !== "string") return undefined;
   const n = Number(v);
-  return v === null || v === undefined || v === "" || Number.isNaN(n) ? undefined : n;
+  return v === "" || !Number.isFinite(n) ? undefined : n;
+};
+const positive = (v: unknown): number | undefined => {
+  const n = count(v);
+  return n !== undefined && n > 0 ? n : undefined;
 };
 
 export function fetchAccount(list: IPTVList): Promise<Account> {
@@ -99,10 +104,10 @@ export function fetchAccount(list: IPTVList): Promise<Account> {
     const formats = (Array.isArray(info.allowed_output_formats) ? info.allowed_output_formats : [])
       .map((f) => String(f).toLowerCase())
       .filter((f): f is "m3u8" | "ts" => f === "m3u8" || f === "ts");
-    const exp = count(info.exp_date);
+    const exp = positive(info.exp_date);
     return {
       formats,
-      maxConnections: count(info.max_connections),
+      maxConnections: positive(info.max_connections),
       activeConnections: count(info.active_cons),
       expiresAt: exp === undefined ? undefined : exp * 1000,
     };

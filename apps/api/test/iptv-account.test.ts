@@ -31,8 +31,8 @@ describe("upstreamFor xtream", () => {
     assert.equal(e?.url, "https://tv.example.test:8080/series/u/segredo-123/4002.mkv");
   });
   it("encodes credentials and returns undefined for unknown ids", () => {
-    const odd = { ...list, username: "a b", password: "p/q" };
-    assert.match(upstreamFor(odd, catalog, undefined, both, { section: "live", id: "101" })!.url, /\/live\/a%20b\/p%2Fq\/101/);
+    const odd = { ...list, username: "a b", password: "p#@%x/ y" };
+    assert.match(upstreamFor(odd, catalog, undefined, both, { section: "live", id: "101" })!.url, /\/live\/a%20b\/p%23%40%25x%2F%20y\/101/);
     assert.equal(upstreamFor(list, catalog, undefined, both, { section: "live", id: "999" }), undefined);
     assert.equal(upstreamFor(list, catalog, undefined, both, { section: "movie", id: "999" }), undefined);
     assert.equal(upstreamFor(list, catalog, detail, both, { section: "series", id: "301", episodeId: "999" }), undefined);
@@ -74,6 +74,15 @@ describe("fetchAccount", () => {
   it("rejects refused credentials", async () => {
     setProviderFetch(fakeFetch(() => body("0")));
     await assert.rejects(fetchAccount(list), /recusou o utilizador ou a palavra-passe/);
+  });
+  it("treats unlimited and malformed numbers as unknown", async () => {
+    const run = async (info: Record<string, unknown>) => {
+      setProviderFetch(fakeFetch(() => ({ user_info: { auth: 1, ...info } })));
+      return fetchAccount(list);
+    };
+    for (const v of ["0", "abc", undefined, true, "Infinity"]) assert.equal((await run({ max_connections: v })).maxConnections, undefined);
+    for (const v of ["0", null, "abc", true]) assert.equal((await run({ exp_date: v })).expiresAt, undefined);
+    assert.equal((await run({ max_connections: "3" })).maxConnections, 3);
   });
   it("m3u needs no request", async () => {
     const f = fakeFetch(() => body(1));
