@@ -41,3 +41,8 @@ test("episodes as a list of season lists are flattened by season", () => {
   const s = normalizeSeriesInfo(raw, c.series.items[0]);
   assert.deepEqual(s.seasons.map((x) => [x.number, x.episodes.length]), [[1, 1], [2, 1]]);
 });
+test("player_api URL ignores the path and query of a stored get.php URL", () => {
+  const u = new URL(xtreamUrl({ url: "https://tv.example.test:8080/get.php?username=a&password=b&type=m3u_plus", username: "u", password: "p" }, "get_live_streams"));
+  assert.equal(u.origin + u.pathname, "https://tv.example.test:8080/player_api.php");
+  assert.deepEqual([...u.searchParams], [["username", "u"], ["password", "p"], ["action", "get_live_streams"]]);
+});

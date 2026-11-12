@@ -42,7 +42,7 @@ export function xtreamUrl(
   action: string,
   params: Record<string, string> = {},
 ): string {
-  const u = new URL(`${list.url.replace(/\/+$/, "")}/player_api.php`);
+  const u = new URL("/player_api.php", list.url);
   if (list.username !== undefined) u.searchParams.set("username", list.username);
   if (list.password !== undefined) u.searchParams.set("password", list.password);
   u.searchParams.set("action", action);
