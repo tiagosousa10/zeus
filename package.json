@@ -20,7 +20,7 @@
     "db:setup": "node --env-file-if-exists=.env --import tsx apps/api/src/db/setup.ts",
     "test:browser": "node tests/browser.mjs",
     "test:visual": "node tests/visual-fidelity.mjs",
-    "test:tv": "node tests/tv-browser.mjs",
+    "test:tv": "node tests/tv-browser.mjs && node tests/tv-player-tools.mjs",
     "test:performance": "npm run build:web && node tests/performance.mjs --check",
     "dist:intel": "npm run dist -- --x64",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate-postgres.mts",

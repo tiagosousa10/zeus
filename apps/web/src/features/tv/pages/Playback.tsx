@@ -1,3 +1,7 @@
+import {
+  PlaybackInfo,
+  PictureInPictureButton,
+} from "../components/PlaybackTools";
 import { ZeusLoader } from "../../../shared/components/ZeusLoader";
 import { PlaybackRecovery } from "../models/recovery";
 import { formatTime } from "../../cinema/models/media";
@@ -44,6 +48,7 @@ function PlaybackView() {
     [channelsOpen, setChannelsOpen] = useState(false),
     [guideOpen, setGuideOpen] = useState(false),
     [tracks, setTracks] = useState(false),
+    [infoOpen, setInfoOpen] = useState(false),
     [page, setPage] = useState<number | null>(null),
     [position, setPosition] = useState(0),
     [duration, setDuration] = useState(
@@ -535,6 +540,12 @@ function PlaybackView() {
                 Canais
               </button>
             )}
+            <button
+              aria-pressed={infoOpen}
+              onClick={() => setInfoOpen((x) => !x)}
+            >
+              Informação técnica
+            </button>
             <button onClick={() => setTracks((x) => !x)}>
               Legendas / Áudio
             </button>
@@ -554,6 +565,13 @@ function PlaybackView() {
             </button>
           </div>
         </div>
+        {infoOpen && visible && (
+          <PlaybackInfo
+            video={video}
+            session={session}
+            onClose={() => setInfoOpen(false)}
+          />
+        )}
         {error && (
           <div className="tv-player-error" role="alert">
             <p>{error}</p>
@@ -610,24 +628,7 @@ function PlaybackView() {
                 </select>
               </>
             )}
-            {document.pictureInPictureEnabled && (
-              <button
-                aria-label="Janela flutuante"
-                onClick={() => {
-                  void (
-                    document.pictureInPictureElement
-                      ? document.exitPictureInPicture()
-                      : video.current?.requestPictureInPicture()
-                  )?.catch(() =>
-                    setError(
-                      "A janela flutuante não está disponível para este vídeo.",
-                    ),
-                  );
-                }}
-              >
-                ▣
-              </button>
-            )}
+            <PictureInPictureButton video={video} />
             <label>
               <span aria-hidden="true">♪</span>{" "}
               <input
