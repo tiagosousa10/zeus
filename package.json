@@ -14,7 +14,7 @@
     "dev:api": "tsx watch apps/api/src/index.ts",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts apps/api/test/*.test.ts apps/desktop/test/*.test.ts",
+    "test": "tsx --test tests/*.test.ts apps/api/test/*.test.ts apps/desktop/test/*.test.ts && npm run test:epg-performance",
     "build": "npm run build:web && npm run build:api",
     "build:api": "node scripts/build-api.mjs",
     "db:setup": "node --env-file-if-exists=.env --import tsx apps/api/src/db/setup.ts",
@@ -34,7 +34,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
-    "test:tv-layouts": "node tests/tv-layouts.mjs"
+    "test:tv-layouts": "node tests/tv-layouts.mjs",
+    "test:epg-performance": "tsx --test apps/api/test/performance/*.test.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.21",

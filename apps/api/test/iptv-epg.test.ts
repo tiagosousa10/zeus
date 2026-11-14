@@ -160,18 +160,6 @@ test("short EPG decodes base64 and ignores invalid timestamps", async () => {
   ]);
   assert.deepEqual(await fetchShortEpg({ ...list, type: "m3u" }, "101"), []);
 });
-test("indexes a large guide within three seconds", () => {
-  const entry =
-    '<programme start="20261112200000 +0000" stop="20261112210000 +0000" channel="c"><title>Telejornal &amp; Notícias</title><desc>' +
-    "x".repeat(80) +
-    "</desc></programme>";
-  const large = `<tv>${entry.repeat(200_000)}</tv>`;
-  const start = performance.now();
-  const index = parseXmltv(large, 0, Infinity);
-  const ms = performance.now() - start;
-  assert.equal(index.get("c")!.length, 200_000);
-  assert.ok(ms < 3000, `Indexing ${large.length} bytes took ${ms} ms`);
-});
 test("loading a large guide lets other requests run before indexing finishes", async () => {
   const entry =
     '<programme start="20261112200000" stop="20261112210000" channel="c"><title>News</title></programme>';
