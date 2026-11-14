@@ -2159,3 +2159,29 @@
     font-size: 10px;
   }
 }
+
+.tv-playback-info {
+  position: absolute;
+  z-index: 5;
+  top: 5rem;
+  right: 1rem;
+  width: min(22rem, calc(100% - 2rem));
+  padding: 1rem;
+  border: 1px solid #ffffff33;
+  border-radius: 1rem;
+  background: #09151ff2;
+  color: #fff;
+}
+.tv-playback-info > button {
+  float: right;
+}
+.tv-playback-info dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.7rem;
+}
+.tv-playback-info dd {
+  margin: 0;
+  text-align: right;
+}
