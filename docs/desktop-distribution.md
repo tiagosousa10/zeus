@@ -4,7 +4,7 @@ A partir da versão 1.2, Electron apresenta a interface, SQLite guarda os dados 
 
 ## Instalar e usar
 
-1. Obter o DMG da arquitectura do Mac: `arm64` para Apple Silicon, `x64` para Intel.
+1. Obter o DMG da arquitectura do Mac: a [release 1.2.9](https://github.com/tiagosousa10/zeus/releases/tag/v1.2.9) disponibiliza apenas `arm64` para Apple Silicon; `x64` para Intel permanece pendente de geração e validação.
 2. Abrir o DMG e arrastar `Zeus.app` para Aplicações; ejectar o volume.
 3. Abrir Zeus. A primeira execução cria o SQLite e o catálogo, e apresenta a criação do Administrador/TOTP.
 4. Adicionar as próprias listas/fontes. Os dados de cada instalação são independentes; o instalador não contém contas, listas ou chaves do autor.
