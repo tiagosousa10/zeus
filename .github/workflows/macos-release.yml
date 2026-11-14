@@ -34,9 +34,13 @@ jobs:
         run: |
           umask 077
           printf '%s' "$KEY" | base64 --decode > "$RUNNER_TEMP/notary.p8"
-      - name: Package
+      - name: Package ad hoc
+        if: ${{ !inputs.signed }}
+        run: npm run dist -- --${{ matrix.arch }}
+      - name: Package signed release
+        if: inputs.signed
         env:
-          ZEUS_RELEASE: ${{ inputs.signed && '1' || '0' }}
+          ZEUS_RELEASE: "1"
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_API_KEY: ${{ runner.temp }}/notary.p8
