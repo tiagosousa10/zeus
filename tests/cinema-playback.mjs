@@ -30,9 +30,18 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
 const origin = "http://127.0.0.1:5197";
 const hash = "a".repeat(40);
 try {
-  for (const scenario of ["motor", "pending", "hls"]) {
+  for (const scenario of [
+    "motor",
+    "pending",
+    "hls",
+    "next",
+    "cancel",
+    "disabled",
+    "future",
+  ]) {
     const pending = scenario === "pending",
       hls = scenario === "hls";
+    const series = ["next", "cancel", "disabled", "future"].includes(scenario);
     let playlists = 0;
     const page = await browser.newPage({
       reducedMotion: "reduce",
@@ -69,9 +78,33 @@ try {
       const url = new URL(route.request().url());
       if (url.hostname === "v3-cinemeta.strem.io")
         return route.fulfill({
-          json: { meta: { id: "tt123", type: "movie", name: "Test Cinema" } },
+          json: {
+            meta: {
+              id: "tt123",
+              type: series ? "series" : "movie",
+              name: "Test Cinema",
+              videos: series
+                ? [
+                    {
+                      id: "tt123:2:1",
+                      season: 2,
+                      episode: 1,
+                      name: "Next season",
+                      released:
+                        scenario === "future" ? "2099-01-01" : "2020-01-01",
+                    },
+                    { id: "tt123:1:2", season: 1, episode: 2, name: "Current" },
+                  ]
+                : [],
+            },
+          },
         });
       if (url.origin !== origin) return route.abort();
+      if (url.pathname === "/leitor")
+        return route.fulfill({
+          contentType: "text/html",
+          body: "Next episode",
+        });
       if (url.pathname === "/")
         return route.fulfill({
           contentType: "text/html",
@@ -104,7 +137,7 @@ try {
           writes.push(route.request().postDataJSON());
         return route.fulfill({
           json: {
-            preferences: {},
+            preferences: { autoplay: scenario !== "disabled" },
             progress: {},
             library: [],
             iptv: [],
@@ -149,8 +182,72 @@ try {
     const started = page.waitForRequest(
       hls ? "**/fixture.m3u8" : "**/api/motor/start",
     );
-    await page.goto(origin + "/?id=tt123&type=movie");
+    await page.goto(
+      origin +
+        (series ? "/?id=tt123&type=series&s=1&e=2" : "/?id=tt123&type=movie"),
+    );
     await started;
+    if (series) {
+      await expect(page.locator("video")).toHaveAttribute(
+        "src",
+        `/api/motor/stream/${hash}/0`,
+      );
+      if (scenario !== "future")
+        await expect(page.locator(".player-next")).toHaveCount(0);
+      await page.clock.install();
+      await page.evaluate(() => {
+        const video = document.querySelector("video");
+        Object.defineProperties(video, {
+          duration: { configurable: true, value: 120 },
+          currentTime: { configurable: true, value: 120 },
+          ended: { configurable: true, value: true },
+        });
+        video.dispatchEvent(new Event("loadedmetadata"));
+        video.dispatchEvent(new Event("timeupdate"));
+        video.dispatchEvent(new Event("ended"));
+      });
+      if (scenario === "future") {
+        await expect(page.locator(".player-next")).toHaveCount(0);
+      } else {
+        await expect(
+          page.getByRole("link", { name: "Reproduzir próximo episódio" }),
+        ).toHaveAttribute("href", "/leitor?id=tt123&type=series&s=2&e=1");
+        if (scenario === "disabled") {
+          await expect(page.locator(".player-next [role=status]")).toHaveCount(
+            0,
+          );
+        } else {
+          await expect(
+            page.locator(".player-next [role=status]"),
+          ).toContainText("15 s");
+          if (scenario === "cancel") {
+            await page
+              .getByRole("button", { name: "Cancelar", exact: true })
+              .click();
+            await page.clock.runFor(16000);
+            assert.ok(page.url().includes("s=1&e=2"));
+            await page
+              .getByRole("button", { name: "Retomar reprodução automática" })
+              .click();
+            await expect(
+              page.locator(".player-next [role=status]"),
+            ).toContainText("15 s");
+          }
+          await page.clock.runFor(15000);
+          await expect(page).toHaveURL(
+            origin + "/leitor?id=tt123&type=series&s=2&e=1",
+          );
+        }
+      }
+      if (["future", "disabled"].includes(scenario)) {
+        await page.clock.runFor(16000);
+        assert.ok(page.url().includes("s=1&e=2"));
+        await page.evaluate(() => window.unmountPlayer());
+      }
+      assert.deepEqual(errors, []);
+      await page.close();
+      continue;
+    }
     if (hls) {
       await expect(page.locator("video")).toHaveAttribute("src", /^blob:/);
       await page.evaluate(() => {
