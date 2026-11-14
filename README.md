@@ -6,9 +6,9 @@ Cinema e TV privados para o Mac e para o navegador, com os ecrãs artísticos ap
 
 A Zeus 1.2 usa **Electron + SQLite local**. A aplicação empacotada inclui o runtime, a API e o motor de reprodução. Não requer Docker, PostgreSQL, Node.js instalado pelo utilizador nem serviços launchd.
 
-Descarregar o DMG correspondente ao Mac (Apple Silicon `arm64`, Intel `x64`), abrir e arrastar **Zeus.app** para **Aplicações**. A primeira abertura cria os ficheiros locais e apresenta a criação do Administrador/TOTP. Ao sair da Zeus, terminam a API e o Motor iniciados pela aplicação.
+Descarregar o [Zeus 1.2.9 para Apple Silicon (`arm64`)](https://github.com/tiagosousa10/zeus/releases/download/v1.2.9/Zeus-1.2.9-arm64.dmg), abrir e arrastar **Zeus.app** para **Aplicações**. O repositório é privado: é necessário ter acesso e sessão iniciada no GitHub. Esta release ainda não inclui instalador Intel (`x64`). A primeira abertura cria os ficheiros locais e apresenta a criação do Administrador/TOTP. Ao sair da Zeus, terminam a API e o Motor iniciados pela aplicação.
 
-Os instaladores são preparados para distribuição nas Releases do GitHub. A geração local não publica automaticamente: a versão pública precisa de assinatura Developer ID e notarização Apple. Um DMG local sem estas credenciais é um artefacto de teste e não tem a mesma experiência de abertura de uma versão assinada.
+A [release 1.2.9](https://github.com/tiagosousa10/zeus/releases/tag/v1.2.9) tem assinatura ad hoc e checksum publicado, mas não tem notarização Apple; o macOS pode exigir autorização em Privacidade e Segurança. A geração local não publica automaticamente; a distribuição com identidade de programador exige Developer ID e notarização Apple.
 
 ## Executar a partir do repositório
 
@@ -58,7 +58,7 @@ Resend (`RESEND_API_KEY`, `RESEND_FROM`) permite emails de Convite e recuperaç�
 - Os Add-ons do catálogo são serviços de terceiros e podem deixar de responder; os que exigem chave só funcionam com o URL configurado. Os importados pela sincronização comunitária continuam a precisar de aprovação.
 - Não há DVR, multiview nem aplicação Android nesta fase.
 - Resend/Turnstile e fornecedores privados exigem as tuas credenciais. A QA isolada usa media H.264/AAC gerada localmente e API simulada; a validação separada do backend com fornecedor privado está documentada em [Plano 2, estado verificado](docs/superpowers/plans/2026-11-12-tv-iptv-2-reproducao.md), sem credenciais nos resultados. Não foram iniciados torrents externos.
-- O DMG está configurado; assinatura/notarização e publicação dependem das credenciais Apple e do lançamento da versão. Os tickets no Linear continuam por sincronizar. Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
+- O DMG está configurado; assinatura/notarização e publicação dependem das credenciais Apple e do lançamento da versão. O trabalho é acompanhado exclusivamente no Storm Tickets, projeto Zeus (team TIA). Repositório: https://github.com/tiagosousa10/zeus. A implementação é revista em Pull Requests antes de integrar em `main`.
 
 ## Arquitetura e qualidade
 
@@ -103,7 +103,7 @@ npm run dist:arm    # num Mac Apple Silicon
 npm run dist:intel  # num Mac Intel
 ```
 
-Resultado: `apps/desktop/dist/Zeus-1.2.6-arm64.dmg` ou `apps/desktop/dist/Zeus-1.2.6-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** gera ambos no GitHub Actions, testa os pacotes e guarda os DMG como artefactos; não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
+Resultado: `apps/desktop/dist/Zeus-<versão>-arm64.dmg` ou `apps/desktop/dist/Zeus-<versão>-x64.dmg`. Cada arquitectura é gerada no seu próprio runner para incluir o FFmpeg correcto. O workflow manual **Build macOS installers** está configurado para gerar ambos no GitHub Actions, testar os pacotes e guardar os DMG como artefactos; só uma execução concluída prova a geração de cada arquitetura e não publica automaticamente. Ver [assinatura, migração e lançamento](docs/desktop-distribution.md).
 
 ## Interface e reprodução — 1.2.1
 
@@ -114,3 +114,11 @@ Pesquisa conjunta em Cinema e em todas as listas IPTV, filtros por módulo/tipo/
 ### Cabeçalho e janela — 1.2.2
 
 Cinema e TV partilham a estrutura de navegação, incluindo posição do logo, módulos, pesquisa e conta. As cores podem variar; a geometria e os pontos de adaptação à largura são comuns. A barra de janela macOS é nativa e fica fora da área web, protegendo o conteúdo mesmo com zoom. `npm run test:header` compara medidas em oito larguras (320–1440 px) e verifica ausência de sobreposições. `test:desktop` confirma separação entre a barra nativa e o conteúdo com zoom a 80%, 100% e 140%.
+
+## Estado de entrega e trabalho pendente
+
+Em 14/11/2026, a versão publicada continua a ser 1.2.9; os PRs #1–#8 estão integrados em `main`. A validação histórica da release inclui 187 testes, vistas TV em desktop/mobile e arranque/persistência/encerramento a partir do DMG arm64. Os relatórios anteriores conservam o estado e os limites da respetiva execução, incluindo notas anteriores aos commits e à CI remota.
+
+No Storm: TIA-276–TIA-283 registam as entregas; TIA-284–TIA-290 acompanham notarização, Intel, exceção de dependências, credenciais legadas, Resend/Turnstile, documentação e proteção da `main`. O benchmark de funcionalidades é um conjunto de ideias: só as selecionadas e registadas em tickets constituem trabalho aprovado.
+
+Push, criação/aprovação e merge de PRs pertencem ao utilizador; a implementação entrega commits locais e evidências no ticket. O estado Done exige entrega e validação, não apenas código preparado.

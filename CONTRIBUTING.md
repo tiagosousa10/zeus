@@ -8,7 +8,9 @@ Node.js 24 ou superior. Executar `npm ci` na raiz: há um único `package-lock.j
 
 ## Alterar
 
-- Trabalhar numa branch e manter cada alteração focada numa intenção.
+- Registar primeiro a tarefa no Storm Tickets (team TIA, projeto Zeus), com critérios e dependências; usar uma branch/worktree por tarefa, identificada pelo ticket.
+- Criar commits locais e entregar branch/base, validação e texto do PR; push, criação/aprovação e merge do PR pertencem ao utilizador.
+- Associar o PR ao ticket após integração e só concluir após entrega e validação.
 - Colocar comportamento perto da funcionalidade que o possui; respeitar a direção das dependências descrita na arquitetura.
 - Usar contratos em `packages/contracts` quando dados atravessam API/web. Não importar código interno de outra aplicação.
 - Preferir funções pequenas, nomes do domínio e composição. Criar uma abstração quando esconde uma responsabilidade real ou duas implementações realmente variam.
