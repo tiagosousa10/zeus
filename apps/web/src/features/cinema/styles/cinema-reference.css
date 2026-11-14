@@ -1306,11 +1306,6 @@ body:has(.p) {
   height: 100%;
   object-fit: contain;
   background: #000;
-  transition: filter 1.6s var(--out);
-}
-/* Pausa: o olhar da Medusa petrifica o fotograma. */
-.p.is-stone video {
-  filter: grayscale(1) sepia(0.14) contrast(1.18) brightness(0.36);
 }
 .p-hit {
   position: absolute;
@@ -1375,19 +1370,6 @@ body:has(.p) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.p-src {
-  margin-left: auto;
-  font: 12px/1 var(--mono);
-  letter-spacing: 0;
-  color: var(--text-2);
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: rgba(28, 28, 30, 0.6);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow: inset 0 0 0 1px var(--hair);
-  white-space: nowrap;
-}
 .p-bar {
   position: absolute;
   z-index: 4;
@@ -1425,7 +1407,9 @@ body:has(.p) {
   transform-origin: left;
   transform: scaleX(var(--p, 0));
 }
-.p-buf {
+.p-track > .p-buf {
+  right: auto;
+  transform: none;
   background: rgba(255, 255, 255, 0.28);
 }
 .p-played {
@@ -1468,7 +1452,8 @@ body:has(.p) {
   pointer-events: none;
 }
 .p-scrub:hover .p-tip,
-.p-scrub.is-drag .p-tip {
+.p-scrub.is-drag .p-tip,
+.p-scrub:focus-within .p-tip {
   opacity: 1;
 }
 .p-tip small {
@@ -1707,75 +1692,6 @@ body:has(.p) {
 .p-ep[aria-current="true"] span {
   color: var(--gold);
 }
-/* Ecrã de pausa */
-.p-pause {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 1.1s var(--out),
-    visibility 0s 1.1s;
-}
-.p.is-stone .p-pause {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 1.4s var(--out);
-}
-.p-pause .z-bolts {
-  z-index: 0;
-}
-.p-medusa {
-  position: absolute;
-  right: max(2vw, var(--gutter));
-  top: 50%;
-  width: min(70vh, 46vw);
-  translate: 0 -54%;
-  -webkit-mask-image: radial-gradient(
-    circle closest-side,
-    #000 80%,
-    transparent 97%
-  );
-  mask-image: radial-gradient(circle closest-side, #000 80%, transparent 97%);
-  scale: 0.96;
-  transition: scale 2.4s var(--out);
-}
-.p.is-stone .p-medusa {
-  scale: 1;
-}
-.p-medusa .z-light__base {
-  filter: brightness(calc(0.22 + var(--I, 0) * 0.7)) contrast(1.15)
-    saturate(0.7);
-}
-.p-copy {
-  position: absolute;
-  left: var(--gutter);
-  top: 50%;
-  translate: 0 -58%;
-  width: min(520px, 44vw);
-  display: grid;
-  gap: 14px;
-  justify-items: start;
-  pointer-events: auto;
-}
-.p-copy .z-foot {
-  font-style: italic;
-  font-size: 15px;
-  color: var(--bronze);
-}
-.p-copy p.z-lede {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.p-copy .p-at {
-  font: 13px/1 var(--mono);
-  color: var(--text-3);
-  letter-spacing: 0;
-}
 /* Placa de mármore com as estatísticas do Motor */
 .p-stats {
   position: absolute;
@@ -1963,28 +1879,8 @@ body:has(.p) {
   animation: z-rot 0.9s linear infinite;
 }
 @media (max-width: 760px) {
-  .p-vol input,
-  .p-b--skip {
+  .p-vol input {
     display: none;
-  }
-  .p-src {
-    display: none;
-  }
-  .p-medusa {
-    top: max(70px, 8vh);
-    right: 50%;
-    translate: 50% 0;
-    width: min(72vw, 40vh);
-  }
-  .p-copy {
-    top: auto;
-    bottom: 150px;
-    translate: 0 0;
-    width: auto;
-    right: var(--gutter);
-  }
-  .p-copy p.z-lede {
-    -webkit-line-clamp: 3;
   }
   .p-pop {
     left: 16px;
@@ -2133,9 +2029,6 @@ body:has(.p) {
 .p .p-help {
   padding: 24px;
 }
-.p.is-stone video {
-  filter: grayscale(1) sepia(0.14) contrast(1.18) brightness(0.36);
-}
 .zeus-player video::cue {
   color: var(--subtitle-color, #fff);
   background-color: var(--subtitle-bg, transparent);
@@ -2199,4 +2092,70 @@ body:has(.p) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.p .player-menu-toggle {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 8;
+  opacity: 0;
+  pointer-events: none;
+}
+.p .player-menu-toggle:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.p .p-top__t {
+  flex: 1;
+}
+.p .p-pop {
+  width: min(330px, calc(100% - 32px));
+  max-height: calc(100% - 170px);
+  overflow-y: auto;
+  padding: 16px;
+}
+.p .p-pop h2 {
+  padding: 0 40px 14px 0;
+  color: var(--text);
+  font-size: 15px;
+}
+.p .p-pop p {
+  font-size: 14px;
+  color: var(--text-2);
+  padding-bottom: 12px;
+}
+.p .p-opt::before {
+  display: none;
+}
+.p .p-opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.p .p-pop .player-popover__close {
+  top: 8px;
+  right: 8px;
+}
+.p .p-tip {
+  max-width: 100%;
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .p .p-b {
+    width: 40px;
+    height: 44px;
+  }
+  .p .p-ctrls {
+    gap: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .p .p-ui,
+  .p .p-shade,
+  .p .p-b,
+  .p .p-knob,
+  .p .p-track,
+  .p .p-tip {
+    transition: none;
+  }
 }
