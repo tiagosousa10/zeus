@@ -11,7 +11,7 @@ import { metadata } from "../services/catalog";
 import { formatTime, progressRatio, type ProgressEntry } from "../models/media";
 import "../styles/cinema.css";
 import "../styles/cinema-reference.css";
-import { cursorLight, lightning, ICON } from "../../../shared/graphics/fx.js";
+import { ICON } from "../../../shared/graphics/fx.js";
 import type { MotorStats } from "../models/playback";
 export default function Player() {
   const params = new URLSearchParams(location.search);
@@ -47,7 +47,7 @@ export default function Player() {
     [muted, setMuted] = useState(false),
     [speed, setSpeed] = useState(1);
   const [menu, setMenu] = useState<
-    "speed" | "subtitles" | "episodes" | "help" | null
+    "options" | "speed" | "subtitles" | "episodes" | "help" | null
   >(null);
   const [idle, setIdle] = useState(false),
     [osd, setOsd] = useState("");
@@ -61,6 +61,14 @@ export default function Player() {
       : state.preferences.subtitleSize === "small"
         ? "80%"
         : "100%";
+  const menuTrigger = useRef<HTMLElement | null>(null);
+  const menuPanel = useRef<HTMLElement>(null);
+  const optionsButton = useRef<HTMLButtonElement>(null);
+  const [preview, setPreview] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [buffered, setBuffered] = useState<{ start: number; end: number }[]>(
+    [],
+  );
   const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const autoplayDone = useRef(false);
   const { persist, persistIfDue, restorePosition, resetResume } =
@@ -87,6 +95,8 @@ export default function Player() {
         setEnded(false);
         setCancelNext(false);
         setCountdown(null);
+        setPreview(null);
+        setBuffered([]);
         setCurrent(0);
         setDuration(0);
         resetResume();
@@ -127,7 +137,12 @@ export default function Player() {
     setIdle(false);
     clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
-      if (video.current && !video.current.paused) setIdle(true);
+      if (
+        video.current &&
+        !video.current.paused &&
+        !host.current?.querySelector(".p-ui:focus-within, .p-ui:hover")
+      )
+        setIdle(true);
     }, 3500);
   }, []);
   useEffect(() => () => clearTimeout(idleTimer.current), []);
@@ -217,7 +232,8 @@ export default function Player() {
   }, [play, wake]);
   const seek = useCallback((delta: number) => {
     const element = video.current;
-    if (!element || !Number.isFinite(element.duration)) return;
+    if (!element || !Number.isFinite(element.duration) || element.duration <= 0)
+      return;
     element.currentTime = Math.min(
       element.duration,
       Math.max(0, element.currentTime + delta),
@@ -234,8 +250,62 @@ export default function Player() {
           setOsd("O ecrã inteiro não está disponível neste browser."),
         );
   }, []);
+  const closePanels = useCallback(() => {
+    setMenu(null);
+    setStatsOpen(false);
+    menuTrigger.current?.focus();
+    wake();
+  }, [wake]);
+  const openMenu = useCallback(
+    (value: typeof menu, trigger?: HTMLElement) => {
+      if (trigger) menuTrigger.current = trigger;
+      else if (!menu && !statsOpen) menuTrigger.current = optionsButton.current;
+      if (menu === value) closePanels();
+      else {
+        setStatsOpen(false);
+        setMenu(value);
+        wake();
+      }
+    },
+    [menu, statsOpen, closePanels, wake],
+  );
+  useEffect(() => {
+    if (menu || statsOpen)
+      menuPanel.current?.querySelector<HTMLButtonElement>("button")?.focus();
+  }, [menu, statsOpen]);
+  const syncTimeline = () => {
+    const element = video.current;
+    if (!element) return;
+    const length =
+      Number.isFinite(element.duration) && element.duration > 0
+        ? element.duration
+        : 0;
+    setDuration(length);
+    setBuffered(
+      length
+        ? Array.from({ length: element.buffered.length }, (_, i) => ({
+            start: Math.max(0, element.buffered.start(i)),
+            end: Math.min(length, element.buffered.end(i)),
+          })).filter((range) => range.end > range.start)
+        : [],
+    );
+  };
   useEffect(() => {
     function keys(event: KeyboardEvent) {
+      const key = event.key.toLowerCase();
+      if (key === "tab" && host.current?.classList.contains("is-idle")) {
+        event.preventDefault();
+        host.current
+          .querySelector<HTMLButtonElement>(".player-menu-toggle")
+          ?.focus();
+        wake();
+        return;
+      }
+      if (key === "escape" && (menu || statsOpen)) {
+        event.preventDefault();
+        closePanels();
+        return;
+      }
       if (
         event.ctrlKey ||
         event.altKey ||
@@ -246,17 +316,15 @@ export default function Player() {
       )
         return;
       wake();
-      const key = event.key.toLowerCase();
-      if (key === "escape") {
-        setMenu(null);
-        setStatsOpen(false);
-        return;
-      }
       if (key === "?") {
-        setMenu((old) => (old === "help" ? null : "help"));
+        openMenu("help");
         return;
       }
-      if (menu) return;
+      if (key === "i" && statsOpen) {
+        closePanels();
+        return;
+      }
+      if (menu || statsOpen) return;
       if (
         (key === " " && !(event.target as HTMLElement).closest("button,a")) ||
         key === "k"
@@ -269,7 +337,10 @@ export default function Player() {
         seek(key === "arrowleft" ? -10 : 10);
       }
       if (key === "f") fullscreen();
-      if (key === "i") setStatsOpen((old) => !old);
+      if (key === "i") {
+        menuTrigger.current = optionsButton.current;
+        setStatsOpen(true);
+      }
       if (key === "m" && video.current)
         video.current.muted = !video.current.muted;
       if ((key === "arrowup" || key === "arrowdown") && video.current) {
@@ -282,15 +353,14 @@ export default function Player() {
     }
     addEventListener("keydown", keys);
     return () => removeEventListener("keydown", keys);
-  }, [menu, toggle, seek, fullscreen, wake]);
-  const openMenu = (value: typeof menu) => {
-    setMenu((old) => (old === value ? null : value));
-    wake();
-  };
-  const showControls = !idle || paused || !!menu || !!error;
+  }, [menu, statsOpen, toggle, seek, fullscreen, wake, openMenu, closePanels]);
+  const showControls =
+    !idle || paused || !!menu || statsOpen || dragging || !!error;
+  const position = Math.max(0, Math.min(current, duration));
+  const ratio = duration ? position / duration : 0;
   return (
     <main
-      className={`zeus-player p ${paused && current > 0 ? "is-paused is-stone" : ""} ${!showControls ? "is-idle" : ""}`}
+      className={`zeus-player p ${!showControls ? "is-idle" : ""}`}
       ref={host}
       style={
         {
@@ -310,6 +380,8 @@ export default function Player() {
         } as React.CSSProperties
       }
       onFocus={wake}
+      onBlur={wake}
+      onPointerMove={wake}
       aria-label="Leitor de vídeo"
     >
       <button
@@ -317,8 +389,8 @@ export default function Player() {
         aria-label="Controlos do leitor"
         aria-expanded={showControls}
         onClick={() => {
-          setIdle(showControls);
-          setMenu(null);
+          setIdle(false);
+          wake();
         }}
       >
         ☷ <span>Controlos</span>
@@ -354,10 +426,11 @@ export default function Player() {
           }
         }}
         onLoadedMetadata={() => {
-          const element = video.current!;
-          setDuration(Number.isFinite(element.duration) ? element.duration : 0);
+          syncTimeline();
           restorePosition();
         }}
+        onDurationChange={syncTimeline}
+        onProgress={syncTimeline}
         onCanPlay={() => {
           setWaiting(false);
           if (!autoplayDone.current) {
@@ -392,50 +465,17 @@ export default function Player() {
         ))}
       </video>
       <div className="p-shade" />
-      {paused && current > 0 && !error && (
-        <section className="p-pause" aria-labelledby="pz-title">
-          <Medusa />
-          <div className="p-copy">
-            <p className="z-foot">O tempo parou.</p>
-            <h2 className="z-t1" id="pz-title">
-              {meta.data?.name}
-            </h2>
-            <p className="p-at">
-              {formatTime(current)} de {formatTime(duration)}
-            </p>
-            <p className="z-lede">{meta.data?.description}</p>
-            <div className="t-actions">
-              <button className="z-btn z-btn--primary" onClick={play}>
-                Retomar
-              </button>
-              <a href={back} className="z-btn z-btn--ghost">
-                Detalhes do título
-              </a>
-            </div>
-          </div>
-        </section>
-      )}
-      <header className={"p-top p-ui"}>
+      <header className="p-top p-ui" inert={!showControls}>
         <a className="p-b" href={back} aria-label="Voltar ao título">
           <PlayerIcon name="left" />
         </a>
         <div className="p-top__t">
           <b>{meta.data?.name ?? "Leitor"}</b>
           <span>
-            {season && `T${season} · E${episode} · `}
-            {source?.addonName || source?.addon || source?.name}
+            {season ? `T${season} · E${episode}` : "Cinema"}
+            {paused && " · Em pausa"}
           </span>
         </div>
-        <span className="p-src">
-          {source?.name || source?.addonName || "Fonte"}
-        </span>
-        <button
-          className="p-b"
-          aria-label="Ajuda de teclado"
-          onClick={() => openMenu("help")}
-        >
-          ?
-        </button>
       </header>
       {(status || waiting) && !error && (
         <div className="player-loading" role="status">
@@ -464,30 +504,58 @@ export default function Player() {
       )}
       {menu && (
         <section
+          ref={menuPanel}
           className={
             menu === "episodes"
               ? "p-eps player-popover"
               : menu === "help"
-                ? "p-help z-panel"
+                ? "p-pop p-help"
                 : "p-pop"
           }
           aria-label={
-            menu === "speed"
-              ? "Velocidade"
-              : menu === "subtitles"
-                ? "Legendas"
-                : menu === "episodes"
-                  ? "Episódios"
-                  : "Ajuda"
+            menu === "options"
+              ? "Opções do leitor"
+              : menu === "speed"
+                ? "Velocidade"
+                : menu === "subtitles"
+                  ? "Legendas"
+                  : menu === "episodes"
+                    ? "Episódios"
+                    : "Ajuda"
           }
         >
           <button
             className="player-popover__close z-icon-btn"
             aria-label="Fechar menu"
-            onClick={() => setMenu(null)}
+            onClick={closePanels}
           >
             ×
           </button>
+          {menu === "options" && (
+            <>
+              <h2>Opções do leitor</h2>
+              <button className="p-opt" onClick={() => openMenu("speed")}>
+                Velocidade <small>{speed}×</small>
+              </button>
+              {episodes.length > 0 && (
+                <button className="p-opt" onClick={() => openMenu("episodes")}>
+                  Episódios
+                </button>
+              )}
+              <button
+                className="p-opt"
+                onClick={() => {
+                  setMenu(null);
+                  setStatsOpen(true);
+                }}
+              >
+                Estado da reprodução
+              </button>
+              <button className="p-opt" onClick={() => openMenu("help")}>
+                Atalhos de teclado
+              </button>
+            </>
+          )}
           {menu === "speed" && (
             <>
               <h2>Velocidade</h2>
@@ -499,7 +567,7 @@ export default function Player() {
                   onClick={() => {
                     if (video.current) video.current.playbackRate = value;
                     setSpeed(value);
-                    setMenu(null);
+                    closePanels();
                   }}
                 >
                   {value === 1 ? "Normal" : `${value}×`}
@@ -630,7 +698,11 @@ export default function Player() {
         </section>
       )}
       {statsOpen && (
-        <section className="p-stats">
+        <section
+          className="p-stats"
+          ref={menuPanel}
+          aria-label="Estado da reprodução"
+        >
           <h2>MOTOR ZEUS</h2>
           <dl>
             <dt>Resolução</dt>
@@ -653,10 +725,7 @@ export default function Player() {
               </>
             )}
           </dl>
-          <button
-            className="z-btn z-btn--ghost"
-            onClick={() => setStatsOpen(false)}
-          >
+          <button className="z-btn z-btn--ghost" onClick={closePanels}>
             Fechar
           </button>
         </section>
@@ -697,47 +766,111 @@ export default function Player() {
         </aside>
       )}
       <footer
-        className={"p-bar p-ui"}
+        className="p-bar p-ui"
+        inert={!showControls}
         onPointerEnter={() => {
           clearTimeout(idleTimer.current);
           setIdle(false);
         }}
         onPointerLeave={wake}
       >
-        <div className="p-scrub">
+        <div
+          className="p-scrub"
+          onPointerMove={(event) => {
+            if (!duration) return;
+            const bounds = event.currentTarget.getBoundingClientRect();
+            setPreview(
+              Math.max(
+                0,
+                Math.min(1, (event.clientX - bounds.left) / bounds.width),
+              ) * duration,
+            );
+          }}
+          onPointerLeave={() => {
+            if (!dragging) setPreview(null);
+          }}
+        >
           <div className="p-track">
+            {buffered.map((range) => (
+              <i
+                key={range.start}
+                className="p-buf"
+                style={{
+                  left: `${(range.start / duration) * 100}%`,
+                  width: `${((range.end - range.start) / duration) * 100}%`,
+                }}
+              />
+            ))}
             <i
               className="p-played"
               style={{
-                transform: `scaleX(${duration ? current / duration : 0})`,
+                transform: `scaleX(${ratio})`,
               }}
             />
           </div>
           <span
             className="p-knob"
-            style={{ left: `${duration ? (current / duration) * 100 : 0}%` }}
+            style={{ left: `${duration ? ratio * 100 : 0}%` }}
           />
+          {preview !== null && duration > 0 && (
+            <span
+              className="p-tip"
+              style={{
+                left: `clamp(32px, ${(preview / duration) * 100}%, calc(100% - 32px))`,
+              }}
+            >
+              {formatTime(preview)}
+            </span>
+          )}
           <input
             className="player-timeline"
             type="range"
             min="0"
             max={duration || 1}
             step=".1"
-            value={Math.min(current, duration || 1)}
+            value={position}
             disabled={!duration}
             aria-label="Posição no vídeo"
             aria-valuetext={`${formatTime(current)} de ${formatTime(duration)}`}
+            onFocus={() => setPreview(position)}
+            onBlur={() => setPreview(null)}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              setDragging(true);
+            }}
+            onPointerUp={() => {
+              setDragging(false);
+              setPreview(null);
+              wake();
+            }}
+            onPointerCancel={() => {
+              setDragging(false);
+              setPreview(null);
+              wake();
+            }}
+            onLostPointerCapture={() => setDragging(false)}
             onChange={(event) => {
-              if (video.current) {
-                video.current.currentTime = Number(event.target.value);
-                setCurrent(Number(event.target.value));
-              }
+              const element = video.current;
+              if (
+                !element ||
+                !duration ||
+                !Number.isFinite(element.duration) ||
+                element.duration <= 0
+              )
+                return;
+              const next = Math.max(
+                0,
+                Math.min(element.duration, Number(event.target.value)),
+              );
+              element.currentTime = next;
+              setCurrent(next);
+              setPreview(next);
             }}
           />
         </div>
         <div className="p-times">
           <span>{formatTime(current)}</span>
-          <span>−{formatTime(duration - current)}</span>
+          <span>−{formatTime(Math.max(0, duration - current))}</span>
         </div>
         <div className="p-ctrls">
           <button
@@ -792,35 +925,18 @@ export default function Player() {
             className="p-b"
             aria-label="Legendas"
             aria-expanded={menu === "subtitles"}
-            onClick={() => openMenu("subtitles")}
+            onClick={(event) => openMenu("subtitles", event.currentTarget)}
           >
             <PlayerIcon name="subs" />
           </button>
           <button
             className="p-b"
-            aria-label="Velocidade"
-            aria-expanded={menu === "speed"}
-            onClick={() => openMenu("speed")}
+            ref={optionsButton}
+            aria-label="Opções do leitor"
+            aria-expanded={(!!menu && menu !== "subtitles") || statsOpen}
+            onClick={(event) => openMenu("options", event.currentTarget)}
           >
-            <PlayerIcon name="speed" />
-          </button>
-          {episodes.length > 0 && (
-            <button
-              className="p-b"
-              aria-label="Episódios"
-              aria-expanded={menu === "episodes"}
-              onClick={() => openMenu("episodes")}
-            >
-              <PlayerIcon name="episodes" />
-            </button>
-          )}
-          <button
-            className="p-b"
-            aria-label="Estado da reprodução"
-            aria-pressed={statsOpen}
-            onClick={() => setStatsOpen(!statsOpen)}
-          >
-            <PlayerIcon name="info" />
+            <PlayerIcon name="more" />
           </button>
           <button
             className="p-b"
@@ -838,41 +954,9 @@ export default function Player() {
   );
 }
 
-function Medusa() {
-  const ref = useRef<HTMLDivElement>(null);
-  const bolts = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const el = ref.current!;
-    el.innerHTML =
-      '<img src="/art/img/medusa.webp" alt="" width="1254" height="1254">';
-    const light = cursorLight(el, {
-      size: 0.5,
-      rest: [0.5, 0.45],
-      orbit: [0.5, 0.46, 0.12, 0.1],
-    });
-    const sky = lightning(bolts.current!, {
-      palette: "warm",
-      every: [9000, 16000],
-      first: [8000, 12000],
-      area: { x: [0.55, 0.9], y: [0.1, 0.3] },
-      onFrame: (I: number) => el.style.setProperty("--I", String(I)),
-    });
-    return () => {
-      sky.destroy();
-      light.destroy();
-      el.replaceChildren();
-    };
-  }, []);
-  return (
-    <>
-      <canvas className="z-bolts" ref={bolts} aria-hidden="true" />
-      <div className="p-medusa" ref={ref} aria-hidden="true" />
-    </>
-  );
-}
 function PlayerIcon({ name }: { name: string }) {
   const paths: Record<string, string> = {
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/>',
+    more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
     pause: '<path d="M8 5v14M16 5v14"/>',
     back10:
       '<path d="M4 8V3m0 5h5M4 8a9 9 0 1 1-1 8"/><text x="12" y="15" font-size="8" fill="currentColor" stroke="none" text-anchor="middle">10</text>',
@@ -882,9 +966,6 @@ function PlayerIcon({ name }: { name: string }) {
       '<path d="M11 5 6 9H3v6h3l5 4zM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
     mute: '<path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6m0-6-5 6"/>',
     subs: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M6 11h3m3 0h6M6 15h7m3 0h2"/>',
-    speed: '<circle cx="12" cy="12" r="9"/><path d="m12 12 4-5M5 17h14"/>',
-    episodes:
-      '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/>',
     full: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
   };
   const icon = (ICON as Record<string, string>)[name];

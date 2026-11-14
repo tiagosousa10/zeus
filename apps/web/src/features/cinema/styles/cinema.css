@@ -706,7 +706,7 @@ progress::-moz-progress-bar {
   color: #c59f7c;
   margin: 8px 0;
 }
-/* Leitor: o vídeo ocupa tudo. A Medusa só aparece quando o tempo pára. */
+/* Leitor */
 .zeus-player {
   position: fixed;
   inset: 0;
@@ -726,10 +726,6 @@ progress::-moz-progress-bar {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: filter 1.3s;
-}
-.zeus-player.is-paused > video {
-  filter: grayscale(1) brightness(0.3);
 }
 .player-shade {
   position: absolute;
