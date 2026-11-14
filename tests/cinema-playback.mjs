@@ -1,6 +1,34 @@
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, readFile, rm, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import ffmpeg from "ffmpeg-static";
+
+const mediaDir = await mkdtemp(join(tmpdir(), "zeus-cinema-ui-"));
+execFileSync(ffmpeg, [
+  "-hide_banner",
+  "-loglevel",
+  "error",
+  "-f",
+  "lavfi",
+  "-i",
+  "testsrc=size=320x180:rate=10",
+  "-t",
+  "120",
+  "-c:v",
+  "libx264",
+  "-preset",
+  "ultrafast",
+  "-pix_fmt",
+  "yuv420p",
+  "-movflags",
+  "+faststart",
+  join(mediaDir, "video.mp4"),
+]);
+const media = await readFile(join(mediaDir, "video.mp4"));
 
 const server = await createServer({
   configFile: "apps/web/vite.config.ts",
@@ -31,6 +59,8 @@ const origin = "http://127.0.0.1:5197";
 const hash = "a".repeat(40);
 try {
   for (const scenario of [
+    "controls-desktop",
+    "controls-mobile",
     "motor",
     "pending",
     "hls",
@@ -39,11 +69,17 @@ try {
     "disabled",
     "future",
   ]) {
+    const controls = scenario.startsWith("controls");
     const pending = scenario === "pending",
       hls = scenario === "hls";
     const series = ["next", "cancel", "disabled", "future"].includes(scenario);
     let playlists = 0;
     const page = await browser.newPage({
+      viewport: {
+        width: scenario === "controls-mobile" ? 375 : 1440,
+        height: 900,
+      },
+      hasTouch: scenario === "controls-mobile",
       reducedMotion: "reduce",
       permissions: ["local-network-access"],
     });
@@ -110,9 +146,30 @@ try {
           contentType: "text/html",
           body: await server.transformIndexHtml(
             "/",
-            '<div id="root"></div><script type="module" src="/@id/virtual:cinema-characterization"></script>',
+            '<link rel="stylesheet" href="/art/shared/zeus.css"><div id="root"></div><script type="module" src="/@id/virtual:cinema-characterization"></script>',
           ),
         });
+      if (url.pathname === "/fixture.mp4") {
+        const range = route
+          .request()
+          .headers()
+          .range?.match(/bytes=(\d+)-(\d*)/);
+        const start = range ? Number(range[1]) : 0;
+        const end = range?.[2]
+          ? Math.min(Number(range[2]), media.length - 1)
+          : media.length - 1;
+        return route.fulfill({
+          status: range ? 206 : 200,
+          contentType: "video/mp4",
+          headers: {
+            "accept-ranges": "bytes",
+            ...(range
+              ? { "content-range": `bytes ${start}-${end}/${media.length}` }
+              : {}),
+          },
+          body: media.subarray(start, end + 1),
+        });
+      }
       if (url.pathname === "/fixture.m3u8") {
         playlists++;
         return route.fulfill({
@@ -152,9 +209,11 @@ try {
         return route.fulfill({
           json: {
             streams: [
-              hls
-                ? { url: origin + "/fixture.m3u8", name: "HLS fixture" }
-                : { infoHash: hash, fileIdx: 0, name: "Test source" },
+              controls
+                ? { url: origin + "/fixture.mp4", name: "Local video" }
+                : hls
+                  ? { url: origin + "/fixture.m3u8", name: "HLS fixture" }
+                  : { infoHash: hash, fileIdx: 0, name: "Test source" },
             ],
           },
         });
@@ -180,13 +239,173 @@ try {
       throw new Error("Unexpected test API request: " + path);
     });
     const started = page.waitForRequest(
-      hls ? "**/fixture.m3u8" : "**/api/motor/start",
+      controls
+        ? "**/fixture.mp4"
+        : hls
+          ? "**/fixture.m3u8"
+          : "**/api/motor/start",
     );
     await page.goto(
       origin +
         (series ? "/?id=tt123&type=series&s=1&e=2" : "/?id=tt123&type=movie"),
     );
     await started;
+    if (controls) {
+      await expect
+        .poll(() => page.locator("video").evaluate((v) => v.readyState))
+        .toBeGreaterThan(1);
+      const video = page.locator("video");
+      if (await video.evaluate((v) => v.paused))
+        await page
+          .getByRole("button", { name: "Reproduzir", exact: true })
+          .click();
+      await expect
+        .poll(() => video.evaluate((v) => v.currentTime))
+        .toBeGreaterThan(1);
+      await page.getByRole("button", { name: "Pausar", exact: true }).click();
+      await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+      await page.waitForTimeout(200);
+      await expect(video).toHaveCSS("filter", "none");
+      const centreIsVideo = await video.evaluate((v) => {
+        const r = v.getBoundingClientRect();
+        return (
+          document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === v
+        );
+      });
+      assert.ok(
+        centreIsVideo,
+        "pause leaves the frame unobscured and clickable",
+      );
+      await page
+        .getByRole("button", { name: "Opções do leitor", exact: true })
+        .click();
+      await page.getByRole("button", { name: /^Velocidade/ }).click();
+      await expect(
+        page.getByRole("region", { name: "Velocidade", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "Opções do leitor", exact: true }),
+      ).toBeFocused();
+      await page.getByRole("button", { name: "Legendas", exact: true }).click();
+      await expect(
+        page.getByRole("region", { name: "Legendas", exact: true }),
+      ).toContainText("Nem esta Fonte");
+      await page.locator('button[aria-label="Fechar menu"]').click();
+      await expect(
+        page.getByRole("button", { name: "Legendas", exact: true }),
+      ).toBeFocused();
+      await page
+        .getByRole("button", { name: "Opções do leitor", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Legendas", exact: true }).click();
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "Legendas", exact: true }),
+      ).toBeFocused();
+      const timeline = page.getByRole("slider", { name: "Posição no vídeo" });
+      const before = await video.evaluate((v) => v.currentTime);
+      await timeline.focus();
+      await page.keyboard.press("ArrowRight");
+      const after = await video.evaluate((v) => v.currentTime);
+      assert.ok(
+        after - before < 1,
+        "range keyboard does not trigger the ten-second shortcut",
+      );
+      const bounds = await timeline.boundingBox();
+      await page.mouse.move(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+      );
+      await expect(page.locator(".p-tip")).toBeVisible();
+      await expect(page.locator(".p-tip")).toContainText("1:00");
+      await expect
+        .poll(() => page.locator(".p-buf").count())
+        .toBeGreaterThan(0);
+      await page.mouse.down();
+      await page.mouse.move(
+        bounds.x + bounds.width * 0.75,
+        bounds.y + bounds.height / 2,
+      );
+      await expect(timeline).toBeVisible();
+      await page.mouse.up();
+      await expect
+        .poll(() => video.evaluate((v) => Math.round(v.currentTime)))
+        .toBeGreaterThan(80);
+      await page
+        .getByRole("button", { name: "Reproduzir", exact: true })
+        .click();
+      await page.clock.install();
+      await page.getByRole("button", { name: "Legendas", exact: true }).click();
+      await page.mouse.move(500, 100);
+      await page.clock.runFor(4100);
+      await expect(
+        page.getByRole("region", { name: "Legendas", exact: true }),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await page.clock.runFor(4100);
+      await expect(
+        page.getByRole("button", { name: "Legendas", exact: true }),
+      ).toBeFocused();
+      await expect(page.locator("main")).not.toHaveClass(/is-idle/);
+      await page.evaluate(() => document.activeElement.blur());
+      await page.locator("video").dispatchEvent("pointermove");
+      await page.clock.runFor(4100);
+      await expect(page.locator("main")).toHaveClass(/is-idle/);
+      await expect(page.locator("footer")).toHaveAttribute("inert", "");
+      await page.keyboard.press("Tab");
+      await expect(
+        page.getByRole("button", { name: "Controlos do leitor" }),
+      ).toBeFocused();
+      await page.getByRole("button", { name: "Pausar", exact: true }).click();
+      await mkdir("/tmp/zeus-cinema-player", { recursive: true });
+      await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+      await expect(
+        page.getByRole("button", { name: "Reproduzir", exact: true }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: `/tmp/zeus-cinema-player/${scenario}.png`,
+      });
+      await page
+        .getByRole("button", { name: "Opções do leitor", exact: true })
+        .click();
+      await page.screenshot({
+        path: `/tmp/zeus-cinema-player/${scenario}-options.png`,
+      });
+      await page.keyboard.press("Escape");
+      await page
+        .getByRole("button", { name: "Ecrã inteiro", exact: true })
+        .click();
+      await expect
+        .poll(() => page.evaluate(() => !!document.fullscreenElement))
+        .toBe(true);
+      await page.evaluate(() => document.exitFullscreen());
+      if (scenario === "controls-mobile") {
+        await page.touchscreen.tap(180, 450);
+        await expect.poll(() => video.evaluate((v) => v.paused)).toBe(false);
+        await page.touchscreen.tap(180, 450);
+        await expect.poll(() => video.evaluate((v) => v.paused)).toBe(true);
+      }
+      assert.ok(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      );
+      for (const invalidDuration of [0, NaN, Infinity]) {
+        await video.evaluate((v, value) => {
+          Object.defineProperty(v, "duration", {
+            configurable: true,
+            value: value === "NaN" ? NaN : value === "Infinity" ? Infinity : 0,
+          });
+          v.dispatchEvent(new Event("durationchange"));
+        }, String(invalidDuration));
+        await expect(timeline).toBeDisabled();
+      }
+      await page.evaluate(() => window.unmountPlayer());
+      assert.deepEqual(errors, []);
+      await page.close();
+      continue;
+    }
     if (series) {
       await expect(page.locator("video")).toHaveAttribute(
         "src",
@@ -328,9 +547,10 @@ try {
     await page.close();
   }
   console.log(
-    "Cinema characterization passed: progress throttle/flush, pending-start cancellation and motor/native/HLS cleanup.",
+    "Cinema passed: desktop/mobile controls, pause, timeline, focus, fullscreen/touch, progress, autoplay and motor/HLS cleanup.",
   );
 } finally {
   await browser.close();
   await server.close();
+  await rm(mediaDir, { recursive: true, force: true });
 }
