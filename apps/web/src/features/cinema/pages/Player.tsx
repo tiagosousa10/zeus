@@ -1,3 +1,4 @@
+import { availableNextEpisode, orderedEpisodes } from "../models/episodes";
 import { useCinemaSource } from "../hooks/use-cinema-source";
 import { useCinemaProgress } from "../hooks/use-cinema-progress";
 import { useCinemaMedia, preferredTrack } from "../hooks/use-cinema-media";
@@ -83,6 +84,9 @@ export default function Player() {
       selection: params.get("selection"),
       sourceIndex: params.get("source"),
       onReset: () => {
+        setEnded(false);
+        setCancelNext(false);
+        setCountdown(null);
         setCurrent(0);
         setDuration(0);
         resetResume();
@@ -106,13 +110,19 @@ export default function Player() {
       ].filter((track) => track.url.startsWith("/api/subtitles/file?")),
     [source?.subtitles, addonSubtitles.data?.subtitles],
   );
-  const episodes = (meta.data?.videos ?? [])
-    .filter((item) => item.season > 0)
-    .sort((a, b) => a.season - b.season || a.episode - b.episode);
-  const nowIndex = episodes.findIndex(
-    (item) => item.season === season && item.episode === episode,
+  const episodes = useMemo(
+    () => orderedEpisodes(meta.data?.videos ?? []),
+    [meta.data?.videos],
   );
-  const nextEpisode = nowIndex >= 0 ? episodes[nowIndex + 1] : undefined;
+  const nextEpisode = availableNextEpisode(episodes, season, episode);
+  const nextParams = nextEpisode
+    ? new URLSearchParams({
+        id,
+        type: "series",
+        s: String(nextEpisode.season),
+        e: String(nextEpisode.episode),
+      }).toString()
+    : null;
   const wake = useCallback(() => {
     setIdle(false);
     clearTimeout(idleTimer.current);
@@ -172,7 +182,7 @@ export default function Player() {
   useEffect(() => {
     if (
       !ended ||
-      !nextEpisode ||
+      !nextParams ||
       state.preferences.autoplay !== true ||
       cancelNext
     ) {
@@ -186,11 +196,11 @@ export default function Player() {
       setCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(timer);
-        location.href = `/leitor?id=${id}&type=series&s=${nextEpisode.season}&e=${nextEpisode.episode}`;
+        location.href = `/leitor?${nextParams}`;
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [ended, nextEpisode, state.preferences.autoplay, cancelNext, id]);
+  }, [ended, nextParams, state.preferences.autoplay, cancelNext]);
   const play = useCallback(() => {
     if (video.current)
       void video.current.play().catch(() => {
@@ -320,6 +330,8 @@ export default function Player() {
         onClick={toggle}
         onDoubleClick={fullscreen}
         onPlay={() => {
+          setEnded(false);
+          setCancelNext(false);
           setPaused(false);
           setWaiting(false);
           wake();
@@ -649,12 +661,14 @@ export default function Player() {
           </button>
         </section>
       )}
-      {duration > 0 && duration - current < 30 && nextEpisode && (
+      {(ended || (duration > 0 && duration - current < 30)) && nextEpisode && (
         <aside className="player-next">
           <p>
             A seguir · T{nextEpisode.season}:E{nextEpisode.episode}
           </p>
-          <strong>{nextEpisode.name}</strong>
+          <strong>
+            {nextEpisode.name || nextEpisode.title || "Próximo episódio"}
+          </strong>
           {countdown !== null && (
             <p role="status">
               Reprodução automática em {countdown} s{" "}
@@ -666,10 +680,18 @@ export default function Player() {
               </button>
             </p>
           )}
-          <a
-            className="z-btn z-btn--secondary"
-            href={`/titulo?id=${id}&type=series&s=${nextEpisode.season}&e=${nextEpisode.episode}`}
-          >
+          {cancelNext && ended && state.preferences.autoplay === true && (
+            <button
+              className="z-btn z-btn--ghost"
+              onClick={() => setCancelNext(false)}
+            >
+              Retomar reprodução automática
+            </button>
+          )}
+          <a className="z-btn z-btn--primary" href={`/leitor?${nextParams}`}>
+            Reproduzir próximo episódio
+          </a>
+          <a className="z-btn z-btn--secondary" href={`/titulo?${nextParams}`}>
             Escolher Fonte do próximo episódio →
           </a>
         </aside>
