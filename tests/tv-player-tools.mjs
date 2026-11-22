@@ -39,6 +39,17 @@ try {
     await page.goto("http://127.0.0.1:5194/tv#section=live&category=pt");
     await page.locator(".tv-channel-main").first().click();
     await expect(page.locator(".tv-player")).toBeVisible();
+    await page.getByRole("button", { name: "Controlos do leitor" }).focus();
+    await expect(page.getByRole("button", { name: /Pausa/ })).toHaveCount(0);
+    await expect(page.getByRole("slider", { name: "Posição" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Legendas / Áudio" }).click();
+    assert.equal(
+      await page.locator("video").evaluate((v) => v.controls),
+      false,
+    );
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".tv-player")).toBeVisible();
+    await page.getByRole("button", { name: "Opções", exact: true }).click();
     await page.evaluate(() => {
       const video = document.querySelector(".tv-player video");
       Object.defineProperties(video, {
@@ -101,6 +112,21 @@ try {
     await page
       .getByRole("button", { name: "Janela flutuante", exact: true })
       .click();
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Legendas / Áudio" }).click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          document.pictureInPictureElement === document.querySelector("video"),
+      ),
+      true,
+      "closing options and opening tracks keeps PiP active",
+    );
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Opções", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Sair da janela flutuante" }),
+    ).toHaveAttribute("aria-pressed", "true");
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
     assert.equal(
       await page.evaluate(() => document.pictureInPictureElement),

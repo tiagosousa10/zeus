@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -1119,9 +1119,209 @@ try {
           .evaluate((v) => v.currentSrc.startsWith("blob:")),
         "HLS uses MSE despite native maybe support",
       );
+    if (mode === "mp4") {
+      await page.getByRole("button", { name: "Pausa", exact: true }).click();
+      assert.equal(await page.locator("video").evaluate((v) => v.paused), true);
+      await page.locator("video").focus();
+      await page.keyboard.press("Space");
+      await expect
+        .poll(() => page.locator("video").evaluate((v) => v.paused))
+        .toBe(false);
+      await page.getByRole("button", { name: "Pausa", exact: true }).click();
+      await page
+        .getByRole("slider", { name: "Posição", exact: true })
+        .fill("4");
+      await expect
+        .poll(() =>
+          page.locator("video").evaluate((v) => Math.round(v.currentTime)),
+        )
+        .toBe(4);
+      await page.getByRole("button", { name: "Opções", exact: true }).click();
+      await page
+        .getByRole("combobox", { name: "Velocidade", exact: true })
+        .selectOption("1.5");
+      assert.equal(
+        await page.locator("video").evaluate((v) => v.playbackRate),
+        1.5,
+      );
+      await page.keyboard.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "Opções", exact: true }),
+      ).toBeFocused();
+      await expect(page.locator(".tv-player")).toBeVisible();
+    }
     decoded.push(mode);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
   }
+  fixture.setMode("mp4");
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() =>
+      window.__tvFixture.play({
+        section: "live",
+        id: "0",
+        categoryId: "pt",
+        title: "Canal 0",
+      }),
+    );
+    await page.waitForFunction(
+      () => document.querySelector("video")?.videoWidth === 320,
+    );
+    await page.locator("video").evaluate(async (v) => {
+      v.loop = true;
+      v.muted = true;
+      await v.play();
+    });
+    await page.locator("video").focus();
+    await page.keyboard.press("Space");
+    assert.equal(
+      await page.locator("video").evaluate((v) => v.paused),
+      false,
+      "Space cannot pause live without timeshift",
+    );
+    await expect(
+      page.getByRole("button", { name: /^(Pausa|Reproduzir)$/ }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("slider", { name: "Posição" })).toHaveCount(0);
+    const starts = fixture.starts.length;
+    await page.getByRole("button", { name: "Opções", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Fechar opções" }),
+    ).toBeFocused();
+    await page.locator("video").focus();
+    await page.waitForTimeout(3200);
+    await expect(
+      page.getByRole("region", { name: "Opções de reprodução" }),
+    ).toBeVisible();
+    await page.evaluate(() =>
+      window.__tvFixture.updatePrefs((p) => ({
+        ...p,
+        favorites: { ...p.favorites, live: ["0"] },
+      })),
+    );
+    await page.screenshot({ path: `${directory}/player-options-${width}.png` });
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Opções", exact: true }),
+    ).toBeFocused();
+    await page.waitForTimeout(3200);
+    await expect(
+      page.getByRole("button", { name: "Opções", exact: true }),
+    ).toBeVisible();
+    await page.locator("video").evaluate((v) => {
+      const t = v.addTextTrack("subtitles", "Português", "pt");
+      t.addCue(new VTTCue(0, 12, "Legenda local"));
+    });
+    await page.getByRole("button", { name: "Legendas / Áudio" }).click();
+    await expect(
+      page.getByRole("button", { name: "Fechar legendas e áudio" }),
+    ).toBeFocused();
+    await page
+      .getByRole("combobox", { name: "Faixa de legendas" })
+      .selectOption("0");
+    assert.equal(
+      await page.locator("video").evaluate((v) => v.textTracks[0].mode),
+      "showing",
+    );
+    assert.equal(
+      await page.locator("video").evaluate((v) => v.controls),
+      false,
+    );
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Legendas / Áudio" }),
+    ).toBeFocused();
+    await page.getByRole("button", { name: "Ecrã inteiro" }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => !!document.fullscreenElement?.querySelector(".tv-player"),
+        ),
+      )
+      .toBe(true);
+    await page.getByRole("button", { name: "Opções", exact: true }).click();
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document.fullscreenElement.contains(
+            document.querySelector(".tv-player-panel"),
+          ),
+        ),
+      )
+      .toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".tv-player")).toBeVisible();
+    await page.evaluate(
+      () => document.fullscreenElement && document.exitFullscreen(),
+    );
+    assert.equal(
+      fixture.starts.length,
+      starts,
+      "menus, focus, fullscreen and preference saves keep the session",
+    );
+    assert.equal(await page.locator("video").evaluate((v) => v.paused), false);
+    await page.screenshot({
+      path: `${directory}/player-controls-${width}.png`,
+    });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      true,
+    );
+    await page.evaluate(() => document.activeElement.blur());
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(3200);
+    await expect(
+      page.getByRole("button", { name: "Opções", exact: true }),
+    ).toBeHidden();
+    await page.mouse.move(width / 2, 400);
+    await expect(
+      page.getByRole("button", { name: "Opções", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Fechar", exact: true }).click();
+  }
+  await page.evaluate(() => {
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function () {
+      this.autoplay = false;
+      this.pause();
+      return Promise.reject(
+        new DOMException("Autoplay blocked", "NotAllowedError"),
+      );
+    };
+    window.__restorePlay = () => {
+      HTMLMediaElement.prototype.play = play;
+    };
+    window.__tvFixture.play({
+      section: "live",
+      id: "autoplay",
+      title: "Emissão",
+    });
+  });
+  await expect(
+    page.getByRole("button", { name: "Iniciar emissão", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^(Pausa|Reproduzir)$/ }),
+  ).toHaveCount(0);
+  const blockedStarts = fixture.starts.length;
+  await page.evaluate(() => window.__restorePlay());
+  await page
+    .getByRole("button", { name: "Iniciar emissão", exact: true })
+    .click();
+  await page.waitForFunction(
+    () => document.querySelector("video")?.currentTime > 0.3,
+  );
+  await expect(
+    page.getByRole("button", { name: "Iniciar emissão", exact: true }),
+  ).toHaveCount(0);
+  assert.equal(
+    fixture.starts.length,
+    blockedStarts,
+    "autoplay recovery reuses the session",
+  );
+  await page.getByRole("button", { name: "Fechar", exact: true }).click();
   fixture.setMode("mp4");
   fixture.setCompatibilityAvailable(true);
   const startsBeforeCompatibility = fixture.starts.length;
@@ -1189,7 +1389,10 @@ try {
       secretOnlyRefresh: true,
       mockedMember: true,
       localDecoded: decoded,
-      screenshots: 24,
+      screenshots: 28,
+      playerControls: true,
+      nativeSubtitles: true,
+      liveAutoplayRecovery: true,
       listChanges: true,
       visibilityInvalidation: true,
       cachedHiddenSurfaces: true,

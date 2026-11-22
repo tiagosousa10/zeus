@@ -5,7 +5,13 @@ import {
 import { ZeusLoader } from "../../../shared/components/ZeusLoader";
 import { PlaybackRecovery } from "../models/recovery";
 import { formatTime } from "../../cinema/models/media";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import type Hls from "hls.js";
 import { useTV } from "../hooks/state";
@@ -19,6 +25,11 @@ import {
   serializeStart,
   type PlaybackSession,
 } from "../models/playback-helpers";
+type NativeAudioTrack = { label: string; language: string; enabled: boolean };
+type NativeVideo = HTMLVideoElement & {
+  audioTracks?: ArrayLike<NativeAudioTrack> & EventTarget;
+};
+
 export default function Playback() {
   const tv = useTV(),
     target = tv.target!;
@@ -47,13 +58,15 @@ function PlaybackView() {
     [paused, setPaused] = useState(false),
     [channelsOpen, setChannelsOpen] = useState(false),
     [guideOpen, setGuideOpen] = useState(false),
-    [tracks, setTracks] = useState(false),
-    [infoOpen, setInfoOpen] = useState(false),
+    [panel, setPanel] = useState<"options" | "tracks" | "info" | null>(null),
+    [needsStart, setNeedsStart] = useState(false),
     [page, setPage] = useState<number | null>(null),
     [position, setPosition] = useState(0),
     [duration, setDuration] = useState(
       tv.prefs.progress[progressKey(target)]?.duration ?? 0,
     );
+  const panelTrigger = useRef<HTMLButtonElement | null>(null);
+  const panelRoot = useRef<HTMLDivElement>(null);
   const session = useRef<PlaybackSession | null>(null),
     base = useRef(0),
     total = useRef(duration),
@@ -65,6 +78,50 @@ function PlaybackView() {
   );
   useEffect(() => () => recovery.dispose(), [recovery]);
   const isLive = target.section === "live";
+  const controlsVisible =
+    visible || !!panel || channelsOpen || (!isLive && paused) || needsStart;
+  const closePanel = () => {
+    setPanel(null);
+    panelTrigger.current?.focus();
+  };
+  useEffect(() => {
+    if (panel)
+      Array.from(
+        panelRoot.current?.querySelectorAll<HTMLElement>("button,select") ?? [],
+      )
+        .find((element) => element.offsetParent !== null)
+        ?.focus();
+  }, [panel]);
+  useEffect(() => {
+    const v = video.current as NativeVideo;
+    const update = () => {
+      if (hls.current) return;
+      setAudio(
+        Array.from(v.audioTracks ?? []).map((t, id) => ({
+          id,
+          label: t.label || t.language || `Faixa ${id + 1}`,
+        })),
+      );
+      setCaptions(
+        Array.from(v.textTracks).map((t, id) => ({
+          id,
+          label: t.label || t.language || `Legenda ${id + 1}`,
+        })),
+      );
+    };
+    v.addEventListener("loadedmetadata", update);
+    for (const list of [v.audioTracks, v.textTracks]) {
+      list?.addEventListener("addtrack", update);
+      list?.addEventListener("removetrack", update);
+    }
+    return () => {
+      v.removeEventListener("loadedmetadata", update);
+      for (const list of [v.audioTracks, v.textTracks]) {
+        list?.removeEventListener("addtrack", update);
+        list?.removeEventListener("removetrack", update);
+      }
+    };
+  }, []);
   const dock = useQuery({
     queryKey: [
       "tv",
@@ -157,6 +214,7 @@ function PlaybackView() {
       destroy = () => {};
     setError("");
     setLoading(true);
+    setNeedsStart(false);
     setAudio([]);
     setCaptions([]);
     const v = video.current!;
@@ -305,7 +363,18 @@ function PlaybackView() {
           },
           { once: true },
         );
-      void v.play().catch(() => {});
+      void v.play().catch((reason: unknown) => {
+        if (
+          !disposed &&
+          reason instanceof DOMException &&
+          reason.name === "NotAllowedError"
+        ) {
+          clearTimeout(watchdog);
+          setLoading(false);
+          setPaused(true);
+          setNeedsStart(true);
+        }
+      });
     }).catch(() => {
       if (!disposed) fail();
     });
@@ -338,13 +407,13 @@ function PlaybackView() {
       }
     };
   }, [listId, attempt, compatibility, isLive, recovery, target]);
-  const wake = () => {
+  const wake = useCallback(() => {
     setVisible(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       if (!root.current?.contains(document.activeElement)) setVisible(false);
     }, 3000);
-  };
+  }, []);
   useEffect(() => {
     wake();
     const focus = requestAnimationFrame(() =>
@@ -357,7 +426,7 @@ function PlaybackView() {
       cancelAnimationFrame(focus);
       clearTimeout(timer.current);
     };
-  }, []);
+  }, [wake]);
   const change = async (delta: number) => {
     const current = dock.data;
     if (!current) return;
@@ -403,11 +472,19 @@ function PlaybackView() {
         e.target instanceof HTMLSelectElement
       )
         return;
-      if (isLive && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      if (
+        isLive &&
+        !panel &&
+        (e.key === "ArrowLeft" || e.key === "ArrowRight")
+      ) {
         e.preventDefault();
         void changeChannel(e.key === "ArrowRight" ? 1 : -1);
       }
-      if (e.key === " " && !(e.target instanceof HTMLButtonElement)) {
+      if (
+        !isLive &&
+        e.key === " " &&
+        !(e.target instanceof HTMLButtonElement)
+      ) {
         e.preventDefault();
         const v = video.current!;
         if (v.paused) void v.play().catch(() => {});
@@ -416,7 +493,26 @@ function PlaybackView() {
     };
     document.addEventListener("keydown", handle);
     return () => document.removeEventListener("keydown", handle);
-  }, [isLive]);
+  }, [isLive, panel, wake]);
+  useEffect(() => {
+    const handle = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !ownsModalInteraction(root.current)) return;
+      if (!panel && !channelsOpen) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (panel) closePanel();
+      else {
+        setChannelsOpen(false);
+        root.current
+          ?.querySelector<HTMLButtonElement>(
+            '[aria-controls="tv-player-channels"]',
+          )
+          ?.focus();
+      }
+    };
+    document.addEventListener("keydown", handle, true);
+    return () => document.removeEventListener("keydown", handle, true);
+  }, [panel, channelsOpen]);
   const programme = now.data?.find(
       (p) => p.start <= Date.now() && p.stop > Date.now(),
     ),
@@ -452,14 +548,21 @@ function PlaybackView() {
     >
       <div
         ref={root}
-        className={`tv-player ${visible ? "" : "tv-controls-hidden"}`}
+        className={`tv-player ${controlsVisible ? "" : "tv-controls-hidden"}`}
+        onPointerMove={() => wake()}
+        onPointerDown={() => wake()}
+        onFocusCapture={() => wake()}
+        onBlurCapture={() => wake()}
       >
         <video
           ref={video}
           autoPlay
           playsInline
-          controls={tracks}
-          onPlay={() => setPaused(false)}
+          tabIndex={-1}
+          onPlay={() => {
+            setPaused(false);
+            setNeedsStart(false);
+          }}
           onPause={() => {
             setPaused(true);
             saveRef.current();
@@ -481,10 +584,13 @@ function PlaybackView() {
         <button
           className="player-menu-toggle"
           aria-label="Controlos do leitor"
-          aria-expanded={visible}
+          aria-expanded={controlsVisible}
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={() => {
             clearTimeout(timer.current);
-            setVisible((x) => !x);
+            closePanel();
+            setChannelsOpen(false);
+            setVisible(!controlsVisible);
           }}
         >
           ☷ <span>Controlos</span>
@@ -502,9 +608,11 @@ function PlaybackView() {
             />
           </div>
         )}
-        <div className="tv-player-top tv-player-controls" inert={!visible}>
+        <div
+          className="tv-player-top tv-player-controls"
+          inert={!controlsVisible}
+        >
           <div className="tv-programme-capsule">
-            {isLive && <span className="tv-live-dot" />}
             <strong>{target.title || "Reprodução"}</strong>
             {isLive && !programme && (
               <span>
@@ -534,84 +642,38 @@ function PlaybackView() {
             )}
             {isLive && (
               <button
-                aria-pressed={channelsOpen}
+                aria-expanded={channelsOpen}
+                aria-controls="tv-player-channels"
                 onClick={() => setChannelsOpen((x) => !x)}
               >
                 Canais
               </button>
             )}
-            <button
-              aria-pressed={infoOpen}
-              onClick={() => setInfoOpen((x) => !x)}
-            >
-              Informação técnica
-            </button>
-            <button onClick={() => setTracks((x) => !x)}>
-              Legendas / Áudio
-            </button>
-            <button
-              aria-label="Ecrã inteiro"
-              onClick={() => {
-                void (
-                  document.fullscreenElement
-                    ? document.exitFullscreen()
-                    : root.current
-                        ?.closest<HTMLElement>(".tv-sheet")
-                        ?.requestFullscreen()
-                )?.catch(() => setError("O ecrã inteiro não está disponível."));
-              }}
-            >
-              ⛶
-            </button>
           </div>
         </div>
-        {infoOpen && visible && (
-          <PlaybackInfo
-            video={video}
-            session={session}
-            onClose={() => setInfoOpen(false)}
-          />
-        )}
-        {error && (
-          <div className="tv-player-error" role="alert">
-            <p>{error}</p>
-            <button
-              onClick={() => {
-                recovery.reset();
-                setRetrying(0);
-                setAttempt((x) => x + 1);
-              }}
-            >
-              Tentar de novo
-            </button>
-          </div>
-        )}
-        <div className="tv-player-bottom tv-player-controls" inert={!visible}>
-          <div className="tv-toolbar">
-            <button
-              aria-label="Reproduzir / Pausa"
-              onClick={() => {
-                const v = video.current!;
-                if (v.paused) void v.play().catch(() => {});
-                else v.pause();
-              }}
-            >
-              <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
-            </button>
+        <div
+          ref={panelRoot}
+          id="tv-player-panel"
+          className="tv-player-panel"
+          hidden={!panel}
+        >
+          <section
+            aria-label="Opções de reprodução"
+            hidden={panel !== "options"}
+          >
+            <header>
+              <h3>Opções</h3>
+              <button aria-label="Fechar opções" onClick={closePanel}>
+                ×
+              </button>
+            </header>
+            <div className="tv-player-option">
+              <span>Janela flutuante</span>
+              <PictureInPictureButton video={video} />
+            </div>
             {!isLive && (
-              <>
-                <button
-                  aria-label="Recuar 10 segundos"
-                  onClick={() => seek(Math.max(0, position - 10))}
-                >
-                  −10
-                </button>
-                <button
-                  aria-label="Avançar 10 segundos"
-                  onClick={() => seek(Math.min(duration, position + 10))}
-                >
-                  +10
-                </button>
+              <label className="tv-player-option">
+                Velocidade
                 <select
                   aria-label="Velocidade"
                   defaultValue="1"
@@ -626,9 +688,164 @@ function PlaybackView() {
                     </option>
                   ))}
                 </select>
+              </label>
+            )}
+            <button onClick={() => setPanel("info")}>Informação técnica</button>
+          </section>
+          {panel === "info" && (
+            <PlaybackInfo
+              video={video}
+              session={session}
+              onClose={() => setPanel("options")}
+            />
+          )}
+          {panel === "tracks" && (
+            <section aria-label="Legendas e áudio">
+              <header>
+                <h3>Legendas e áudio</h3>
+                <button
+                  aria-label="Fechar legendas e áudio"
+                  onClick={closePanel}
+                >
+                  ×
+                </button>
+              </header>
+              {(audio.length > 0 || captions.length > 0) && (
+                <div className="tv-toolbar">
+                  {audio.length > 0 && (
+                    <label>
+                      Áudio{" "}
+                      <select
+                        aria-label="Faixa de áudio"
+                        defaultValue={
+                          hls.current?.audioTrack ??
+                          Array.from(
+                            (video.current as NativeVideo)?.audioTracks ?? [],
+                          ).findIndex((t) => t.enabled)
+                        }
+                        onChange={(e) => {
+                          if (hls.current)
+                            hls.current.audioTrack = +e.target.value;
+                          else
+                            Array.from(
+                              (video.current as NativeVideo)?.audioTracks ?? [],
+                            ).forEach((t, i) => {
+                              t.enabled = i === +e.target.value;
+                            });
+                        }}
+                      >
+                        {audio.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {captions.length > 0 && (
+                    <label>
+                      Legendas{" "}
+                      <select
+                        aria-label="Faixa de legendas"
+                        defaultValue={
+                          hls.current?.subtitleTrack ??
+                          Array.from(video.current?.textTracks ?? []).findIndex(
+                            (t) => t.mode === "showing",
+                          )
+                        }
+                        onChange={(e) => {
+                          if (hls.current)
+                            hls.current.subtitleTrack = +e.target.value;
+                          else
+                            Array.from(video.current?.textTracks ?? []).forEach(
+                              (t, i) => {
+                                t.mode =
+                                  i === +e.target.value
+                                    ? "showing"
+                                    : "disabled";
+                              },
+                            );
+                        }}
+                      >
+                        <option value={-1}>Desligadas</option>
+                        {captions.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {!audio.length && !captions.length && (
+                <p>Não há faixas alternativas disponíveis neste vídeo.</p>
+              )}
+            </section>
+          )}
+        </div>
+        {error && (
+          <div className="tv-player-error" role="alert">
+            <p>{error}</p>
+            <button
+              onClick={() => {
+                recovery.reset();
+                setRetrying(0);
+                setAttempt((x) => x + 1);
+              }}
+            >
+              Tentar de novo
+            </button>
+          </div>
+        )}
+        <div
+          className="tv-player-bottom tv-player-controls"
+          inert={!controlsVisible}
+        >
+          <div className="tv-toolbar">
+            {!isLive && (
+              <button
+                className="tv-play-toggle"
+                aria-label={paused ? "Reproduzir" : "Pausa"}
+                onClick={() => {
+                  const v = video.current!;
+                  if (v.paused) void v.play().catch(() => {});
+                  else v.pause();
+                }}
+              >
+                <span aria-hidden="true">{paused ? "▶" : "Ⅱ"}</span>
+              </button>
+            )}
+            {isLive && (
+              <span className="tv-live-label">
+                <span className="tv-live-dot" />
+                Em direto
+              </span>
+            )}
+            {isLive && needsStart && (
+              <button
+                onClick={() => void video.current?.play().catch(() => {})}
+              >
+                Iniciar emissão
+              </button>
+            )}
+            {!isLive && (
+              <>
+                <button
+                  aria-label="Recuar 10 segundos"
+                  onClick={() => seek(Math.max(0, position - 10))}
+                >
+                  −10
+                </button>
+                <button
+                  aria-label="Avançar 10 segundos"
+                  onClick={() => seek(Math.min(duration, position + 10))}
+                >
+                  +10
+                </button>
               </>
             )}
-            <PictureInPictureButton video={video} />
             <label>
               <span aria-hidden="true">♪</span>{" "}
               <input
@@ -643,8 +860,48 @@ function PlaybackView() {
                 }}
               />
             </label>
+            <div className="tv-player-actions">
+              <button
+                aria-expanded={panel === "tracks"}
+                aria-controls="tv-player-panel"
+                onClick={(e) => {
+                  panelTrigger.current = e.currentTarget;
+                  if (panel === "tracks") closePanel();
+                  else setPanel("tracks");
+                }}
+              >
+                Legendas / Áudio
+              </button>
+              <button
+                aria-expanded={panel === "options" || panel === "info"}
+                aria-controls="tv-player-panel"
+                onClick={(e) => {
+                  panelTrigger.current = e.currentTarget;
+                  if (panel === "options" || panel === "info") closePanel();
+                  else setPanel("options");
+                }}
+              >
+                Opções
+              </button>
+              <button
+                aria-label="Ecrã inteiro"
+                onClick={() => {
+                  void (
+                    document.fullscreenElement
+                      ? document.exitFullscreen()
+                      : root.current
+                          ?.closest<HTMLElement>(".tv-sheet")
+                          ?.requestFullscreen()
+                  )?.catch(() =>
+                    setError("O ecrã inteiro não está disponível."),
+                  );
+                }}
+              >
+                ⛶
+              </button>
+            </div>
           </div>
-          {!isLive && duration > 0 && (
+          {!isLive && Number.isFinite(duration) && duration > 0 && (
             <label className="tv-seek">
               {formatTime(position)} / {formatTime(duration)}
               <input
@@ -657,56 +914,8 @@ function PlaybackView() {
               />
             </label>
           )}
-          {tracks && (audio.length > 0 || captions.length > 0) && (
-            <div className="tv-toolbar">
-              {audio.length > 0 && (
-                <label>
-                  Áudio{" "}
-                  <select
-                    aria-label="Faixa de áudio"
-                    defaultValue={hls.current?.audioTrack}
-                    onChange={(e) => {
-                      if (hls.current) hls.current.audioTrack = +e.target.value;
-                    }}
-                  >
-                    {audio.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {captions.length > 0 && (
-                <label>
-                  Legendas{" "}
-                  <select
-                    aria-label="Faixa de legendas"
-                    defaultValue={hls.current?.subtitleTrack ?? -1}
-                    onChange={(e) => {
-                      if (hls.current)
-                        hls.current.subtitleTrack = +e.target.value;
-                    }}
-                  >
-                    <option value={-1}>Desligadas</option>
-                    {captions.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
-          )}
-          {tracks && (
-            <p>
-              Usa os controlos nativos do vídeo para as faixas disponíveis. A
-              disponibilidade depende do canal e do navegador.
-            </p>
-          )}
           {isLive && channelsOpen && (
-            <div className="tv-channel-dock">
+            <div className="tv-channel-dock" id="tv-player-channels">
               <button aria-label="Canal anterior" onClick={() => change(-1)}>
                 ←
               </button>

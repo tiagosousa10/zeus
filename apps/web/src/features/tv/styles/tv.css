@@ -2185,3 +2185,116 @@
   margin: 0;
   text-align: right;
 }
+
+.tv-player .tv-player-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.tv-player-controls button,
+.tv-player-panel button,
+.tv-player-panel select {
+  min-height: 42px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+.tv-player button:focus-visible,
+.tv-player select:focus-visible,
+.tv-player input:focus-visible {
+  outline: 2px solid var(--tv-accent, #7de3f0);
+  outline-offset: 3px;
+}
+.tv-player button[aria-expanded="true"] {
+  border-color: #7de3f080;
+  background: #20333fe8;
+}
+.tv-player .tv-play-toggle {
+  min-width: 46px;
+  background: #d8edf0;
+  color: #09151f;
+}
+.tv-live-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+.tv-player-panel {
+  position: absolute;
+  z-index: 6;
+  right: max(24px, calc((100% - 900px) / 2));
+  bottom: 150px;
+  width: min(360px, calc(100% - 48px));
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid #9bb7cc40;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #152431f5, #090d15fa);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 12px 48px #0008;
+  font-size: 13px;
+}
+.tv-player-panel[hidden],
+.tv-player-panel [hidden] {
+  display: none;
+}
+.tv-player-panel header,
+.tv-player-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tv-player-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.tv-player-option {
+  flex-wrap: wrap;
+}
+.tv-player-panel p,
+.tv-player-option [role="status"] {
+  color: #aab6c1;
+  line-height: 1.5;
+}
+.tv-player-panel .tv-playback-info {
+  position: static;
+  padding: 0;
+  width: 100%;
+  border: 0;
+  background: none;
+}
+.tv-player-panel .tv-toolbar {
+  align-items: stretch;
+  flex-direction: column;
+}
+.tv-player-panel label select {
+  max-width: 100%;
+}
+@media (max-width: 650px) {
+  .tv-player .tv-player-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .tv-player-panel {
+    right: 12px;
+    width: calc(100% - 24px);
+    bottom: 190px;
+    max-height: calc(100dvh - 260px);
+  }
+  .tv-player-bottom .tv-toolbar {
+    gap: 8px;
+  }
+}
+@media (max-height: 500px) {
+  .tv-player-panel {
+    top: 60px;
+    bottom: 12px;
+    max-height: none;
+  }
+}
